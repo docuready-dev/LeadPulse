@@ -1,5 +1,5 @@
 import { 
-  Play, Sparkles, Layers, X, Check
+  BarChart3, Database, Play, Sparkles, Users, Zap, ShieldCheck, Layers, X, Check, Search, Send, Waypoints, TrendingDown
 } from 'lucide-react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { useRef, useState } from 'react';
@@ -7,6 +7,207 @@ import MeshBackground from '../components/MeshBackground';
 import { useStore } from '../store/useStore';
 import docuReadyBlackLogo from '../assets/DocuReady-black.png';
 import docuReadyWhiteLogo from '../assets/DocuReady-white.png';
+
+const companies = [
+  { name: 'Acme Corp', icon: Database },
+  { name: 'Globex', icon: BarChart3 },
+  { name: 'Soylent', icon: Users },
+  { name: 'Initech', icon: Zap },
+  { name: 'Umbrella', icon: ShieldCheck },
+  { name: 'Massive Dynamic', icon: Sparkles },
+];
+
+const benchmarkProfiles = {
+  solo: {
+    label: 'Solo Founder (1 Seat)',
+    seats: '1 Seat',
+    leadsPerMo: '500 Leads/mo',
+    marketTotal: '₹9,200',
+    marketAnnual: '₹1,10,400',
+    leadPulsePlan: 'Basic Plan',
+    leadPulseTotal: '₹699',
+    leadPulseAnnual: '₹8,388',
+    annualSavings: '₹1,02,012',
+    savingsPct: '92%',
+    leadPulseBarPct: 8,
+    instances: [
+      {
+        id: '01',
+        title: 'B2B Lead Discovery & Spatial Extraction',
+        replaces: 'Apollo / Lusha / ZoomInfo',
+        icon: Search,
+        scenario: 'Extracting 500–600 verified commercial prospects across targeted city zones every month.',
+        marketPrice: '₹4,100 / mo',
+        marketSub: '$49/mo static database credits',
+        marketFlaw: 'Stale recycled lists & credit lock-in',
+        ourPrice: '₹699 / mo',
+        ourBadge: 'Or ₹1/lead Mega Pack',
+        ourSub: '600 tokens/mo • Live Google Maps extraction',
+        ourAdvantage: 'Real-time Quick & Deep multi-page scraping',
+        savingsTag: 'Save ₹3,400/mo',
+        barPct: 16,
+      },
+      {
+        id: '02',
+        title: 'AI Cold Email Studio, A/B Testing & Multi-Channel',
+        replaces: 'Instantly / Lemlist',
+        icon: Send,
+        scenario: 'Synthesizing personalized outreach copy per lead, 50/50 A/B split tests, and inbox + WhatsApp dispatch.',
+        marketPrice: '₹3,100 / mo',
+        marketSub: '$37/mo for email sender only (0 leads)',
+        marketFlaw: 'Separate subscription + no WhatsApp bridge',
+        ourPrice: '₹0 Extra',
+        ourBadge: 'Built Native',
+        ourSub: 'AI Copilot + 8 Templates + SMTP & WhatsApp',
+        ourAdvantage: 'Zero add-on fee inside your workspace',
+        savingsTag: 'Save ₹3,100/mo',
+        barPct: 4,
+      },
+      {
+        id: '03',
+        title: 'Kanban CRM, Automated Journeys & Team Pool',
+        replaces: 'HubSpot / Pipedrive',
+        icon: Waypoints,
+        scenario: 'Managing deal stages, automated follow-up sequences, Google Sheets mirroring, and webhook telemetry.',
+        marketPrice: '₹2,000 / mo',
+        marketSub: '$24/mo base CRM subscription',
+        marketFlaw: 'Charges extra for automation & webhooks',
+        ourPrice: '₹0 Extra',
+        ourBadge: 'Included Free',
+        ourSub: '6-Stage Resizable Kanban + Live Sheet Sync',
+        ourAdvantage: 'Full CRM & automation included on every tier',
+        savingsTag: 'Save ₹2,000/mo',
+        barPct: 4,
+      },
+    ],
+  },
+  agency: {
+    label: 'Growth Agency (5 Seats)',
+    seats: '5 Seats',
+    leadsPerMo: '600–1,500 Leads/mo',
+    marketTotal: '₹24,500',
+    marketAnnual: '₹2,94,000',
+    leadPulsePlan: 'Basic / Pro Shared Pool',
+    leadPulseTotal: '₹699 – ₹1,999',
+    leadPulseAnnual: '₹8,388',
+    annualSavings: '₹2,70,000+',
+    savingsPct: '94%',
+    leadPulseBarPct: 6,
+    instances: [
+      {
+        id: '01',
+        title: 'B2B Lead Discovery & Spatial Extraction',
+        replaces: 'Apollo / Lusha / ZoomInfo',
+        icon: Search,
+        scenario: 'A digital agency extracting 600–1,500 verified local & B2B prospects across targeted metropolitan zones monthly.',
+        marketPrice: '₹8,500 / mo',
+        marketSub: '$99/mo multi-user scraping & export credits',
+        marketFlaw: 'Strict export caps & per-credit overages',
+        ourPrice: '₹699 / mo',
+        ourBadge: 'Or ₹1/lead Mega Pack',
+        ourSub: 'Live Quick (20) & Deep (60) spatial extraction',
+        ourAdvantage: '100% public verified phones, ratings & domains',
+        savingsTag: 'Save ~₹7,800/mo',
+        barPct: 9,
+      },
+      {
+        id: '02',
+        title: 'AI Cold Email Studio, A/B Testing & Multi-Channel',
+        replaces: 'Instantly / Lemlist',
+        icon: Send,
+        scenario: 'Running multi-client AI outreach campaigns with 50/50 A/B split testing across Gmail, Resend, SMTP & WhatsApp.',
+        marketPrice: '₹6,000 / mo',
+        marketSub: '$72/mo agency sender tier (zero leads)',
+        marketFlaw: 'Manual CSV uploads between scraper & sender',
+        ourPrice: '₹0 Extra',
+        ourBadge: 'Built Native',
+        ourSub: '8 Link Mobility Architectures + AI Copilot',
+        ourAdvantage: '1-click synthesis & dispatch from scraped leads',
+        savingsTag: 'Save ~₹6,000/mo',
+        barPct: 4,
+      },
+      {
+        id: '03',
+        title: 'Kanban CRM, Automated Journeys & Multi-Seat Teams',
+        replaces: 'HubSpot / Pipedrive',
+        icon: Waypoints,
+        scenario: 'Managing a 5-person revenue squad with automated follow-up workflows, Google Sheets sync, and shared lead pools.',
+        marketPrice: '₹10,000 / mo',
+        marketSub: '₹2,000 × 5 seats per-user billing tax',
+        marketFlaw: 'Penalizes agency growth with per-seat fees',
+        ourPrice: 'Universal Pool',
+        ourBadge: 'Zero Per-Seat Tax',
+        ourSub: '50% seats on Basic (₹699) • 100% seats on Pro (₹1,999)',
+        ourAdvantage: 'Share workspace tokens across registered seats',
+        savingsTag: 'Save ~₹10,000/mo',
+        barPct: 7,
+      },
+    ],
+  },
+  scale: {
+    label: 'Revenue Squad (10 Seats)',
+    seats: '10 Seats',
+    leadsPerMo: '1,500+ Leads/mo',
+    marketTotal: '₹44,900',
+    marketAnnual: '₹5,38,800',
+    leadPulsePlan: 'Pro Tier (100% Seats)',
+    leadPulseTotal: '₹1,999',
+    leadPulseAnnual: '₹23,988',
+    annualSavings: '₹5,14,800+',
+    savingsPct: '95%',
+    leadPulseBarPct: 5,
+    instances: [
+      {
+        id: '01',
+        title: 'B2B Lead Discovery & Spatial Extraction',
+        replaces: 'Apollo / Lusha / ZoomInfo',
+        icon: Search,
+        scenario: 'High-velocity commercial squad harvesting 1,500+ verified prospects monthly with Deep 60-lead pagination.',
+        marketPrice: '₹12,500 / mo',
+        marketSub: '$149/mo commercial data license',
+        marketFlaw: 'Annual lock-in contracts & seat restrictions',
+        ourPrice: '₹1,999 / mo',
+        ourBadge: '1,500 Tokens/mo + Top-Ups',
+        ourSub: 'Includes Deep 60-lead sweeps & ₹1/lead top-ups',
+        ourAdvantage: 'Instant UPI top-ups anytime, zero lock-in',
+        savingsTag: 'Save ~₹10,500/mo',
+        barPct: 14,
+      },
+      {
+        id: '02',
+        title: 'AI Cold Email Studio, A/B Testing & Multi-Channel',
+        replaces: 'Instantly / Lemlist',
+        icon: Send,
+        scenario: 'Full-scale A/B split testing, custom HTML & attachment dispatch, and direct WhatsApp bridge across 10 reps.',
+        marketPrice: '₹7,900 / mo',
+        marketSub: '$97/mo pro outreach automation tier',
+        marketFlaw: 'Disconnected from CRM stage transitions',
+        ourPrice: '₹0 Extra',
+        ourBadge: 'Built Native',
+        ourSub: 'Unlimited AI Copilot + Multi-Provider Relay',
+        ourAdvantage: 'Native Gmail, Resend, SendGrid & Custom SMTP',
+        savingsTag: 'Save ~₹7,900/mo',
+        barPct: 4,
+      },
+      {
+        id: '03',
+        title: 'Kanban CRM, Automated Journeys & Multi-Seat Teams',
+        replaces: 'HubSpot / Pipedrive',
+        icon: Waypoints,
+        scenario: '10 sales reps collaborating on a shared token pool with live Google Sheets mirroring, Slack/Discord alerts & webhooks.',
+        marketPrice: '₹24,500 / mo',
+        marketSub: '₹2,450 × 10 seats CRM + workflow add-ons',
+        marketFlaw: 'Massive per-seat bloat as headcount scales',
+        ourPrice: '100% Seats Included',
+        ourBadge: 'Zero Per-Seat Tax',
+        ourSub: 'All 10 registered team seats share the Pro pool',
+        ourAdvantage: 'One flat ₹1,999/mo bill for the entire squad',
+        savingsTag: 'Save ~₹24,500/mo',
+        barPct: 5,
+      },
+    ],
+  },
+} as const;
 
 const Landing = ({ onLogin }: { onLogin: () => void }) => {
   const { token } = useStore();
@@ -24,6 +225,8 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
   const [isTermsOpen, setIsTermsOpen] = useState(false);
   const [isContactOpen, setIsContactOpen] = useState(false);
   const [contactSubmitted, setContactSubmitted] = useState(false);
+  const [benchmarkScale, setBenchmarkScale] = useState<'solo' | 'agency' | 'scale'>('agency');
+  const activeBenchmark = benchmarkProfiles[benchmarkScale];
 
   const containerVars = {
     hidden: { opacity: 0 },
@@ -521,12 +724,47 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
         </div>
       </section>
 
+      {/* ================= MARQUEE SECTION (BEFORE WHY DOCUREADY) ================= */}
+      <section className="py-10 border-y border-[#E5E0D5] bg-[#F5F2EB] overflow-hidden w-full relative z-10">
+        <p className="text-center text-[11px] font-delight font-bold text-[#78716A] mb-7 uppercase tracking-[0.14em]">
+          Powering revenue teams at modern commercial organizations
+        </p>
+        <div className="w-full inline-flex flex-nowrap overflow-hidden pointer-events-none select-none [mask-image:_linear-gradient(to_right,transparent_0,_black_128px,_black_calc(100%-128px),transparent_100%)]">
+          <div className="flex items-center shrink-0 w-max gap-16 pr-16 animate-marquee">
+            {[...companies, ...companies].map((company, i) => {
+              const Icon = company.icon;
+              return (
+                <div key={i} className="flex items-center gap-3 opacity-85">
+                  <div className="w-7 h-7 rounded-[5px] bg-white border border-[#D6CFC2] flex items-center justify-center text-[#C85A32]">
+                    <Icon className="w-4 h-4" />
+                  </div>
+                  <span className="text-xl font-extrabold tracking-tight text-[#191716]">{company.name}</span>
+                </div>
+              );
+            })}
+          </div>
+          <div className="flex items-center shrink-0 w-max gap-16 pr-16 animate-marquee" aria-hidden="true">
+            {[...companies, ...companies].map((company, i) => {
+              const Icon = company.icon;
+              return (
+                <div key={i + 'dup'} className="flex items-center gap-3 opacity-85">
+                  <div className="w-7 h-7 rounded-[5px] bg-white border border-[#D6CFC2] flex items-center justify-center text-[#C85A32]">
+                    <Icon className="w-4 h-4" />
+                  </div>
+                  <span className="text-xl font-extrabold tracking-tight text-[#191716]">{company.name}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
       {/* ================= 6. WHY DOCUREADY ENGINEERED LEADPULSE (id="docuready") ================= */}
-      <section id="docuready" className="py-20 px-6 md:px-12 max-w-7xl mx-auto w-full relative z-10 scroll-mt-20 border-t border-[#E5E0D5]">
+      <section id="docuready" className="py-20 px-6 md:px-12 max-w-7xl mx-auto w-full relative z-10 scroll-mt-20">
         <div className="grid lg:grid-cols-12 gap-10 items-start">
           
           {/* Left Column (5 Cols): DocuReady Entity Story & What We Offer */}
-          <div className="lg:col-span-5 space-y-6">
+          <div className="lg:col-span-5 space-y-6 lg:sticky lg:top-24">
             <div className="inline-flex items-center gap-2.5 px-3 py-1.5 rounded-[5px] border border-[#E5E0D5] bg-[#F5F2EB]">
               <img src={docuReadyBlackLogo} alt="DocuReady" className="h-4 w-auto object-contain" />
               <span className="w-1 h-1 rounded-full bg-[#C85A32]"></span>
@@ -540,7 +778,7 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
             </h2>
 
             <p className="text-sm md:text-[14.5px] text-[#57524B] leading-relaxed">
-              When our engineering team at <strong>DocuReady</strong> audited the modern B2B sales stack, we saw agencies, founders, and commercial teams paying <strong>₹12,000 to ₹25,000+ every single month</strong> across four disconnected subscriptions—one for scraping leads, another for email warmup, a third for AI copywriting, and a fourth per-seat CRM.
+              When our engineering team at <strong>DocuReady</strong> audited the modern B2B sales stack, we saw agencies, founders, and commercial teams paying <strong>₹12,000 to ₹45,000+ every single month</strong> across four disconnected subscriptions—one for scraping leads, another for email warmup, a third for AI copywriting, and a fourth per-seat CRM.
             </p>
 
             <p className="text-sm md:text-[14.5px] text-[#57524B] leading-relaxed">
@@ -577,122 +815,196 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
             </div>
           </div>
 
-          {/* Right Column (7 Cols): Real-World Market Rate vs. Our Price Instances */}
-          <div className="lg:col-span-7 space-y-4">
-            <div className="bg-white border border-[#E5E0D5] rounded-lg overflow-hidden shadow-2xs">
-              <div className="px-6 py-4 bg-[#F5F2EB] border-b border-[#E5E0D5] flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  <span className="text-[10px] font-delight font-bold uppercase tracking-wider text-[#C85A32] block">
-                    REAL-WORLD COST BENCHMARKING
-                  </span>
-                  <h3 className="text-base font-extrabold text-[#191716] tracking-tight">
-                    Current Market Rate vs. DocuReady&apos;s LeadPulse Price
-                  </h3>
+          {/* Right Column (7 Cols): Repolished Intuitive Real-World Cost Benchmarking Studio */}
+          <div className="lg:col-span-7">
+            <div className="bg-white border border-[#D6CFC2] rounded-xl overflow-hidden shadow-sm">
+              
+              {/* Studio Header + Interactive Team Size Switcher */}
+              <div className="p-5 sm:p-6 bg-[#F5F2EB] border-b border-[#E5E0D5] space-y-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <div className="inline-flex items-center gap-1.5 text-[10px] font-delight font-bold uppercase tracking-widest text-[#C85A32] mb-1">
+                      <TrendingDown className="w-3.5 h-3.5" />
+                      <span>REAL-WORLD COST BENCHMARKING // LIVE STACK AUDIT</span>
+                    </div>
+                    <h3 className="text-lg sm:text-xl font-extrabold text-[#191716] tracking-tight">
+                      Fragmented Market Stack vs. DocuReady&apos;s LeadPulse
+                    </h3>
+                  </div>
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[5px] bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-delight font-bold shadow-2xs">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span>
+                    <span>Save {activeBenchmark.savingsPct} ({activeBenchmark.annualSavings}/yr)</span>
+                  </div>
                 </div>
-                <span className="text-[10.5px] font-delight font-semibold px-2.5 py-1 rounded-[4px] bg-white border border-[#E5E0D5] text-[#191716]">
-                  Up to 92% Lower Total Cost
-                </span>
+
+                {/* Interactive Scenario Preset Selector */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between text-[10.5px] font-delight font-semibold text-[#78716A]">
+                    <span>SELECT YOUR TEAM PROFILE TO COMPARE MONTHLY BURN:</span>
+                    <span className="text-[#191716] font-bold">{activeBenchmark.seats} • {activeBenchmark.leadsPerMo}</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1.5 p-1 rounded-[7px] bg-[#EAE5DA] border border-[#D6CFC2]">
+                    {(['solo', 'agency', 'scale'] as const).map((key) => {
+                      const prof = benchmarkProfiles[key];
+                      const isActive = benchmarkScale === key;
+                      return (
+                        <button
+                          key={key}
+                          type="button"
+                          onClick={() => setBenchmarkScale(key)}
+                          className={`py-2 px-2.5 rounded-[5px] text-center transition-all cursor-pointer font-delight ${
+                            isActive
+                              ? 'bg-[#191716] text-white shadow-xs'
+                              : 'text-[#57524B] hover:text-[#191716] hover:bg-white/60'
+                          }`}
+                        >
+                          <div className="text-[11px] font-bold leading-tight">{prof.label}</div>
+                          <div className={`text-[9.5px] mt-0.5 ${isActive ? 'text-[#E07A5F]' : 'text-[#78716A]'}`}>
+                            {prof.leadsPerMo}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Visual Total Monthly Burn Meter (Instant At-A-Glance Bar) */}
+                <div className="p-4 rounded-lg bg-white border border-[#E5E0D5] space-y-3">
+                  {/* Market Burn Bar */}
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-xs font-delight">
+                      <span className="font-semibold text-[#57524B] flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-xs bg-[#9C9488]"></span>
+                        3 Separate Market Subscriptions (Scraper + Sender + CRM)
+                      </span>
+                      <span className="font-bold text-[#78716A] line-through tabular-nums">
+                        {activeBenchmark.marketTotal} / mo
+                      </span>
+                    </div>
+                    <div className="w-full h-2.5 rounded-full bg-[#F5F2EB] overflow-hidden border border-[#E5E0D5]">
+                      <div className="h-full bg-[#9C9488]/65 rounded-full w-full transition-all duration-500"></div>
+                    </div>
+                  </div>
+
+                  {/* LeadPulse Burn Bar */}
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-xs font-delight">
+                      <span className="font-extrabold text-[#191716] flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-xs bg-[#C85A32]"></span>
+                        LeadPulse Unified OS ({activeBenchmark.leadPulsePlan})
+                      </span>
+                      <span className="font-extrabold text-[#C85A32] tabular-nums">
+                        {activeBenchmark.leadPulseTotal} / mo
+                      </span>
+                    </div>
+                    <div className="w-full h-2.5 rounded-full bg-[#FDF3EF] overflow-hidden border border-[#F2D0C2]">
+                      <div
+                        className="h-full bg-[#C85A32] rounded-full transition-all duration-500"
+                        style={{ width: `${activeBenchmark.leadPulseBarPct}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                </div>
               </div>
 
+              {/* 3 Stack Layer Breakdown Cards */}
               <div className="divide-y divide-[#E5E0D5]">
-                {/* Instance 1 */}
-                <div className="p-5 sm:p-6 hover:bg-[#FAF8F5]/60 transition-colors">
-                  <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-                    <span className="text-xs font-delight font-bold text-[#191716]">
-                      Instance 01 // B2B Lead Discovery &amp; Spatial Extraction
-                    </span>
-                    <span className="text-[10.5px] font-delight font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-[4px]">
-                      Save ~₹3,400 – ₹11,800/mo
-                    </span>
-                  </div>
-                  <p className="text-xs text-[#57524B] leading-relaxed mb-3.5">
-                    A digital agency or local service team extracting 500–600 verified commercial prospects across targeted city zones every month.
-                  </p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-delight">
-                    <div className="p-3 rounded-[5px] bg-[#FAF8F5] border border-[#E5E0D5]">
-                      <span className="text-[10px] uppercase tracking-wider text-[#78716A] block font-semibold">Current Market Rate (Apollo / Lusha / ZoomInfo)</span>
-                      <span className="text-sm font-bold text-slate-500 line-through">₹4,100 – ₹12,500 / mo</span>
-                      <span className="text-[11px] text-[#78716A] block mt-0.5">($49–$149/mo for static database credits)</span>
-                    </div>
-                    <div className="p-3 rounded-[5px] bg-[#F5F2EB] border border-[#C85A32]/35">
-                      <span className="text-[10px] uppercase tracking-wider text-[#C85A32] block font-bold">Our Price at LeadPulse</span>
-                      <span className="text-sm font-extrabold text-[#191716]">₹699 / mo <span className="text-xs font-semibold text-[#C85A32]">(or ₹1/lead Mega Pack)</span></span>
-                      <span className="text-[11px] text-[#57524B] block mt-0.5">Live Quick &amp; Deep multi-page scraping included</span>
-                    </div>
-                  </div>
-                </div>
+                {activeBenchmark.instances.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <div key={item.id} className="p-5 sm:p-6 hover:bg-[#FAF8F5]/70 transition-colors space-y-3.5">
+                      {/* Top Row: Layer Title + Replaced Tools + Savings Pill */}
+                      <div className="flex flex-wrap items-start justify-between gap-2">
+                        <div className="flex items-start gap-3">
+                          <div className="w-8 h-8 rounded-[6px] bg-[#F5F2EB] border border-[#D6CFC2] text-[#C85A32] flex items-center justify-center shrink-0 mt-0.5">
+                            <Icon className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="text-[10px] font-delight font-extrabold uppercase tracking-wider px-1.5 py-0.5 rounded-[3px] bg-[#191716] text-white">
+                                Layer {item.id}
+                              </span>
+                              <h4 className="text-sm font-extrabold text-[#191716] tracking-tight">
+                                {item.title}
+                              </h4>
+                            </div>
+                            <p className="text-xs text-[#57524B] mt-1 leading-relaxed">
+                              {item.scenario}
+                            </p>
+                          </div>
+                        </div>
+                        <span className="text-[10.5px] font-delight font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-[4px] shrink-0">
+                          {item.savingsTag}
+                        </span>
+                      </div>
 
-                {/* Instance 2 */}
-                <div className="p-5 sm:p-6 hover:bg-[#FAF8F5]/60 transition-colors">
-                  <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-                    <span className="text-xs font-delight font-bold text-[#191716]">
-                      Instance 02 // AI Cold Email Studio, A/B Testing &amp; Multi-Channel Dispatch
-                    </span>
-                    <span className="text-[10.5px] font-delight font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-[4px]">
-                      Save ~₹3,100 – ₹7,900/mo
-                    </span>
-                  </div>
-                  <p className="text-xs text-[#57524B] leading-relaxed mb-3.5">
-                    Synthesizing personalized outreach copy per lead, running 50/50 A/B split tests, and dispatching directly to inboxes + WhatsApp.
-                  </p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-delight">
-                    <div className="p-3 rounded-[5px] bg-[#FAF8F5] border border-[#E5E0D5]">
-                      <span className="text-[10px] uppercase tracking-wider text-[#78716A] block font-semibold">Current Market Rate (Instantly / Lemlist)</span>
-                      <span className="text-sm font-bold text-slate-500 line-through">₹3,100 – ₹7,900 / mo</span>
-                      <span className="text-[11px] text-[#78716A] block mt-0.5">($37–$97/mo for email sender only, zero leads)</span>
-                    </div>
-                    <div className="p-3 rounded-[5px] bg-[#F5F2EB] border border-[#C85A32]/35">
-                      <span className="text-[10px] uppercase tracking-wider text-[#C85A32] block font-bold">Our Price at LeadPulse</span>
-                      <span className="text-sm font-extrabold text-[#191716]">₹0 Extra — Built Native</span>
-                      <span className="text-[11px] text-[#57524B] block mt-0.5">AI Copilot + 8 Templates + Direct SMTP &amp; WhatsApp</span>
-                    </div>
-                  </div>
-                </div>
+                      {/* Side-by-Side Comparison Grid */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-delight pl-0 sm:pl-11">
+                        {/* Legacy Market Card */}
+                        <div className="p-3.5 rounded-lg bg-[#FAF8F5] border border-[#E5E0D5] flex flex-col justify-between space-y-2">
+                          <div>
+                            <div className="flex items-center justify-between gap-1 text-[10px] uppercase tracking-wider text-[#78716A] font-semibold">
+                              <span>Legacy Stack ({item.replaces})</span>
+                              <span className="text-[9.5px] px-1.5 py-0.5 rounded bg-[#EAE5DA] text-[#57524B]">External Tool</span>
+                            </div>
+                            <div className="text-base font-extrabold text-[#78716A] line-through mt-1 tabular-nums">
+                              {item.marketPrice}
+                            </div>
+                            <div className="text-[11px] text-[#78716A] mt-0.5">
+                              {item.marketSub}
+                            </div>
+                          </div>
+                          <div className="pt-2 border-t border-[#E5E0D5] flex items-center gap-1.5 text-[11px] text-[#78716A]">
+                            <X className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                            <span>{item.marketFlaw}</span>
+                          </div>
+                        </div>
 
-                {/* Instance 3 */}
-                <div className="p-5 sm:p-6 hover:bg-[#FAF8F5]/60 transition-colors">
-                  <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-                    <span className="text-xs font-delight font-bold text-[#191716]">
-                      Instance 03 // Kanban CRM, Automated Journeys &amp; Multi-Seat Teams
-                    </span>
-                    <span className="text-[10.5px] font-delight font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-[4px]">
-                      Zero Per-Seat Tax
-                    </span>
-                  </div>
-                  <p className="text-xs text-[#57524B] leading-relaxed mb-3.5">
-                    Managing a 5-person revenue squad with automated follow-up workflows, webhook telemetry, and shared lead pools.
-                  </p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-delight">
-                    <div className="p-3 rounded-[5px] bg-[#FAF8F5] border border-[#E5E0D5]">
-                      <span className="text-[10px] uppercase tracking-wider text-[#78716A] block font-semibold">Current Market Rate (HubSpot / Pipedrive)</span>
-                      <span className="text-sm font-bold text-slate-500 line-through">₹2,000 – ₹4,500 / seat / mo</span>
-                      <span className="text-[11px] text-[#78716A] block mt-0.5">Penalizes team growth with per-user billing</span>
+                        {/* LeadPulse Native Card */}
+                        <div className="p-3.5 rounded-lg bg-[#FDF6F3] border border-[#C85A32]/40 flex flex-col justify-between space-y-2 relative overflow-hidden">
+                          <div>
+                            <div className="flex items-center justify-between gap-1 text-[10px] uppercase tracking-wider text-[#C85A32] font-bold">
+                              <span>LeadPulse by DocuReady</span>
+                              <span className="text-[9.5px] px-1.5 py-0.5 rounded bg-[#C85A32] text-white font-bold">
+                                {item.ourBadge}
+                              </span>
+                            </div>
+                            <div className="text-base font-extrabold text-[#191716] mt-1 tabular-nums">
+                              {item.ourPrice}
+                            </div>
+                            <div className="text-[11px] text-[#57524B] mt-0.5 font-medium">
+                              {item.ourSub}
+                            </div>
+                          </div>
+                          <div className="pt-2 border-t border-[#F2D0C2] flex items-center gap-1.5 text-[11px] text-[#191716] font-semibold">
+                            <Check className="w-3.5 h-3.5 text-[#C85A32] shrink-0" />
+                            <span>{item.ourAdvantage}</span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <div className="p-3 rounded-[5px] bg-[#F5F2EB] border border-[#C85A32]/35">
-                      <span className="text-[10px] uppercase tracking-wider text-[#C85A32] block font-bold">Our Price at LeadPulse</span>
-                      <span className="text-sm font-extrabold text-[#191716]">Universal Token Sharing</span>
-                      <span className="text-[11px] text-[#57524B] block mt-0.5">50% seats on Basic (₹699) • 100% seats on Pro (₹1,999)</span>
-                    </div>
-                  </div>
-                </div>
+                  );
+                })}
               </div>
 
-              {/* Bottom Espresso Comparison Summary Bar with White DocuReady Logo */}
-              <div className="p-5 bg-[#191716] text-[#FAF8F5] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
+              {/* Bottom Espresso Total Scoreboard Bar with White DocuReady Logo */}
+              <div className="p-5 sm:p-6 bg-[#191716] text-[#FAF8F5] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3.5">
                   <img src={docuReadyWhiteLogo} alt="DocuReady" className="h-5 w-auto object-contain shrink-0" />
-                  <div className="border-l border-white/20 pl-3">
-                    <div className="text-xs font-delight font-bold text-white">
-                      Market Stack: <span className="line-through text-[#A8A096]">₹12,000+/mo</span> &rarr; LeadPulse by DocuReady: <span className="text-[#E07A5F]">₹699/mo</span>
+                  <div className="border-l border-white/20 pl-3.5 space-y-0.5">
+                    <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm font-delight font-bold text-white">
+                      <span>Market Stack: <span className="line-through text-[#A8A096]">{activeBenchmark.marketTotal}/mo</span></span>
+                      <span className="text-[#C85A32]">&rarr;</span>
+                      <span>LeadPulse: <span className="text-[#E07A5F]">{activeBenchmark.leadPulseTotal}/mo</span></span>
                     </div>
                     <div className="text-[11px] font-delight text-[#A8A096]">
-                      Or test the entire engine right now with 15 free tokens—zero card required.
+                      Keep <strong className="text-emerald-400">{activeBenchmark.annualSavings} every year</strong> inside your business—or start right now with 15 free tokens.
                     </div>
                   </div>
                 </div>
                 <button
                   onClick={onLogin}
-                  className="px-4 py-2 rounded-[5px] bg-[#C85A32] hover:bg-[#B04B25] text-white text-xs font-delight font-bold transition-colors shrink-0 cursor-pointer"
+                  className="w-full sm:w-auto px-4 py-2.5 rounded-[5px] bg-[#C85A32] hover:bg-[#B04B25] text-white text-xs font-delight font-bold transition-colors shrink-0 cursor-pointer text-center shadow-xs"
                 >
                   Claim 15 Free Tokens &rarr;
                 </button>
