@@ -16,6 +16,7 @@ import Audience from './pages/Audience';
 import Automations from './pages/Automations';
 import Integrations from './pages/Integrations';
 import Team from './pages/Team';
+import Appointments from './pages/Appointments';
 
 import MeshBackground from './components/MeshBackground';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -68,6 +69,7 @@ const App = () => {
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/finder" element={<ProtectedRoute><LeadFinder /></ProtectedRoute>} />
             <Route path="/crm" element={<ProtectedRoute><CrmPipeline /></ProtectedRoute>} />
+            <Route path="/appointments" element={<ProtectedRoute><Appointments /></ProtectedRoute>} />
             <Route path="/outreach" element={<ProtectedRoute><OutreachCenter /></ProtectedRoute>} />
             <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
             

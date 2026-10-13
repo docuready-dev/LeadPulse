@@ -50,6 +50,7 @@ import outreachRoutes from './routes/outreach';
 import automationRoutes from './routes/automations';
 import integrationRoutes from './routes/integrations';
 import teamRoutes from './routes/team';
+import bookingRoutes from './routes/booking';
 
 const app = express();
 
@@ -101,6 +102,7 @@ app.use('/api/outreach', outreachRoutes);
 app.use('/api/automations', automationRoutes);
 app.use('/api/integrations', integrationRoutes);
 app.use('/api/team', teamRoutes);
+app.use('/api/booking', bookingRoutes);
 
 // Health Check Endpoint for Load Balancers & Uptime Monitors
 app.get('/health', (_req, res) => {

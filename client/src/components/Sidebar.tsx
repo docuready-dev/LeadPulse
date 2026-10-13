@@ -2,7 +2,8 @@ import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, Users, BarChart3, Settings, 
   FolderKanban, HelpCircle, Search, Send, Users2, 
-  Webhook, Waypoints, LogOut, Sparkles, Zap, ArrowUpRight
+  Webhook, Waypoints, LogOut, Sparkles, Zap, ArrowUpRight,
+  Calendar
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import docuReadyBlackLogo from '../assets/DocuReady-black.png';
@@ -18,6 +19,7 @@ const mainNav = [
 const pipelineNav = [
   { name: 'Lead Gen', icon: Search, path: '/finder' },
   { name: 'CRM Pipeline', icon: FolderKanban, path: '/crm' },
+  { name: 'Appointments', icon: Calendar, path: '/appointments' },
 ];
 
 const toolsNav = [
