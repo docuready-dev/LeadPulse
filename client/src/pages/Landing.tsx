@@ -7,6 +7,7 @@ import MeshBackground from '../components/MeshBackground';
 import { useStore } from '../store/useStore';
 import docuReadyBlackLogo from '../assets/DocuReady-black.png';
 import docuReadyWhiteLogo from '../assets/DocuReady-white.png';
+import leadPulseLogo from '../assets/LeadPulse-logo.png';
 
 const companies = [
   { name: 'Acme Corp', icon: Database },
@@ -246,15 +247,25 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           className="flex items-center justify-between px-6 md:px-12 py-4 max-w-7xl mx-auto w-full"
         >
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-[5px] bg-[#C85A32] text-white flex items-center justify-center font-delight font-extrabold text-xs shadow-xs">
-              LP
+          <a 
+            href="/" 
+            className="flex items-center gap-2.5 group cursor-pointer hover:opacity-90 transition-all select-none"
+            title="LeadPulse Home"
+          >
+            <div className="w-8 h-8 rounded-[6px] overflow-hidden bg-[#191716] flex items-center justify-center p-1 border border-[#E5E0D5] shadow-2xs group-hover:border-[#C85A32] group-hover:scale-105 transition-all shrink-0">
+              <img 
+                src={leadPulseLogo} 
+                alt="LeadPulse Logo" 
+                className="w-full h-full object-contain" 
+              />
             </div>
             <div className="flex flex-col">
               <div className="flex items-center gap-1.5">
-                <span className="font-extrabold text-[17px] tracking-tight text-[#191716] leading-none">LeadPulse</span>
+                <span className="font-extrabold text-[17px] tracking-tight text-[#191716] group-hover:text-[#C85A32] transition-colors leading-none">
+                  LeadPulse
+                </span>
                 <span className="text-[9.5px] font-delight font-bold uppercase bg-[#F5F2EB] text-[#C85A32] border border-[#E5E0D5] px-1.5 py-0.5 rounded-[4px] tracking-wider leading-none">
-                  v3.0
+                  v1.0
                 </span>
               </div>
               <div className="flex items-center gap-1.5 mt-1">
@@ -263,7 +274,7 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
                 <span className="text-[9.5px] font-delight font-semibold text-[#78716A] uppercase tracking-wider">Entity</span>
               </div>
             </div>
-          </div>
+          </a>
 
           <div className="hidden md:flex items-center gap-7 text-[11px] font-delight font-bold tracking-widest uppercase text-[#57524B]">
             <a href="#product" className="hover:text-[#C85A32] transition-colors">Platform</a>
@@ -1398,7 +1409,21 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
             {/* Brand + DocuReady Entity Badge */}
             <div className="flex flex-wrap items-center gap-3">
-              <span className="font-extrabold tracking-tight text-[#191716] text-base">LeadPulse</span>
+              <a 
+                href="/" 
+                className="flex items-center gap-2 group cursor-pointer hover:opacity-90 transition-all select-none"
+                title="LeadPulse Home"
+              >
+                <div className="w-6 h-6 rounded overflow-hidden bg-[#191716] flex items-center justify-center p-0.5 border border-[#E5E0D5] group-hover:border-[#C85A32] transition-all shrink-0">
+                  <img src={leadPulseLogo} alt="LeadPulse Logo" className="w-full h-full object-contain" />
+                </div>
+                <span className="font-extrabold tracking-tight text-[#191716] group-hover:text-[#C85A32] transition-colors text-base">
+                  LeadPulse
+                </span>
+                <span className="text-[9px] font-delight font-bold uppercase bg-[#FAF8F5] text-[#C85A32] border border-[#E5E0D5] px-1 py-0.5 rounded tracking-wider">
+                  v1.0
+                </span>
+              </a>
               <span className="text-[#D6CFC2]">|</span>
               <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-[5px] bg-white border border-[#E5E0D5]">
                 <span className="text-[10.5px] font-delight font-bold uppercase tracking-wider text-[#57524B]">

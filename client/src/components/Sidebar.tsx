@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import docuReadyBlackLogo from '../assets/DocuReady-black.png';
+import leadPulseLogo from '../assets/LeadPulse-logo.png';
 
 const mainNav = [
   { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
@@ -85,15 +86,27 @@ const Sidebar = () => {
       
       {/* Brand & Workspace Header */}
       <div className="h-13 px-4 flex items-center justify-between border-b border-[#E5E0D5] bg-[#F5F2EB]">
-        <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-md bg-[#C85A32] text-white flex items-center justify-center font-bold font-delight text-xs">
-            L
+        <Link 
+          to="/" 
+          className="flex items-center gap-2.5 group cursor-pointer hover:opacity-90 transition-all select-none"
+          title="Go to Landing Page"
+        >
+          <div className="w-7 h-7 rounded-md overflow-hidden bg-[#191716] flex items-center justify-center p-0.5 border border-[#D6CFC2] shadow-2xs group-hover:border-[#C85A32] group-hover:scale-105 transition-all shrink-0">
+            <img 
+              src={leadPulseLogo} 
+              alt="LeadPulse Logo" 
+              className="w-full h-full object-contain" 
+            />
           </div>
           <div className="flex flex-col">
-            <span className="font-bold text-sm tracking-tight text-[#191716] font-delight leading-none">LeadPulse</span>
-            <span className="text-[9px] font-delight font-medium text-[#6E675F] uppercase tracking-wider mt-0.5">Workspace</span>
+            <span className="font-bold text-sm tracking-tight text-[#191716] group-hover:text-[#C85A32] transition-colors font-delight leading-none">
+              LeadPulse
+            </span>
+            <span className="text-[9px] font-delight font-medium text-[#6E675F] uppercase tracking-wider mt-0.5">
+              Workspace
+            </span>
           </div>
-        </div>
+        </Link>
         <div className="w-6 h-6 rounded-md overflow-hidden border border-[#D6CFC2] bg-white">
            {user?.profile_picture ? (
              <img src={user?.profile_picture} className="w-full h-full object-cover" alt="Profile" />
@@ -179,7 +192,7 @@ const Sidebar = () => {
            </div>
            <span className="flex items-center gap-1.5">
              <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
-             <span className="text-[#191716] font-semibold uppercase tracking-wider text-[9px]">v3.0</span>
+             <span className="text-[#191716] font-semibold uppercase tracking-wider text-[9px]">v1.0</span>
            </span>
          </div>
          <button 

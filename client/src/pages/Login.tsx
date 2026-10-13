@@ -3,6 +3,7 @@ import { useStore } from '../store/useStore';
 import axios from 'axios';
 import { X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import leadPulseLogo from '../assets/LeadPulse-logo.png';
 
 interface LoginProps {
   onBack?: () => void;
@@ -65,10 +66,27 @@ const Login = ({ onBack }: LoginProps) => {
         <div className="p-8 flex flex-col justify-center">
           <div className="max-w-sm w-full mx-auto">
             <div className="text-center mb-6">
-              <div className="inline-flex items-center gap-1.5 px-2 py-0.5 mb-3 bg-slate-100 border border-slate-200 rounded-sm text-[10px] font-delight font-semibold uppercase tracking-wider text-slate-600">
-                LeadPulse Access Gateway
+              <a 
+                href="/" 
+                className="inline-flex items-center gap-2.5 group cursor-pointer hover:opacity-85 transition-all mb-3 select-none"
+                title="Return to Landing Page"
+              >
+                <div className="w-8 h-8 rounded-md overflow-hidden bg-[#191716] flex items-center justify-center p-1 border border-slate-200 shadow-2xs group-hover:border-[#C85A32] group-hover:scale-105 transition-all">
+                  <img src={leadPulseLogo} alt="LeadPulse Logo" className="w-full h-full object-contain" />
+                </div>
+                <span className="font-extrabold text-lg tracking-tight text-slate-900 group-hover:text-[#C85A32] transition-colors leading-none">
+                  LeadPulse
+                </span>
+                <span className="text-[9px] font-delight font-bold uppercase bg-slate-100 text-[#C85A32] border border-slate-200 px-1 py-0.5 rounded tracking-wider">
+                  v1.0
+                </span>
+              </a>
+              <div>
+                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-slate-100 border border-slate-200 rounded-sm text-[10px] font-delight font-semibold uppercase tracking-wider text-slate-600">
+                  Access Gateway
+                </span>
               </div>
-              <h2 className="text-xl font-bold font-delight tracking-tight text-slate-900">
+              <h2 className="text-xl font-bold font-delight tracking-tight text-slate-900 mt-2">
                 {isSignUp ? 'Create Workspace Account' : 'Authenticate Session'}
               </h2>
               <p className="text-slate-500 text-xs mt-1">
