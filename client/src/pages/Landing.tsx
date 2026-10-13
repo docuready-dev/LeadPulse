@@ -35,7 +35,7 @@ const benchmarkProfiles = {
         id: '01',
         title: 'B2B Lead Discovery & Spatial Extraction',
         replaces: 'Apollo / Lusha / ZoomInfo',
-        scenario: 'Extracting 500–600 verified commercial prospects across targeted city zones every month.',
+        scenario: 'Extracting 500 to 600 verified commercial prospects across targeted city zones every month.',
         marketPrice: '₹4,100 / mo',
         marketSub: '$49/mo static database credits',
         marketFlaw: 'Stale recycled lists & credit lock-in',
@@ -81,11 +81,11 @@ const benchmarkProfiles = {
   agency: {
     label: 'Growth Agency (5 Seats)',
     seats: '5 Seats',
-    leadsPerMo: '600–1,500 Leads/mo',
+    leadsPerMo: '600 to 1,500 Leads/mo',
     marketTotal: '₹24,500',
     marketAnnual: '₹2,94,000',
     leadPulsePlan: 'Basic / Pro Shared Pool',
-    leadPulseTotal: '₹699 – ₹1,999',
+    leadPulseTotal: '₹699 to ₹1,999',
     leadPulseAnnual: '₹8,388',
     annualSavings: '₹2,70,000+',
     savingsPct: '94%',
@@ -95,7 +95,7 @@ const benchmarkProfiles = {
         id: '01',
         title: 'B2B Lead Discovery & Spatial Extraction',
         replaces: 'Apollo / Lusha / ZoomInfo',
-        scenario: 'A digital agency extracting 600–1,500 verified local & B2B prospects across targeted metropolitan zones monthly.',
+        scenario: 'A digital agency extracting 600 to 1,500 verified local & B2B prospects across targeted metropolitan zones monthly.',
         marketPrice: '₹8,500 / mo',
         marketSub: '$99/mo multi-user scraping & export credits',
         marketFlaw: 'Strict export caps & per-credit overages',
@@ -766,11 +766,11 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
             </h2>
 
             <p className="text-sm md:text-[14.5px] text-[#57524B] leading-relaxed">
-              When our engineering team at <strong>DocuReady</strong> audited the modern B2B sales stack, we saw agencies, founders, and commercial teams paying <strong>₹12,000 to ₹45,000+ every single month</strong> across four disconnected subscriptions—one for scraping leads, another for email warmup, a third for AI copywriting, and a fourth per-seat CRM.
+              When our engineering team at <strong>DocuReady</strong> audited the modern B2B sales stack, we saw agencies, founders, and commercial teams paying <strong>₹12,000 to ₹45,000+ every single month</strong> across four disconnected subscriptions: one for scraping leads, another for email warmup, a third for AI copywriting, and a fourth per-seat CRM.
             </p>
 
             <p className="text-sm md:text-[14.5px] text-[#57524B] leading-relaxed">
-              We engineered <strong>LeadPulse</strong> as a flagship <strong>DocuReady Entity</strong> with one uncompromising mandate: collapse that entire fragmented stack into a single, self-contained revenue operating system—and price it so transparently that a single closed deal pays for an entire year of compute.
+              We engineered <strong>LeadPulse</strong> as a flagship <strong>DocuReady Entity</strong> with one uncompromising mandate: collapse that entire fragmented stack into a single, self-contained revenue operating system, priced so transparently that a single closed deal pays for an entire year of compute.
             </p>
 
             {/* What We Offer Pillar Box */}
@@ -785,7 +785,7 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
               <ul className="space-y-2.5 text-xs text-[#57524B]">
                 <li className="flex items-start gap-2.5">
                   <Check className="w-3.5 h-3.5 text-[#C85A32] shrink-0 mt-0.5" />
-                  <span><strong>Live Spatial Lead Harvesting:</strong> Direct geo-targeted business extraction with verified websites, ratings, and phones—zero recycled lists.</span>
+                  <span><strong>Live Spatial Lead Harvesting:</strong> Direct geo-targeted business extraction with verified websites, ratings, and phones with zero recycled lists.</span>
                 </li>
                 <li className="flex items-start gap-2.5">
                   <Check className="w-3.5 h-3.5 text-[#C85A32] shrink-0 mt-0.5" />
@@ -974,7 +974,7 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
                       <span>LeadPulse: <span className="text-[#E07A5F]">{activeBenchmark.leadPulseTotal}/mo</span></span>
                     </div>
                     <div className="text-[11px] font-delight text-[#A8A096]">
-                      Keep <strong className="text-emerald-400">{activeBenchmark.annualSavings} every year</strong> inside your business—or start right now with 15 free tokens.
+                      Keep <strong className="text-emerald-400">{activeBenchmark.annualSavings} every year</strong> inside your business, or start right now with 15 free tokens.
                     </div>
                   </div>
                 </div>
@@ -1002,7 +1002,7 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
               Engineered to cost less than your daily coffee.
             </h2>
             <p className="text-sm md:text-[15px] text-[#57524B] font-normal leading-relaxed">
-              Step inside with <strong>15 free lead tokens</strong> waiting in your workspace—no credit card, no lock-in. When you&apos;re ready to scale, upgrade for just <strong>₹23/day</strong> or top up on demand starting at <strong>₹50</strong>.
+              Step inside with <strong>15 free lead tokens</strong> waiting in your workspace with no credit card and no lock-in. When you&apos;re ready to scale, upgrade for just <strong>₹23/day</strong> or top up on demand starting at <strong>₹50</strong>.
             </p>
           </div>
 
@@ -1371,7 +1371,7 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
             Check in and test your first harvest in 30 seconds.
           </h2>
           <p className="text-sm md:text-base text-[#B8B0A4] mb-8 max-w-xl leading-relaxed">
-            See why teams are replacing ₹12,000+/month of bloated outreach tools with DocuReady&apos;s unified LeadPulse engine. Start free—upgrade only when you see the pipeline results.
+            See why teams are replacing ₹12,000+/month of bloated outreach tools with DocuReady&apos;s unified LeadPulse engine. Start free and upgrade only when you see the pipeline results.
           </p>
           <button
             onClick={onLogin}
@@ -1426,7 +1426,7 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
 
           <div className="pt-5 border-t border-[#E5E0D5] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs font-delight text-[#78716A]">
             <p>
-              LeadPulse is a <strong>DocuReady Entity</strong> — Engineered to deliver enterprise B2B discovery, AI outreach synthesis, and pipeline automation at a fraction of current market rates.
+              LeadPulse is a <strong>DocuReady Entity</strong>. Engineered to deliver enterprise B2B discovery, AI outreach synthesis, and pipeline automation at a fraction of current market rates.
             </p>
             <p className="shrink-0">
               &copy; {new Date().getFullYear()} DocuReady / LeadPulse Inc. All rights reserved.
