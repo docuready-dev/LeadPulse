@@ -16,7 +16,7 @@ interface EmailProviderModalProps {
 const EmailProviderModal = ({ isOpen, onClose, user, onSaved }: EmailProviderModalProps) => {
   if (!isOpen) return null;
 
-  const [provider, setProvider] = useState<'gmail' | 'resend' | 'custom' | 'test'>('gmail');
+  const [provider, setProvider] = useState<'gmail' | 'resend' | 'sendgrid' | 'custom' | 'test'>('gmail');
   
   // Gmail fields
   const [gmailUser, setGmailUser] = useState(user?.email || '');
@@ -25,6 +25,10 @@ const EmailProviderModal = ({ isOpen, onClose, user, onSaved }: EmailProviderMod
   // Resend fields
   const [resendApiKey, setResendApiKey] = useState('');
   const [resendFromEmail, setResendFromEmail] = useState(user?.email || 'onboarding@resend.dev');
+
+  // SendGrid fields
+  const [sendgridApiKey, setSendgridApiKey] = useState('');
+  const [sendgridFromEmail, setSendgridFromEmail] = useState(user?.email || 'outreach@leadpulse.io');
 
   // Custom SMTP fields
   const [smtpHost, setSmtpHost] = useState('smtp.gmail.com');
@@ -60,6 +64,7 @@ const EmailProviderModal = ({ isOpen, onClose, user, onSaved }: EmailProviderMod
             setSmtpPass(res.data.pass);
           }
           if (res.data.resendApiKey) setResendApiKey(res.data.resendApiKey);
+          if (res.data.sendgridApiKey) setSendgridApiKey(res.data.sendgridApiKey);
           if (res.data.host) setSmtpHost(res.data.host);
           if (res.data.port) setSmtpPort(String(res.data.port));
           if (res.data.fromName) setFromName(res.data.fromName);
@@ -88,6 +93,9 @@ const EmailProviderModal = ({ isOpen, onClose, user, onSaved }: EmailProviderMod
       } else if (provider === 'resend') {
         payload.resendApiKey = resendApiKey;
         payload.fromEmail = resendFromEmail;
+      } else if (provider === 'sendgrid') {
+        payload.sendgridApiKey = sendgridApiKey;
+        payload.fromEmail = sendgridFromEmail;
       } else if (provider === 'custom') {
         payload.host = smtpHost;
         payload.port = parseInt(smtpPort) || 587;
@@ -124,6 +132,9 @@ const EmailProviderModal = ({ isOpen, onClose, user, onSaved }: EmailProviderMod
       } else if (provider === 'resend') {
         customSmtp.resendApiKey = resendApiKey;
         customSmtp.fromEmail = resendFromEmail;
+      } else if (provider === 'sendgrid') {
+        customSmtp.sendgridApiKey = sendgridApiKey;
+        customSmtp.fromEmail = sendgridFromEmail;
       } else if (provider === 'custom') {
         customSmtp.host = smtpHost;
         customSmtp.port = parseInt(smtpPort) || 587;
@@ -140,7 +151,7 @@ const EmailProviderModal = ({ isOpen, onClose, user, onSaved }: EmailProviderMod
         },
         customRecipientEmail: user?.email || 'ashleyghose64@gmail.com',
         fromName,
-        fromEmail: provider === 'resend' ? resendFromEmail : fromEmail,
+        fromEmail: provider === 'resend' ? resendFromEmail : provider === 'sendgrid' ? sendgridFromEmail : fromEmail,
         customSmtp
       }, {
         headers: { userid: user?._id }
@@ -184,44 +195,57 @@ const EmailProviderModal = ({ isOpen, onClose, user, onSaved }: EmailProviderMod
           {/* Provider Selection Tabs */}
           <div className="space-y-1.5">
             <label className="text-[11px] font-delight font-medium text-slate-600 uppercase tracking-wider">Select Mail Provider</label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-4 gap-2">
               <button
                 type="button"
                 onClick={() => setProvider('gmail')}
-                className={`p-2.5 rounded-md border text-center transition-all cursor-pointer font-delight font-medium ${
+                className={`p-2 rounded-md border text-center transition-all cursor-pointer font-delight font-medium ${
                   provider === 'gmail' 
                     ? 'border-slate-900 bg-slate-50 text-slate-900 font-bold ring-1 ring-slate-900' 
                     : 'border-slate-200 text-slate-500 hover:border-slate-300'
                 }`}
               >
-                <div className="text-xs font-bold">Google Gmail</div>
+                <div className="text-xs font-bold">Gmail</div>
                 <div className="text-[10px] text-slate-400">App Password</div>
               </button>
 
               <button
                 type="button"
                 onClick={() => setProvider('resend')}
-                className={`p-2.5 rounded-md border text-center transition-all cursor-pointer font-delight font-medium ${
+                className={`p-2 rounded-md border text-center transition-all cursor-pointer font-delight font-medium ${
                   provider === 'resend' 
                     ? 'border-purple-600 bg-purple-50/50 text-purple-950 font-bold ring-1 ring-purple-600' 
                     : 'border-slate-200 text-slate-500 hover:border-slate-300'
                 }`}
               >
-                <div className="text-xs font-bold">Resend API</div>
-                <div className="text-[10px] text-slate-400">High Deliverability</div>
+                <div className="text-xs font-bold">Resend</div>
+                <div className="text-[10px] text-slate-400">REST API</div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setProvider('sendgrid')}
+                className={`p-2 rounded-md border text-center transition-all cursor-pointer font-delight font-medium ${
+                  provider === 'sendgrid' 
+                    ? 'border-emerald-600 bg-emerald-50/50 text-emerald-950 font-bold ring-1 ring-emerald-600' 
+                    : 'border-slate-200 text-slate-500 hover:border-slate-300'
+                }`}
+              >
+                <div className="text-xs font-bold">SendGrid</div>
+                <div className="text-[10px] text-slate-400">High Volume</div>
               </button>
 
               <button
                 type="button"
                 onClick={() => setProvider('custom')}
-                className={`p-2.5 rounded-md border text-center transition-all cursor-pointer font-delight font-medium ${
+                className={`p-2 rounded-md border text-center transition-all cursor-pointer font-delight font-medium ${
                   provider === 'custom' 
                     ? 'border-blue-600 bg-blue-50/50 text-blue-950 font-bold ring-1 ring-blue-600' 
                     : 'border-slate-200 text-slate-500 hover:border-slate-300'
                 }`}
               >
-                <div className="text-xs font-bold">Custom SMTP</div>
-                <div className="text-[10px] text-slate-400">SendGrid / Brevo</div>
+                <div className="text-xs font-bold">Custom</div>
+                <div className="text-[10px] text-slate-400">SMTP Host</div>
               </button>
             </div>
           </div>
@@ -294,7 +318,41 @@ const EmailProviderModal = ({ isOpen, onClose, user, onSaved }: EmailProviderMod
             </div>
           )}
 
-          {/* 3. CUSTOM SMTP */}
+          {/* 3. SENDGRID API CONFIG */}
+          {provider === 'sendgrid' && (
+            <div className="p-3.5 rounded-md bg-emerald-50/40 border border-emerald-200 space-y-3">
+              <div className="flex items-start gap-2 text-xs text-slate-600">
+                <Sparkles className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                <p>
+                  SendGrid Web API v3 bypasses port blocking and delivers directly through authenticated high-volume IP pools. Get your key at <a href="https://app.sendgrid.com/settings/api_keys" target="_blank" rel="noreferrer" className="text-emerald-700 underline font-semibold">app.sendgrid.com</a>.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-delight font-medium text-slate-600 mb-1">SendGrid API Key</label>
+                <input 
+                  type="password"
+                  value={sendgridApiKey}
+                  onChange={(e) => setSendgridApiKey(e.target.value)}
+                  placeholder="SG.xxxxxxxxxxxx..."
+                  className="w-full h-8 px-2.5 bg-white border border-emerald-200 rounded-md text-xs font-delight font-medium text-slate-900 focus:outline-none focus:border-emerald-600"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-delight font-medium text-slate-600 mb-1">Sender Email</label>
+                <input 
+                  type="email"
+                  value={sendgridFromEmail}
+                  onChange={(e) => setSendgridFromEmail(e.target.value)}
+                  placeholder="outreach@yourdomain.com"
+                  className="w-full h-8 px-2.5 bg-white border border-emerald-200 rounded-md text-xs font-delight font-medium text-slate-900 focus:outline-none focus:border-emerald-600"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* 4. CUSTOM SMTP */}
           {provider === 'custom' && (
             <div className="p-3.5 rounded-md bg-slate-50 border border-slate-200 space-y-3">
               <div className="grid grid-cols-3 gap-2">

@@ -68,26 +68,45 @@ const TemplateGalleryModal = ({
           </div>
         );
 
+      case 'interactive_calendar':
       case 'two_column':
         return (
-          <div className="w-full h-32 bg-slate-50 border border-slate-200 rounded-md p-3 flex flex-col justify-between">
-            <div className="flex justify-between items-center">
-              <div className="w-12 h-2.5 bg-slate-300 rounded-xs" />
-              <div className="w-20 h-2 bg-slate-400 rounded-xs" />
-            </div>
-            <div className="grid grid-cols-2 gap-2 my-1">
-              <div className="bg-white border border-slate-200 p-1.5 rounded-sm flex flex-col items-center space-y-1">
-                <div className="w-full h-8 bg-blue-100 rounded-xs" />
-                <div className="w-3/4 h-2 bg-slate-700 rounded-xs" />
-                <div className="w-12 h-3 bg-blue-600 rounded-xs" />
+          <div className="w-full h-32 bg-slate-50 border border-slate-200 rounded-md p-2.5 flex flex-col justify-between">
+            {/* Host header preview */}
+            <div className="flex items-center gap-2 bg-white border border-slate-200 p-1.5 rounded-sm">
+              <div className="w-5 h-5 rounded-full bg-emerald-100 border border-emerald-400 flex items-center justify-center text-[7px] font-bold text-emerald-800">
+                15m
               </div>
-              <div className="bg-white border border-slate-200 p-1.5 rounded-sm flex flex-col items-center space-y-1">
-                <div className="w-full h-8 bg-purple-100 rounded-xs" />
-                <div className="w-3/4 h-2 bg-slate-700 rounded-xs" />
-                <div className="w-12 h-3 bg-purple-600 rounded-xs" />
+              <div className="flex-1 space-y-0.5">
+                <div className="w-16 h-1.5 bg-slate-800 rounded-xs" />
+                <div className="w-10 h-1 bg-slate-400 rounded-xs" />
+              </div>
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            </div>
+
+            {/* Time Slot Chips Grid */}
+            <div className="grid grid-cols-2 gap-1.5 my-1">
+              <div className="bg-white border border-slate-200 py-1 px-1.5 rounded-xs flex items-center gap-1">
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                <span className="text-[7.5px] font-bold text-slate-700 truncate">10:30 AM</span>
+              </div>
+              <div className="bg-white border border-slate-200 py-1 px-1.5 rounded-xs flex items-center gap-1">
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                <span className="text-[7.5px] font-bold text-slate-700 truncate">2:00 PM</span>
+              </div>
+              <div className="bg-white border border-slate-200 py-1 px-1.5 rounded-xs flex items-center gap-1">
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                <span className="text-[7.5px] font-bold text-slate-700 truncate">4:30 PM</span>
+              </div>
+              <div className="bg-indigo-50 border border-indigo-200 py-1 px-1.5 rounded-xs flex items-center justify-center">
+                <span className="text-[7.5px] font-bold text-indigo-700">All Slots &rarr;</span>
               </div>
             </div>
-            <div className="w-full h-1.5 bg-slate-200 rounded-xs" />
+
+            {/* Direct Booking CTA */}
+            <div className="w-full h-4 bg-indigo-600 text-white rounded-xs flex items-center justify-center text-[8px] font-delight font-bold">
+              Reserve Time Slot
+            </div>
           </div>
         );
 
@@ -137,28 +156,49 @@ const TemplateGalleryModal = ({
           </div>
         );
 
+      case 'interactive_roi':
       case 'zig_zag':
         return (
-          <div className="w-full h-32 bg-slate-50 border border-slate-200 rounded-md p-2.5 flex flex-col justify-between">
-            {/* Row 1: Left Image, Right Text */}
-            <div className="flex items-center gap-2">
-              <div className="w-12 h-9 bg-emerald-50 border border-emerald-200 rounded-xs shrink-0" />
-              <div className="flex-1 space-y-1">
-                <div className="w-4/5 h-2 bg-slate-700 rounded-xs" />
-                <div className="w-full h-1 bg-slate-300 rounded-xs" />
-                <div className="w-10 h-2 bg-emerald-600 rounded-xs" />
+          <div className="w-full h-32 bg-slate-50 border border-slate-200 rounded-md p-2 flex flex-col justify-between">
+            {/* Top comparison title */}
+            <div className="flex justify-between items-center px-1">
+              <div className="w-16 h-2 bg-slate-800 rounded-xs" />
+              <div className="w-12 h-2 bg-emerald-600 rounded-xs" />
+            </div>
+
+            {/* Side-by-side comparative cards */}
+            <div className="grid grid-cols-2 gap-1.5 my-0.5">
+              {/* Legacy card */}
+              <div className="bg-rose-50 border border-rose-200 p-1 rounded-xs flex flex-col space-y-0.5">
+                <span className="text-[6.5px] font-bold text-rose-700 uppercase">Agency</span>
+                <span className="text-[8px] font-extrabold text-rose-800 line-through">₹45k/mo</span>
+                <div className="w-full h-1 bg-rose-200 rounded-xs" />
+              </div>
+              {/* LeadPulse card */}
+              <div className="bg-emerald-50 border border-emerald-300 p-1 rounded-xs flex flex-col space-y-0.5 shadow-2xs">
+                <span className="text-[6.5px] font-bold text-emerald-700 uppercase">LeadPulse</span>
+                <span className="text-[9px] font-extrabold text-emerald-800">₹699/mo</span>
+                <span className="text-[6.5px] font-semibold text-emerald-600">8.4x Lower CAC</span>
               </div>
             </div>
-            {/* Row 2: Left Text, Right Image */}
-            <div className="flex items-center gap-2">
-              <div className="flex-1 space-y-1 text-right flex flex-col items-end">
-                <div className="w-4/5 h-2 bg-slate-700 rounded-xs" />
-                <div className="w-full h-1 bg-slate-300 rounded-xs" />
-                <div className="w-10 h-2 bg-emerald-600 rounded-xs" />
+
+            {/* 3 Metrics pills */}
+            <div className="grid grid-cols-3 gap-1">
+              <div className="bg-indigo-50 border border-indigo-200 rounded-2xs p-0.5 text-center">
+                <span className="text-[6.5px] font-bold text-indigo-700 block">₹44k Sav</span>
               </div>
-              <div className="w-12 h-9 bg-emerald-50 border border-emerald-200 rounded-xs shrink-0" />
+              <div className="bg-slate-100 border border-slate-200 rounded-2xs p-0.5 text-center">
+                <span className="text-[6.5px] font-bold text-slate-700 block">99.4% Inb</span>
+              </div>
+              <div className="bg-slate-100 border border-slate-200 rounded-2xs p-0.5 text-center">
+                <span className="text-[6.5px] font-bold text-slate-700 block">300+ Lds</span>
+              </div>
             </div>
-            <div className="w-full h-1.5 bg-slate-200 rounded-xs" />
+
+            {/* Action CTA */}
+            <div className="w-full h-3.5 bg-emerald-600 text-white rounded-xs flex items-center justify-center text-[7.5px] font-delight font-bold">
+              Claim Growth Tier &rarr;
+            </div>
           </div>
         );
 

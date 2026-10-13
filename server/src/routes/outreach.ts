@@ -166,8 +166,13 @@ router.post('/dispatch-batch', requireAuth, async (req: any, res: any) => {
         failedCount++;
       }
 
+      const resolvedPreview = result.previewUrl
+        ? (result.previewUrl.startsWith('http') ? result.previewUrl : `${req.headers['x-forwarded-proto'] || req.protocol || 'http'}://${req.headers['x-forwarded-host'] || req.headers.host || 'localhost:3001'}${result.previewUrl}`)
+        : null;
+
       deliveryLogs.push({
         ...result,
+        previewUrl: resolvedPreview,
         businessName: lead.businessName,
         leadId: lead._id || 'unknown',
         subject: compiled.subject,
@@ -311,12 +316,19 @@ router.post('/dispatch-single', requireAuth, async (req: any, res: any) => {
       }
     }
 
+    const resolvedPreview = result.previewUrl
+      ? (result.previewUrl.startsWith('http') ? result.previewUrl : `${req.headers['x-forwarded-proto'] || req.protocol || 'http'}://${req.headers['x-forwarded-host'] || req.headers.host || 'localhost:3001'}${result.previewUrl}`)
+      : null;
+
     res.json({
       success: result.success,
-      result,
+      result: {
+        ...result,
+        previewUrl: resolvedPreview
+      },
       recipient,
       subject: compiled.subject,
-      previewUrl: result.previewUrl
+      previewUrl: resolvedPreview
     });
   } catch (err: any) {
     console.error('[Dispatch Engine] Single email dispatch failure:', err);
@@ -342,7 +354,7 @@ router.get('/smtp-config', requireAuth, async (req: any, res: any) => {
 });
 
 router.post('/smtp-config', requireAuth, async (req: any, res: any) => {
-  const { provider, host, port, user, pass, resendApiKey, fromName, fromEmail } = req.body;
+  const { provider, host, port, user, pass, resendApiKey, sendgridApiKey, fromName, fromEmail } = req.body;
   try {
     const settings = {
       provider: provider || 'gmail',
@@ -351,6 +363,7 @@ router.post('/smtp-config', requireAuth, async (req: any, res: any) => {
       user: user || '',
       pass: pass || '',
       resendApiKey: resendApiKey || '',
+      sendgridApiKey: sendgridApiKey || '',
       fromName: fromName || '',
       fromEmail: fromEmail || '',
       updatedAt: new Date().toISOString()
@@ -367,10 +380,66 @@ router.post('/smtp-config', requireAuth, async (req: any, res: any) => {
 });
 
 // ============================================================================
-// 4. IN-APP DELIVERED INBOX FEED
+// 4. IN-APP DELIVERED INBOX FEED & LIVE DELIVERY INSPECTOR
 // ============================================================================
 router.get('/inbox', requireAuth, (req: any, res: any) => {
   res.json(inAppDeliveredInbox);
+});
+
+router.get('/preview-delivered/:id', (req: any, res: any) => {
+  const { id } = req.params;
+  const msg = inAppDeliveredInbox.find(m => m.id === id);
+  if (!msg) {
+    return res.status(404).send(`
+      <!DOCTYPE html>
+      <html>
+        <head><title>Email Record Not Found</title></head>
+        <body style="font-family: sans-serif; text-align: center; padding: 40px; color: #64748B;">
+          <h2>Email Record Not Found</h2>
+          <p>This message may have expired from the recent delivery buffer.</p>
+        </body>
+      </html>
+    `);
+  }
+
+  res.send(`
+    <!DOCTYPE html>
+    <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>${msg.subject} - LeadPulse Inbox Inspector</title>
+        <style>
+          * { box-sizing: border-box; }
+          body { margin: 0; padding: 0; background: #F8FAFC; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #0F172A; }
+          .inspector-header { background: #0F172A; color: #FFFFFF; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; font-size: 13px; border-bottom: 1px solid #1E293B; }
+          .badge { background: #10B981; color: #FFFFFF; padding: 3px 10px; border-radius: 9999px; font-weight: 700; font-size: 11px; letter-spacing: 0.5px; }
+          .meta-card { background: #FFFFFF; border-bottom: 1px solid #E2E8F0; padding: 16px 24px; font-size: 13px; }
+          .meta-row { margin-bottom: 6px; display: flex; align-items: baseline; }
+          .meta-label { width: 90px; font-weight: 700; color: #64748B; font-size: 12px; text-transform: uppercase; }
+          .email-stage { max-width: 640px; margin: 28px auto 48px auto; background: #FFFFFF; border-radius: 12px; box-shadow: 0 4px 20px -2px rgba(0,0,0,0.08); overflow: hidden; border: 1px solid #E2E8F0; }
+        </style>
+      </head>
+      <body>
+        <div class="inspector-header">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <strong>LeadPulse Direct Delivery Inspector</strong>
+            <span class="badge">Delivered (250 OK)</span>
+          </div>
+          <div style="color: #94A3B8; font-size: 12px;">Transport: ${msg.provider}</div>
+        </div>
+        <div class="meta-card">
+          <div class="meta-row"><span class="meta-label">Subject:</span> <strong>${msg.subject}</strong></div>
+          <div class="meta-row"><span class="meta-label">Recipient:</span> <span>${msg.to}</span></div>
+          <div class="meta-row"><span class="meta-label">Sender:</span> <span>${msg.from}</span></div>
+          <div class="meta-row"><span class="meta-label">Dispatched:</span> <span>${new Date(msg.timestamp).toLocaleString()}</span></div>
+        </div>
+        <div class="email-stage">
+          ${msg.html}
+        </div>
+      </body>
+    </html>
+  `);
 });
 
 // ============================================================================

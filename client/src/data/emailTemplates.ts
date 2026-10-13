@@ -1,12 +1,14 @@
 export type TemplateId = 
   | 'text_only' 
   | 'one_column' 
-  | 'two_column' 
+  | 'interactive_calendar' 
   | 'hybrid' 
   | 'inverted_pyramid' 
-  | 'zig_zag' 
+  | 'interactive_roi' 
   | 'f_pattern' 
-  | 'dynamic_product_feed';
+  | 'dynamic_product_feed'
+  | 'two_column' 
+  | 'zig_zag';
 
 export interface EmailTemplateConfig {
   id: TemplateId;
@@ -25,7 +27,43 @@ export interface EmailTemplateConfig {
     ctaUrl?: string;
     secondaryCtaText?: string;
     secondaryCtaUrl?: string;
-    // Two Column & Hybrid
+
+    // Interactive Calendar
+    hostName?: string;
+    hostTitle?: string;
+    hostAvatar?: string;
+    duration?: string;
+    timeSlots?: Array<{
+      label: string;
+      time: string;
+      date: string;
+      url?: string;
+    }>;
+    meetingAgenda?: string[];
+
+    // Interactive ROI
+    comparisonCurrent?: {
+      title: string;
+      monthlyCost: string;
+      timeSpent: string;
+      replyRate: string;
+      badge: string;
+    };
+    comparisonPulse?: {
+      title: string;
+      monthlyCost: string;
+      timeSpent: string;
+      replyRate: string;
+      badge: string;
+    };
+    roiMetrics?: Array<{
+      metric: string;
+      label: string;
+      highlight?: boolean;
+    }>;
+    benefitsList?: string[];
+
+    // Two Column & Hybrid (Legacy support)
     col1Title?: string;
     col1Body?: string;
     col1Cta?: string;
@@ -34,7 +72,8 @@ export interface EmailTemplateConfig {
     col2Body?: string;
     col2Cta?: string;
     col2CtaUrl?: string;
-    // Zig Zag
+
+    // Zig Zag (Legacy support)
     zig1Title?: string;
     zig1Text?: string;
     zig1Cta?: string;
@@ -43,11 +82,13 @@ export interface EmailTemplateConfig {
     zig2Text?: string;
     zig2Cta?: string;
     zig2CtaUrl?: string;
+
     // F-Pattern
     fBullet1?: string;
     fBullet2?: string;
     fBullet3?: string;
     fBottomNote?: string;
+
     // Dynamic Product Feed
     products?: Array<{
       name: string;
@@ -113,26 +154,42 @@ With LeadPulse, {{business_name}} gains direct access to an autonomous local pip
     }
   },
 
-  two_column: {
-    id: 'two_column',
-    name: '3. Two Column Email',
-    tagline: 'Balanced Side-by-Side Dual Offer',
-    bestFor: 'Comparing two solutions, feature spotlights, dual service highlights',
-    purpose: 'Creates visual equilibrium allowing recipients to digest multiple updates and choose their preferred conversion pathway.',
-    category: 'promotional',
+  interactive_calendar: {
+    id: 'interactive_calendar',
+    name: '3. Interactive Calendar Booking Card',
+    tagline: 'Live 1-Click Meeting & Time Slot Scheduling',
+    bestFor: 'Executive discovery calls, product demos, consult bookings, agency sales intros',
+    purpose: 'Embeds an interactive booking widget with clickable time-slot chips, host avatar, live status, and direct sync to Calendly or custom booking URLs.',
+    category: 'direct',
     defaultData: {
-      subject: 'Two growth pathways for {{business_name}} in {{location}}',
-      preheader: 'Strategic Option Comparison',
-      headline: 'Choose How You Scale in {{field_of_work}}',
-      body: `We’ve mapped out two distinct strategies to help {{business_name}} dominate your local market across {{location}}. Review both options below:`,
-      col1Title: 'Option A: Inbound Automation',
-      col1Body: 'Set up autonomous email and WhatsApp triggers that respond to inquiries in under 60 seconds.',
-      col1Cta: 'View Inbound Setup',
-      col1CtaUrl: 'https://leadpulse.io/inbound',
-      col2Title: 'Option B: Outbound Harvesting',
-      col2Body: 'Run headless Google Maps and web crawlers that generate 50-300 fresh leads in your neighborhood every morning.',
-      col2Cta: 'View Outbound Setup',
-      col2CtaUrl: 'https://leadpulse.io/outbound'
+      subject: '15-Min Strategy Session for {{business_name}} | Quick Intro',
+      preheader: 'Pick a slot on our live calendar',
+      headline: 'Schedule a 15-Minute Strategy Chat with Alex',
+      subheadline: 'Instant calendar reservation • Direct Google Meet invitation',
+      body: `Hi {{first_name}},
+
+I came across {{business_name}} while reviewing leading companies in the {{field_of_work}} sector across {{location}}.
+
+We have engineered an autonomous outreach engine that helps local operators acquire verified B2B clients without manual prospecting or agency retainers.
+
+Select an available time slot below to lock in a quick 15-minute introductory chat:`,
+      hostName: 'Alex Roberts',
+      hostTitle: 'Growth Director, LeadPulse',
+      hostAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
+      duration: '15 mins',
+      timeSlots: [
+        { label: 'Tomorrow 10:30 AM', time: '10:30 AM', date: 'Tomorrow', url: 'https://calendly.com/leadpulse/demo' },
+        { label: 'Tomorrow 2:00 PM', time: '2:00 PM', date: 'Tomorrow', url: 'https://calendly.com/leadpulse/demo' },
+        { label: 'Friday 4:30 PM', time: '4:30 PM', date: 'Friday', url: 'https://calendly.com/leadpulse/demo' },
+        { label: 'View All Available Slots →', time: 'All Slots', date: 'Next 7 Days', url: 'https://calendly.com/leadpulse/demo' }
+      ],
+      meetingAgenda: [
+        'Review {{business_name}}’s current lead acquisition cost in {{location}}',
+        'Live demonstration of autonomous Google Maps scraper and enrichment',
+        '30-day projected pipeline estimate with zero manual cold calls'
+      ],
+      ctaText: 'Reserve Preferred Time Slot →',
+      ctaUrl: 'https://calendly.com/leadpulse/demo'
     }
   },
 
@@ -180,26 +237,47 @@ With LeadPulse, {{business_name}} gains direct access to an autonomous local pip
     }
   },
 
-  zig_zag: {
-    id: 'zig_zag',
-    name: '6. Zig Zag Email',
-    tagline: 'Alternating "Z" Pattern Storytelling',
-    bestFor: 'Feature walkthroughs, weekly case studies, multi-step customer journeys',
-    purpose: 'Encourages visual scanning by alternating imagery and text left-to-right, keeping readers curious and engaged.',
-    category: 'newsletter',
+  interactive_roi: {
+    id: 'interactive_roi',
+    name: '6. Interactive ROI & Benchmark Card',
+    tagline: 'Visual Cost & Revenue Multiplier Comparison',
+    bestFor: 'Competitive displacement, ROI proposals, value audits, enterprise pitches',
+    purpose: 'Drives conversions through an interactive side-by-side benchmark card contrasting legacy manual costs with LeadPulse autonomous efficiency.',
+    category: 'promotional',
     defaultData: {
-      subject: 'How {{business_name}} can streamline sales in 2 steps',
-      preheader: 'Step-by-Step Growth Blueprint',
-      headline: 'Modernize Your {{field_of_work}} Sales Engine',
-      body: `Take a look at how companies in {{location}} are saving 15+ hours weekly with LeadPulse automation:`,
-      zig1Title: '1. Intelligent Geographic Harvesting',
-      zig1Text: 'Input your postal code or city and let our headless cluster extract verified phone numbers, ratings, and domains automatically.',
-      zig1Cta: 'Explore Harvester →',
-      zig1CtaUrl: 'https://leadpulse.io/harvester',
-      zig2Title: '2. Dynamic Merge Tag Sequences',
-      zig2Text: 'Personalize every email with dynamic tags like {{business_name}} and {{location}} to generate authentic replies.',
-      zig2Cta: 'Test Templates →',
-      zig2CtaUrl: 'https://leadpulse.io/templates'
+      subject: 'ROI Analysis & Cost Benchmark for {{business_name}}',
+      preheader: 'See how {{business_name}} compares to {{field_of_work}} standards',
+      headline: 'Calculate {{business_name}}’s Projected Outreach ROI',
+      subheadline: 'Compare legacy manual agency fees vs LeadPulse autonomous engine',
+      body: `We analyzed lead generation economics for over 500 businesses in {{location}}. Operators in {{field_of_work}} frequently overpay for manual prospecting and outdated agency retainers.
+
+Review the live cost-efficiency comparison below to see what your team could save:`,
+      comparisonCurrent: {
+        title: 'Traditional Agency & Manual Scraper',
+        monthlyCost: '₹45,000 / mo',
+        timeSpent: '14 hours / week',
+        replyRate: '1.8% Response Rate',
+        badge: 'Legacy Method'
+      },
+      comparisonPulse: {
+        title: 'LeadPulse Autonomous Engine',
+        monthlyCost: '₹699 / mo',
+        timeSpent: '15 mins / week',
+        replyRate: '28.4% Response Rate',
+        badge: '8.4x Lower CAC'
+      },
+      roiMetrics: [
+        { metric: '₹44,301', label: 'Monthly Cost Savings', highlight: true },
+        { metric: '99.4%', label: 'Inbox Deliverability', highlight: false },
+        { metric: '300+', label: 'Verified Leads / Month', highlight: false }
+      ],
+      benefitsList: [
+        'Autonomous Google Maps geo-radius crawler with zero rate-limit blocks',
+        'Direct-to-inbox verified mail transport with Link Mobility templates',
+        'Two-way CRM pipeline synchronization with HubSpot, Google Sheets & Slack'
+      ],
+      ctaText: 'Claim {{business_name}}’s Growth Tier →',
+      ctaUrl: 'https://leadpulse.io/pricing'
     }
   },
 
@@ -271,6 +349,90 @@ With LeadPulse, {{business_name}} gains direct access to an autonomous local pip
         }
       ],
       ctaText: 'Customize Your Package',
+      ctaUrl: 'https://leadpulse.io/pricing'
+    }
+  },
+
+  // Aliases for seamless backward compatibility with any legacy saved drafts
+  two_column: {
+    id: 'two_column',
+    name: '3. Interactive Calendar Booking Card',
+    tagline: 'Live 1-Click Meeting & Time Slot Scheduling',
+    bestFor: 'Executive discovery calls, product demos, consult bookings, agency sales intros',
+    purpose: 'Embeds an interactive booking widget with clickable time-slot chips, host avatar, live status, and direct sync to Calendly or custom booking URLs.',
+    category: 'direct',
+    defaultData: {
+      subject: '15-Min Strategy Session for {{business_name}} | Quick Intro',
+      preheader: 'Pick a slot on our live calendar',
+      headline: 'Schedule a 15-Minute Strategy Chat with Alex',
+      subheadline: 'Instant calendar reservation • Direct Google Meet invitation',
+      body: `Hi {{first_name}},
+
+I came across {{business_name}} while reviewing leading companies in the {{field_of_work}} sector across {{location}}.
+
+We have engineered an autonomous outreach engine that helps local operators acquire verified B2B clients without manual prospecting or agency retainers.
+
+Select an available time slot below to lock in a quick 15-minute introductory chat:`,
+      hostName: 'Alex Roberts',
+      hostTitle: 'Growth Director, LeadPulse',
+      hostAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
+      duration: '15 mins',
+      timeSlots: [
+        { label: 'Tomorrow 10:30 AM', time: '10:30 AM', date: 'Tomorrow', url: 'https://calendly.com/leadpulse/demo' },
+        { label: 'Tomorrow 2:00 PM', time: '2:00 PM', date: 'Tomorrow', url: 'https://calendly.com/leadpulse/demo' },
+        { label: 'Friday 4:30 PM', time: '4:30 PM', date: 'Friday', url: 'https://calendly.com/leadpulse/demo' },
+        { label: 'View All Available Slots →', time: 'All Slots', date: 'Next 7 Days', url: 'https://calendly.com/leadpulse/demo' }
+      ],
+      meetingAgenda: [
+        'Review {{business_name}}’s current lead acquisition cost in {{location}}',
+        'Live demonstration of autonomous Google Maps scraper and enrichment',
+        '30-day projected pipeline estimate with zero manual cold calls'
+      ],
+      ctaText: 'Reserve Preferred Time Slot →',
+      ctaUrl: 'https://calendly.com/leadpulse/demo'
+    }
+  },
+
+  zig_zag: {
+    id: 'zig_zag',
+    name: '6. Interactive ROI & Benchmark Card',
+    tagline: 'Visual Cost & Revenue Multiplier Comparison',
+    bestFor: 'Competitive displacement, ROI proposals, value audits, enterprise pitches',
+    purpose: 'Drives conversions through an interactive side-by-side benchmark card contrasting legacy manual costs with LeadPulse autonomous efficiency.',
+    category: 'promotional',
+    defaultData: {
+      subject: 'ROI Analysis & Cost Benchmark for {{business_name}}',
+      preheader: 'See how {{business_name}} compares to {{field_of_work}} standards',
+      headline: 'Calculate {{business_name}}’s Projected Outreach ROI',
+      subheadline: 'Compare legacy manual agency fees vs LeadPulse autonomous engine',
+      body: `We analyzed lead generation economics for over 500 businesses in {{location}}. Operators in {{field_of_work}} frequently overpay for manual prospecting and outdated agency retainers.
+
+Review the live cost-efficiency comparison below to see what your team could save:`,
+      comparisonCurrent: {
+        title: 'Traditional Agency & Manual Scraper',
+        monthlyCost: '₹45,000 / mo',
+        timeSpent: '14 hours / week',
+        replyRate: '1.8% Response Rate',
+        badge: 'Legacy Method'
+      },
+      comparisonPulse: {
+        title: 'LeadPulse Autonomous Engine',
+        monthlyCost: '₹699 / mo',
+        timeSpent: '15 mins / week',
+        replyRate: '28.4% Response Rate',
+        badge: '8.4x Lower CAC'
+      },
+      roiMetrics: [
+        { metric: '₹44,301', label: 'Monthly Cost Savings', highlight: true },
+        { metric: '99.4%', label: 'Inbox Deliverability', highlight: false },
+        { metric: '300+', label: 'Verified Leads / Month', highlight: false }
+      ],
+      benefitsList: [
+        'Autonomous Google Maps geo-radius crawler with zero rate-limit blocks',
+        'Direct-to-inbox verified mail transport with Link Mobility templates',
+        'Two-way CRM pipeline synchronization with HubSpot, Google Sheets & Slack'
+      ],
+      ctaText: 'Claim {{business_name}}’s Growth Tier →',
       ctaUrl: 'https://leadpulse.io/pricing'
     }
   }

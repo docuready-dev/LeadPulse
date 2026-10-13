@@ -83,751 +83,246 @@ export interface IntegrationApp {
   configFields: ConfigField[];
   lastSync?: string | null;
   badge?: string;
+  linkedModule?: 'outreach' | 'automations' | 'crm' | 'leads' | 'billing';
+  linkedTitle?: string;
+  linkedRoute?: string;
 }
 
 export const DEFAULT_APPS: IntegrationApp[] = [
-  // Communication
+  // 1. Google Workspace / Gmail
+  {
+    id: 'gmail',
+    name: 'Google Workspace / Gmail',
+    category: 'Email & Outreach',
+    connected: false,
+    logo: '/integrations/Google Drive.png',
+    description: 'Authenticated Google Workspace and Gmail outbound relay. Connects directly to Outreach Studio for direct-to-inbox dispatch and email warmup.',
+    config: { email: '', appPassword: '', fromName: '' },
+    configFields: [
+      { key: 'email', label: 'Gmail / Google Account Address', type: 'email', placeholder: 'you@company.com', required: true },
+      { key: 'appPassword', label: '16-Character Google App Password', type: 'password', placeholder: 'xxxx xxxx xxxx xxxx', helperText: 'Generate at myaccount.google.com/apppasswords', required: true },
+      { key: 'fromName', label: 'Sender Display Name', type: 'text', placeholder: 'Growth Director' }
+    ],
+    lastSync: null,
+    badge: 'Core Mailer',
+    linkedModule: 'outreach',
+    linkedTitle: 'Outreach Studio (SMTP Relay)',
+    linkedRoute: '/outreach'
+  },
+  // 2. Resend
+  {
+    id: 'resend',
+    name: 'Resend',
+    category: 'Email & Outreach',
+    connected: false,
+    logo: '/integrations/Resend.png',
+    description: 'Modern developer-grade email API engineered for 99.9% inbox deliverability via HTTPS REST. Bypasses cloud SMTP port blocks.',
+    config: { apiKey: '', fromEmail: 'onboarding@resend.dev', fromName: '' },
+    configFields: [
+      { key: 'apiKey', label: 'Resend API Key', type: 'password', placeholder: 're_123456789...', required: true },
+      { key: 'fromEmail', label: 'Verified Sender Email', type: 'email', placeholder: 'outreach@yourdomain.com', required: true },
+      { key: 'fromName', label: 'Sender Display Name', type: 'text', placeholder: 'LeadPulse Growth Director' }
+    ],
+    lastSync: null,
+    badge: 'High Deliverability',
+    linkedModule: 'outreach',
+    linkedTitle: 'Outreach Studio & Drip Sequences',
+    linkedRoute: '/outreach'
+  },
+  // 3. SendGrid
+  {
+    id: 'sendgrid',
+    name: 'SendGrid',
+    category: 'Email & Outreach',
+    connected: false,
+    logo: '/integrations/Resend.png',
+    description: 'High-volume cloud email dispatch infrastructure with dedicated IP warmup, reputation monitoring, and high-throughput batch sending.',
+    config: { apiKey: '', fromEmail: '', fromName: '' },
+    configFields: [
+      { key: 'apiKey', label: 'SendGrid API Key', type: 'password', placeholder: 'SG.xxxxxxxxxxxx...', required: true },
+      { key: 'fromEmail', label: 'Verified Sender Email', type: 'email', placeholder: 'outreach@yourdomain.com', required: true },
+      { key: 'fromName', label: 'Sender Display Name', type: 'text', placeholder: 'Outreach Director' }
+    ],
+    lastSync: null,
+    badge: 'High Volume',
+    linkedModule: 'outreach',
+    linkedTitle: 'Batch Campaign Dispatcher',
+    linkedRoute: '/outreach'
+  },
+  // 4. WhatsApp Cloud API
+  {
+    id: 'whatsapp',
+    name: 'WhatsApp Cloud API',
+    category: 'Communication',
+    connected: false,
+    logo: '/integrations/WhatsApp.png',
+    description: 'Official Meta WhatsApp Cloud API for conversational B2B messaging, click-to-chat links, and automated WhatsApp follow-ups.',
+    config: { phoneNumberId: '', accessToken: '', businessAccountId: '' },
+    configFields: [
+      { key: 'phoneNumberId', label: 'Phone Number ID', type: 'text', placeholder: '1029384756...', required: true },
+      { key: 'accessToken', label: 'Permanent System Access Token', type: 'password', placeholder: 'EAAB...', required: true },
+      { key: 'businessAccountId', label: 'WhatsApp Business Account ID', type: 'text', placeholder: '789101112...' }
+    ],
+    lastSync: null,
+    badge: 'Mobile Outreach',
+    linkedModule: 'outreach',
+    linkedTitle: 'WhatsApp Studio & Multi-Channel Journeys',
+    linkedRoute: '/outreach'
+  },
+  // 5. Calendly
+  {
+    id: 'calendly',
+    name: 'Calendly',
+    category: 'Scheduling',
+    connected: false,
+    logo: '/integrations/Calendly.png',
+    description: '1-Click meeting booking embeds. Automatically injects your live scheduling link into {{booking_url}} merge tags and the Interactive Calendar template.',
+    config: { bookingUrl: '', apiKey: '' },
+    configFields: [
+      { key: 'bookingUrl', label: 'Calendly Booking URL', type: 'url', placeholder: 'https://calendly.com/your-name/15min', required: true },
+      { key: 'apiKey', label: 'Personal Access Token', type: 'password', placeholder: 'cal_...' }
+    ],
+    lastSync: null,
+    badge: '1-Click Booking',
+    linkedModule: 'outreach',
+    linkedTitle: 'Interactive Calendar Template & Merge Tags',
+    linkedRoute: '/outreach'
+  },
+  // 6. HubSpot CRM
+  {
+    id: 'hubspot',
+    name: 'HubSpot CRM',
+    category: 'CRM & Pipeline',
+    connected: false,
+    logo: '/integrations/HubSpot.png',
+    description: 'Two-way CRM pipeline sync. Automatically push discovered leads and contacted prospects into HubSpot Contacts, Deals, and Company records.',
+    config: { accessToken: '', portalId: '', pipelineStage: 'appointmentscheduled' },
+    configFields: [
+      { key: 'accessToken', label: 'HubSpot Private App Token', type: 'password', placeholder: 'pat-na1-...', required: true },
+      { key: 'portalId', label: 'HubSpot Portal ID', type: 'text', placeholder: '12345678' },
+      { key: 'pipelineStage', label: 'Default Deal Pipeline Stage', type: 'text', placeholder: 'appointmentscheduled' }
+    ],
+    lastSync: null,
+    badge: '2-Way Sync',
+    linkedModule: 'crm',
+    linkedTitle: 'CRM Pipeline & Lead Finder Sync',
+    linkedRoute: '/crm'
+  },
+  // 7. Google Sheets
+  {
+    id: 'google-sheets',
+    name: 'Google Sheets',
+    category: 'Productivity & Data',
+    connected: false,
+    logo: '/integrations/Google Sheets.png',
+    description: 'Real-time spreadsheet synchronization. Automatically appends newly scraped leads and pipeline updates into your live Google Sheet.',
+    config: { spreadsheetUrl: '', sheetName: 'Sheet1' },
+    configFields: [
+      { key: 'spreadsheetUrl', label: 'Google Sheet URL or ID', type: 'url', placeholder: 'https://docs.google.com/spreadsheets/d/.../edit', required: true },
+      { key: 'sheetName', label: 'Worksheet / Tab Name', type: 'text', placeholder: 'Sheet1' }
+    ],
+    lastSync: null,
+    badge: 'Live Mirror',
+    linkedModule: 'leads',
+    linkedTitle: 'Lead Finder & Pipeline Sync',
+    linkedRoute: '/leads'
+  },
+  // 8. Slack
   {
     id: 'slack',
     name: 'Slack',
     category: 'Communication',
     connected: false,
     logo: '/integrations/Slack.png',
-    description: 'Receive real-time lead capture, deal conversion, and team assignment alerts in dedicated Slack channels.',
-    config: { webhookUrl: '', channel: '#sales-leads' },
+    description: 'Instant team notification engine. Posts real-time alerts to Slack channels when leads reply, campaigns finish, or deals convert.',
+    config: { webhookUrl: '', channel: '#lead-alerts' },
     configFields: [
       { key: 'webhookUrl', label: 'Incoming Webhook URL', type: 'url', placeholder: 'https://hooks.slack.com/services/...', required: true },
-      { key: 'channel', label: 'Alert Channel', type: 'text', placeholder: '#sales-leads', required: true }
+      { key: 'channel', label: 'Notification Channel', type: 'text', placeholder: '#lead-alerts' }
     ],
-    lastSync: null
+    lastSync: null,
+    badge: 'Real-time Alerts',
+    linkedModule: 'automations',
+    linkedTitle: 'Automated Journey Alerts',
+    linkedRoute: '/automations'
   },
-  {
-    id: 'microsoft-teams',
-    name: 'Microsoft Teams',
-    category: 'Communication',
-    connected: false,
-    logo: '/integrations/Microsoft%20Teams.png',
-    description: 'Post real-time adaptive cards for high-value deal alerts and inbound form submissions to Teams channels.',
-    config: { webhookUrl: '', channelName: '' },
-    configFields: [
-      { key: 'webhookUrl', label: 'Incoming Webhook URL', type: 'url', placeholder: 'https://outlook.office.com/webhook/...', required: true },
-      { key: 'channelName', label: 'Target Channel Name', type: 'text', placeholder: 'Enterprise Leads' }
-    ],
-    lastSync: null
-  },
-  {
-    id: 'microsoft-outlook',
-    name: 'Microsoft Outlook',
-    category: 'Communication',
-    connected: false,
-    logo: '/integrations/Microsoft%20Outlook.png',
-    description: 'Dispatch B2B cold emails and monitor inbox replies directly through corporate Office 365 mailboxes.',
-    config: { email: '', clientId: '', clientSecret: '' },
-    configFields: [
-      { key: 'email', label: 'Mailbox Email Address', type: 'email', placeholder: 'outreach@enterprise.com', required: true },
-      { key: 'clientId', label: 'Azure Client ID', type: 'text', placeholder: '00000000-0000-0000-0000-000000000000' },
-      { key: 'clientSecret', label: 'Client Secret', type: 'password', placeholder: '••••••••••••' }
-    ],
-    lastSync: null
-  },
+  // 9. Twilio
   {
     id: 'twilio',
     name: 'Twilio',
     category: 'Communication',
     connected: false,
     logo: '/integrations/Twilio.png',
-    description: 'Dispatch programmable SMS notifications, WhatsApp outreach, and voice calls to verified phone numbers.',
-    config: { accountSid: '', authToken: '', phoneNumber: '' },
+    description: 'Carrier-grade SMS messaging and phone number verification. Dispatch automated SMS outreach and mobile engagement sequences.',
+    config: { accountSid: '', authToken: '', fromPhone: '' },
     configFields: [
-      { key: 'accountSid', label: 'Twilio Account SID', type: 'text', placeholder: 'ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', required: true },
-      { key: 'authToken', label: 'Auth Token', type: 'password', placeholder: '••••••••••••', required: true },
-      { key: 'phoneNumber', label: 'Twilio Phone Number', type: 'text', placeholder: '+1 (555) 019-2831', required: true }
+      { key: 'accountSid', label: 'Twilio Account SID', type: 'text', placeholder: 'ACxxxxxxxx...', required: true },
+      { key: 'authToken', label: 'Twilio Auth Token', type: 'password', placeholder: 'xxxxxxxx...', required: true },
+      { key: 'fromPhone', label: 'Sender Phone Number', type: 'text', placeholder: '+15551234567', required: true }
     ],
-    lastSync: null
+    lastSync: null,
+    badge: 'Direct SMS',
+    linkedModule: 'outreach',
+    linkedTitle: 'SMS Studio & Follow-Up Sequences',
+    linkedRoute: '/outreach'
   },
-  {
-    id: 'resend',
-    name: 'Resend',
-    category: 'Communication',
-    connected: false,
-    logo: '/integrations/Resend.png',
-    description: 'Developer-first email delivery platform for fast, transactional cold outreach with DKIM verification.',
-    config: { apiKey: '', fromEmail: '' },
-    configFields: [
-      { key: 'apiKey', label: 'Resend API Key', type: 'password', placeholder: 're_123456789', required: true },
-      { key: 'fromEmail', label: 'Verified From Address', type: 'email', placeholder: 'outreach@yourdomain.com', required: true }
-    ],
-    lastSync: null
-  },
-  {
-    id: 'gmail-workspace',
-    name: 'Google Workspace / Gmail',
-    category: 'Communication',
-    connected: false,
-    logo: '/integrations/Google%20Drive.png',
-    description: 'Native SMTP and Google API relay to dispatch cold campaigns with 99.4% inbox deliverability.',
-    config: { apiKey: '', emailAddress: '', provider: 'google_workspace' },
-    configFields: [
-      { key: 'apiKey', label: 'Google Workspace / Gmail API Key', type: 'password', placeholder: 'AIzaSy...', helperText: 'Auto-fetched from Google Cloud Console or paste manually below', required: true },
-      { key: 'emailAddress', label: 'Relay Email Address', type: 'email', placeholder: 'outreach@yourcompany.com', required: true },
-      { key: 'provider', label: 'Provider Type', type: 'text', placeholder: 'google_workspace' }
-    ],
-    lastSync: null
-  },
-
-  // CRM
-  {
-    id: 'hubspot',
-    name: 'HubSpot',
-    category: 'CRM',
-    connected: false,
-    logo: '/integrations/HubSpot.png',
-    description: 'Automatically push harvested B2B contacts directly into HubSpot CRM contact lists.',
-    config: { accessToken: '' },
-    configFields: [
-      { key: 'accessToken', label: 'HubSpot Private App Token', type: 'password', placeholder: 'pat-na1-xxxx-xxxx', required: true }
-    ],
-    lastSync: null
-  },
-  {
-    id: 'salesforce',
-    name: 'Salesforce CRM',
-    category: 'CRM',
-    connected: false,
-    logo: 'https://cdn.simpleicons.org/salesforce',
-    description: 'Bi-directionally synchronize enriched leads and deal stages with Salesforce Lightning.',
-    config: { instanceUrl: '', apiToken: '' },
-    configFields: [
-      { key: 'instanceUrl', label: 'Salesforce Instance URL', type: 'url', placeholder: 'https://yourinstance.salesforce.com', required: true },
-      { key: 'apiToken', label: 'OAuth Token / Connected App Key', type: 'password', placeholder: 'Bearer token', required: true }
-    ],
-    lastSync: null
-  },
-  {
-    id: 'apollo',
-    name: 'Apollo',
-    category: 'CRM',
-    connected: false,
-    logo: '/integrations/Apollo.png',
-    description: 'Enrich B2B lead records with validated buyer emails, mobile phones, LinkedIn URLs, and company firmographics.',
-    config: { apiKey: '', webhookSecret: '' },
-    configFields: [
-      { key: 'apiKey', label: 'Apollo API Key', type: 'password', placeholder: 'apl_live_...', required: true },
-      { key: 'webhookSecret', label: 'Webhook Signing Key (Optional)', type: 'password', placeholder: 'sec_...' }
-    ],
-    lastSync: null
-  },
-  {
-    id: 'attio',
-    name: 'Attio',
-    category: 'CRM',
-    connected: false,
-    logo: '/integrations/Attio.png',
-    description: 'Next-gen CRM data sync. Stream companies, contacts, and deal attributes directly into custom Attio objects.',
-    config: { apiKey: '', listSlug: '' },
-    configFields: [
-      { key: 'apiKey', label: 'Attio API Key', type: 'password', placeholder: 'attio_api_...', required: true },
-      { key: 'listSlug', label: 'Target Collection Slug', type: 'text', placeholder: 'leads-inbound' }
-    ],
-    lastSync: null
-  },
-  {
-    id: 'linkedin',
-    name: 'LinkedIn',
-    category: 'CRM',
-    connected: false,
-    logo: '/integrations/LinkedIn.png',
-    description: 'Pull verified professional bios, company headcounts, and decision-maker roles directly from LinkedIn.',
-    config: { clientId: '', clientSecret: '', organizationUrn: '' },
-    configFields: [
-      { key: 'clientId', label: 'LinkedIn Client ID', type: 'text', placeholder: '78xxxxxx', required: true },
-      { key: 'clientSecret', label: 'Client Secret', type: 'password', placeholder: '••••••••••••', required: true },
-      { key: 'organizationUrn', label: 'Organization URN', type: 'text', placeholder: 'urn:li:organization:1234567' }
-    ],
-    lastSync: null
-  },
-  {
-    id: 'netsuite',
-    name: 'NetSuite',
-    category: 'CRM',
-    connected: false,
-    logo: '/integrations/NetSuite.png',
-    description: 'Enterprise ERP sync. Transition closed-won deals into NetSuite Customer & Sales Order records.',
-    config: { accountId: '', consumerKey: '', tokenId: '' },
-    configFields: [
-      { key: 'accountId', label: 'NetSuite Account ID', type: 'text', placeholder: '1234567_SB1', required: true },
-      { key: 'consumerKey', label: 'TBA Consumer Key', type: 'password', placeholder: '••••••••••••', required: true },
-      { key: 'tokenId', label: 'Token ID', type: 'text', placeholder: '••••••••••••', required: true }
-    ],
-    lastSync: null
-  },
-
-  // AI & LLM
-  {
-    id: 'openai',
-    name: 'OpenAI',
-    category: 'AI & LLM',
-    connected: false,
-    logo: '/integrations/OpenAI.png',
-    description: 'Supercharge campaign copy generation, automated email writing, and sentiment analysis with GPT-4o.',
-    config: { apiKey: '', organizationId: '' },
-    configFields: [
-      { key: 'apiKey', label: 'OpenAI API Key', type: 'password', placeholder: 'sk-proj-...', required: true },
-      { key: 'organizationId', label: 'Organization ID (Optional)', type: 'text', placeholder: 'org-...' }
-    ],
-    lastSync: null
-  },
-  {
-    id: 'anthropic',
-    name: 'Anthropic',
-    category: 'AI & LLM',
-    connected: false,
-    logo: '/integrations/Anthropic.png',
-    description: 'Power hyper-personalized cold outreach copy, tone analysis, and AI reply drafting with Claude 3.5 Sonnet.',
-    config: { apiKey: '', defaultModel: 'claude-3-5-sonnet-20241022' },
-    configFields: [
-      { key: 'apiKey', label: 'Anthropic API Key', type: 'password', placeholder: 'sk-ant-api03-...', required: true },
-      { key: 'defaultModel', label: 'Default Model', type: 'text', placeholder: 'claude-3-5-sonnet-20241022' }
-    ],
-    lastSync: null
-  },
-  {
-    id: 'gemini',
-    name: 'Gemini (Google)',
-    category: 'AI & LLM',
-    connected: false,
-    logo: '/integrations/Gemini%20(Google).png',
-    description: 'Native Google Gemini 1.5 Pro / 2.0 Flash integration for fast lead score reasoning and contextual pitch generation.',
-    config: { apiKey: '', model: 'gemini-1.5-pro' },
-    configFields: [
-      { key: 'apiKey', label: 'Gemini API Key', type: 'password', placeholder: 'AIzaSy...', required: true },
-      { key: 'model', label: 'Target Model', type: 'text', placeholder: 'gemini-1.5-pro' }
-    ],
-    lastSync: null
-  },
-  {
-    id: 'elevenlabs',
-    name: 'ElevenLabs',
-    category: 'AI & LLM',
-    connected: false,
-    logo: '/integrations/ElevenLabs.png',
-    description: 'Generate hyper-realistic AI voice audio notes and personalized audio pitches for targeted enterprise outreach.',
-    config: { apiKey: '', voiceId: '' },
-    configFields: [
-      { key: 'apiKey', label: 'ElevenLabs API Key', type: 'password', placeholder: 'eleven_api_...', required: true },
-      { key: 'voiceId', label: 'Voice ID', type: 'text', placeholder: '21m00Tcm4TlvDq8ikWAM (Rachel)' }
-    ],
-    lastSync: null
-  },
-
-  // Productivity
+  // 10. Airtable
   {
     id: 'airtable',
     name: 'Airtable',
-    category: 'Productivity',
+    category: 'Productivity & Data',
     connected: false,
     logo: '/integrations/Airtable.png',
-    description: 'Sync enriched leads, deal stages, and campaign statuses bidirectionally into Airtable bases.',
-    config: { apiKey: '', baseId: '', tableName: '' },
+    description: 'Modern relational database sync. Push enriched leads, contact details, and custom tags into Airtable bases with custom field mapping.',
+    config: { apiKey: '', baseId: '', tableName: 'Leads' },
     configFields: [
-      { key: 'apiKey', label: 'Personal Access Token', type: 'password', placeholder: 'patXXXXXXXXXX.XXXXX', required: true },
-      { key: 'baseId', label: 'Base ID', type: 'text', placeholder: 'appXXXXXXXXXXXXXX', required: true },
-      { key: 'tableName', label: 'Table Name', type: 'text', placeholder: 'Leads & Prospects', required: true }
+      { key: 'apiKey', label: 'Personal Access Token', type: 'password', placeholder: 'pat...', required: true },
+      { key: 'baseId', label: 'Base ID', type: 'text', placeholder: 'app...', required: true },
+      { key: 'tableName', label: 'Table Name', type: 'text', placeholder: 'Leads' }
     ],
-    lastSync: null
+    lastSync: null,
+    badge: 'Relational DB',
+    linkedModule: 'leads',
+    linkedTitle: 'Lead Finder & Relational Base Sync',
+    linkedRoute: '/leads'
   },
+  // 11. Zapier & Webhooks
   {
-    id: 'notion',
-    name: 'Notion',
-    category: 'Productivity',
+    id: 'webhook',
+    name: 'Zapier & Webhooks',
+    category: 'Developer & Workflows',
     connected: false,
-    logo: '/integrations/Notion.png',
-    description: 'Automatically populate Notion databases with qualified leads, AI-generated research dossiers, and meeting notes.',
-    config: { internalApiKey: '', databaseId: '' },
+    logo: '/integrations/GitHub.png',
+    description: 'Custom HTTP POST webhooks to trigger external workflows in Zapier, Make, n8n, Pipedream, or your internal API backend.',
+    config: { webhookUrl: '', secretHeader: '' },
     configFields: [
-      { key: 'internalApiKey', label: 'Internal Integration Secret', type: 'password', placeholder: 'secret_...', required: true },
-      { key: 'databaseId', label: 'Database ID', type: 'text', placeholder: '32-character database string', required: true }
+      { key: 'webhookUrl', label: 'Target Webhook URL', type: 'url', placeholder: 'https://hooks.zapier.com/hooks/catch/...', required: true },
+      { key: 'secretHeader', label: 'Custom Secret / Auth Header', type: 'password', placeholder: 'Bearer xxx / secret token' }
     ],
-    lastSync: null
+    lastSync: null,
+    badge: 'Custom Hooks',
+    linkedModule: 'automations',
+    linkedTitle: 'Automations Engine & Custom Triggers',
+    linkedRoute: '/automations'
   },
-  {
-    id: 'google-sheets',
-    name: 'Google Sheets',
-    category: 'Productivity',
-    connected: false,
-    logo: '/integrations/Google%20Sheets.png',
-    description: 'Real-time spreadsheet sync. Auto-append newly scraped B2B leads and pipeline deals to any Google Spreadsheet.',
-    config: { apiKey: '', spreadsheetId: '', sheetName: 'Sheet1', webhookUrl: '' },
-    configFields: [
-      { key: 'apiKey', label: 'Google Sheets API Key', type: 'password', placeholder: 'AIzaSy...', helperText: 'Auto-fetched after opening Google API Console, or paste manually', required: true },
-      { key: 'spreadsheetId', label: 'Google Sheet URL or Spreadsheet ID', type: 'text', placeholder: 'https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5.../edit', helperText: 'Paste full Google Sheet URL or Spreadsheet ID' },
-      { key: 'sheetName', label: 'Sheet Tab Name', type: 'text', placeholder: 'Sheet1' },
-      { key: 'webhookUrl', label: 'Apps Script Web App URL (Optional Direct Bridge)', type: 'url', placeholder: 'https://script.google.com/macros/s/.../exec', helperText: 'Optional: Paste deployed Google Apps Script URL for instant row append' }
-    ],
-    lastSync: null
-  },
-  {
-    id: 'microsoft-excel',
-    name: 'Microsoft Excel',
-    category: 'Productivity',
-    connected: false,
-    logo: '/integrations/Microsoft%20Excel.png',
-    description: 'Append leads and financial metrics directly into cloud-hosted Excel workbooks via Microsoft Graph API.',
-    config: { accessToken: '', workbookId: '', worksheetName: 'Sheet1' },
-    configFields: [
-      { key: 'accessToken', label: 'Microsoft Graph Token', type: 'password', placeholder: 'EwBAA...', required: true },
-      { key: 'workbookId', label: 'Workbook Item ID', type: 'text', placeholder: '01BY2...xlsx', required: true },
-      { key: 'worksheetName', label: 'Worksheet Name', type: 'text', placeholder: 'Sheet1' }
-    ],
-    lastSync: null
-  },
-  {
-    id: 'google-calendar',
-    name: 'Google Calendar',
-    category: 'Productivity',
-    connected: false,
-    logo: '/integrations/Google%20Calendar.png',
-    description: 'Sync discovery calls, lead calendar invites, and sales follow-ups directly to your Google Workspace calendar.',
-    config: { apiKey: '', calendarId: 'primary', oauthToken: '' },
-    configFields: [
-      { key: 'apiKey', label: 'Google Calendar API Key', type: 'password', placeholder: 'AIzaSy...', helperText: 'Auto-fetched from Google API Console or paste manually below', required: true },
-      { key: 'calendarId', label: 'Calendar ID', type: 'text', placeholder: 'primary or sales@company.com', required: true },
-      { key: 'oauthToken', label: 'OAuth Access Token (Optional)', type: 'password', placeholder: 'ya29....' }
-    ],
-    lastSync: null
-  },
-  {
-    id: 'calendly',
-    name: 'Calendly',
-    category: 'Productivity',
-    connected: false,
-    logo: '/integrations/Calendly.png',
-    description: 'Inject {{calendly_link}} into Outreach pitches, listen for booked demos, and auto-advance deal stages.',
-    config: { bookingUrl: '', personalAccessToken: '', signingKey: '' },
-    configFields: [
-      { key: 'bookingUrl', label: 'Booking Link URL ({{calendly_link}})', type: 'url', placeholder: 'https://calendly.com/your-name/15min', required: true },
-      { key: 'personalAccessToken', label: 'Personal Access Token', type: 'password', placeholder: 'calendly_pat_...' },
-      { key: 'signingKey', label: 'Webhook Signing Key (Optional)', type: 'password', placeholder: 'whsec_...' }
-    ],
-    lastSync: null
-  },
-  {
-    id: 'asana',
-    name: 'Asana',
-    category: 'Productivity',
-    connected: false,
-    logo: '/integrations/Asana.png',
-    description: 'Automatically create deal onboarding tasks, assign sales reps, and track sales pipeline milestones in Asana.',
-    config: { personalAccessToken: '', workspaceGid: '', projectId: '' },
-    configFields: [
-      { key: 'personalAccessToken', label: 'Personal Access Token', type: 'password', placeholder: '1/1234567890:...', required: true },
-      { key: 'workspaceGid', label: 'Workspace GID', type: 'text', placeholder: '1200000000000000' },
-      { key: 'projectId', label: 'Project ID', type: 'text', placeholder: 'Sales Pipeline' }
-    ],
-    lastSync: null
-  },
-  {
-    id: 'linear',
-    name: 'Linear',
-    category: 'Productivity',
-    connected: false,
-    logo: '/integrations/Linear.png',
-    description: 'High-performance issue tracking. Create Linear cycles, issues, and customer requests on lead milestone changes.',
-    config: { apiKey: '', teamKey: '' },
-    configFields: [
-      { key: 'apiKey', label: 'Linear API Key', type: 'password', placeholder: 'lin_api_...', required: true },
-      { key: 'teamKey', label: 'Team Identifier', type: 'text', placeholder: 'REV or ENG', required: true }
-    ],
-    lastSync: null
-  },
-  {
-    id: 'jira',
-    name: 'Jira',
-    category: 'Productivity',
-    connected: false,
-    logo: '/integrations/Jira.png',
-    description: 'Create enterprise implementation tickets, customer bug reports, and SLA tasks upon deal conversion in Jira.',
-    config: { host: '', email: '', apiToken: '', projectKey: '' },
-    configFields: [
-      { key: 'host', label: 'Atlassian Domain', type: 'text', placeholder: 'yourcompany.atlassian.net', required: true },
-      { key: 'email', label: 'Account Email', type: 'email', placeholder: 'admin@yourcompany.com', required: true },
-      { key: 'apiToken', label: 'API Token', type: 'password', placeholder: 'ATATT3xFfGF0...', required: true },
-      { key: 'projectKey', label: 'Project Key', type: 'text', placeholder: 'SALES' }
-    ],
-    lastSync: null
-  },
-  {
-    id: 'trello',
-    name: 'Trello',
-    category: 'Productivity',
-    connected: false,
-    logo: '/integrations/Trello.png',
-    description: 'Create visual Kanban cards for deal stages, sales follow-ups, and client handoffs on Trello boards.',
-    config: { apiKey: '', apiToken: '', boardId: '' },
-    configFields: [
-      { key: 'apiKey', label: 'Trello Developer API Key', type: 'text', placeholder: '32-character key', required: true },
-      { key: 'apiToken', label: 'API Token', type: 'password', placeholder: '64-character token', required: true },
-      { key: 'boardId', label: 'Target Board ID', type: 'text', placeholder: 'Board ID or shortlink' }
-    ],
-    lastSync: null
-  },
-  {
-    id: 'monday',
-    name: 'monday.com',
-    category: 'Productivity',
-    connected: false,
-    logo: '/integrations/monday.com.png',
-    description: 'Create dynamic board items, assign sales reps, and trigger automated column status updates in monday.com.',
-    config: { apiToken: '', boardId: '' },
-    configFields: [
-      { key: 'apiToken', label: 'monday.com v2 API Token', type: 'password', placeholder: 'eyJhbGci...', required: true },
-      { key: 'boardId', label: 'Board ID', type: 'text', placeholder: '1234567890', required: true }
-    ],
-    lastSync: null
-  },
-  {
-    id: 'google-drive',
-    name: 'Google Drive',
-    category: 'Productivity',
-    connected: false,
-    logo: '/integrations/Google%20Drive.png',
-    description: 'Export audience segments, lead proposals, and pitch PDF attachments directly to shared Google Drive folders.',
-    config: { apiKey: '', folderId: '', serviceAccountEmail: '' },
-    configFields: [
-      { key: 'apiKey', label: 'Google Drive API Key', type: 'password', placeholder: 'AIzaSy...', helperText: 'Auto-fetched from Google API Console or paste manually below', required: true },
-      { key: 'folderId', label: 'Google Drive Folder ID', type: 'text', placeholder: '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs', required: true },
-      { key: 'serviceAccountEmail', label: 'Service Account Email', type: 'email', placeholder: 'drive-bot@project.iam.gserviceaccount.com' }
-    ],
-    lastSync: null
-  },
-  {
-    id: 'onedrive',
-    name: 'OneDrive',
-    category: 'Productivity',
-    connected: false,
-    logo: '/integrations/OneDrive.png',
-    description: 'Archive client proposals, compliance receipts, and campaign CSV exports into Microsoft OneDrive.',
-    config: { tenantId: '', clientId: '', folderPath: '/Sales/LeadPulse/' },
-    configFields: [
-      { key: 'tenantId', label: 'Tenant ID', type: 'text', placeholder: '00000000-0000-0000-0000-000000000000', required: true },
-      { key: 'clientId', label: 'Application (client) ID', type: 'text', placeholder: '00000000-0000-0000-0000-000000000000', required: true },
-      { key: 'folderPath', label: 'Target Folder Path', type: 'text', placeholder: '/Sales/LeadPulse/' }
-    ],
-    lastSync: null
-  },
-  {
-    id: 'box',
-    name: 'Box',
-    category: 'Productivity',
-    connected: false,
-    logo: '/integrations/Box.png',
-    description: 'Secure enterprise storage. Store signed contracts, audit decks, and lead intelligence files in Box folders.',
-    config: { clientId: '', clientSecret: '', folderId: '0' },
-    configFields: [
-      { key: 'clientId', label: 'Box Client ID', type: 'text', placeholder: 'box_client_...', required: true },
-      { key: 'clientSecret', label: 'Client Secret', type: 'password', placeholder: '••••••••••••', required: true },
-      { key: 'folderId', label: 'Target Folder ID', type: 'text', placeholder: '0' }
-    ],
-    lastSync: null
-  },
-
-  // Marketing & Forms
-  {
-    id: 'brevo',
-    name: 'Brevo',
-    category: 'Marketing & Forms',
-    connected: false,
-    logo: '/integrations/Brevo.png',
-    description: 'Transactional and marketing email relay with dedicated IPs, SMS campaigns, and audience segmentation.',
-    config: { apiKey: '', senderEmail: '' },
-    configFields: [
-      { key: 'apiKey', label: 'Brevo API Key (v3)', type: 'password', placeholder: 'xkeysib-...', required: true },
-      { key: 'senderEmail', label: 'Sender Email Address', type: 'email', placeholder: 'sales@yourdomain.com', required: true }
-    ],
-    lastSync: null
-  },
-  {
-    id: 'mailchimp',
-    name: 'Mailchimp',
-    category: 'Marketing & Forms',
-    connected: false,
-    logo: '/integrations/Mailchimp.png',
-    description: 'Sync captured audience leads into Mailchimp marketing audiences with custom tags and merge fields.',
-    config: { apiKey: '', serverPrefix: 'us1', listId: '' },
-    configFields: [
-      { key: 'apiKey', label: 'Mailchimp API Key', type: 'password', placeholder: 'md-xxxxxxxx-us20', required: true },
-      { key: 'serverPrefix', label: 'Server Prefix', type: 'text', placeholder: 'us20', required: true },
-      { key: 'listId', label: 'Audience List ID', type: 'text', placeholder: 'a1b2c3d4e5', required: true }
-    ],
-    lastSync: null
-  },
-  {
-    id: 'typeform',
-    name: 'Typeform',
-    category: 'Marketing & Forms',
-    connected: false,
-    logo: '/integrations/Typeform.png',
-    description: 'Capture responses from interactive conversational Typeform surveys and auto-create enriched CRM leads.',
-    config: { personalAccessToken: '', formId: '' },
-    configFields: [
-      { key: 'personalAccessToken', label: 'Personal Access Token', type: 'password', placeholder: 'tfp_...', required: true },
-      { key: 'formId', label: 'Typeform Form UID', type: 'text', placeholder: 'a1b2c3', required: true }
-    ],
-    lastSync: null
-  },
-  {
-    id: 'google-forms',
-    name: 'Google Forms',
-    category: 'Marketing & Forms',
-    connected: false,
-    logo: '/integrations/Google%20Forms.png',
-    description: 'Automatically ingest submissions from Google Forms into LeadPulse Audience with instant email verification.',
-    config: { apiKey: '', formId: '', webhookUrl: '' },
-    configFields: [
-      { key: 'apiKey', label: 'Google Forms API Key', type: 'password', placeholder: 'AIzaSy...', helperText: 'Auto-fetched from Google API Console or paste manually below', required: true },
-      { key: 'formId', label: 'Google Form ID', type: 'text', placeholder: '1FAIpQLSe...', required: true },
-      { key: 'webhookUrl', label: 'App Script Webhook Trigger', type: 'url', placeholder: 'https://script.google.com/macros/s/...' }
-    ],
-    lastSync: null
-  },
-  {
-    id: 'facebook-pages',
-    name: 'Facebook Pages',
-    category: 'Marketing & Forms',
-    connected: false,
-    logo: '/integrations/Facebook%20Pages.png',
-    description: 'Capture Meta Lead Ads submissions instantly and sync messages from connected Facebook Business Pages.',
-    config: { pageAccessToken: '', pageId: '' },
-    configFields: [
-      { key: 'pageAccessToken', label: 'Page Access Token', type: 'password', placeholder: 'EAAB...', required: true },
-      { key: 'pageId', label: 'Facebook Page ID', type: 'text', placeholder: '1004829104829', required: true }
-    ],
-    lastSync: null
-  },
-
-  // Finance & Payments
+  // 12. Stripe
   {
     id: 'stripe',
     name: 'Stripe',
     category: 'Finance & Payments',
     connected: false,
     logo: '/integrations/Stripe.png',
-    description: 'Sync payments, track customer Lifetime Value (LTV), and link Stripe charges to converted leads.',
-    config: { secretKey: '', webhookSecret: '' },
+    description: 'Enterprise billing and checkout gateway. Handles token top-ups, recurring plan upgrades, and customer invoice tracking.',
+    config: { publishableKey: '', secretKey: '' },
     configFields: [
-      { key: 'secretKey', label: 'Stripe Secret Key', type: 'password', placeholder: 'sk_live_... or rk_live_...', required: true },
-      { key: 'webhookSecret', label: 'Webhook Signing Secret', type: 'password', placeholder: 'whsec_...' }
+      { key: 'publishableKey', label: 'Publishable Key', type: 'text', placeholder: 'pk_live_...', required: true },
+      { key: 'secretKey', label: 'Secret Key', type: 'password', placeholder: 'sk_live_...' }
     ],
-    lastSync: null
-  },
-  {
-    id: 'quickbooks',
-    name: 'QuickBooks',
-    category: 'Finance & Payments',
-    connected: false,
-    logo: '/integrations/QuickBooks.png',
-    description: 'Auto-generate customer profiles and invoices when leads transition to "Closed-Won" status.',
-    config: { clientId: '', clientSecret: '', realmId: '' },
-    configFields: [
-      { key: 'clientId', label: 'QuickBooks Client ID', type: 'text', placeholder: 'AB...', required: true },
-      { key: 'clientSecret', label: 'Client Secret', type: 'password', placeholder: '••••••••••••', required: true },
-      { key: 'realmId', label: 'Company / Realm ID', type: 'text', placeholder: '913035...', required: true }
-    ],
-    lastSync: null
-  },
-  {
-    id: 'xero',
-    name: 'Xero',
-    category: 'Finance & Payments',
-    connected: false,
-    logo: '/integrations/Xero.png',
-    description: 'Create recurring invoices and reconcile customer accounts when deals close successfully in LeadPulse.',
-    config: { clientId: '', clientSecret: '', tenantId: '' },
-    configFields: [
-      { key: 'clientId', label: 'Xero Client ID', type: 'text', placeholder: 'Xero Client ID', required: true },
-      { key: 'clientSecret', label: 'Client Secret', type: 'password', placeholder: '••••••••••••', required: true },
-      { key: 'tenantId', label: 'Tenant ID', type: 'text', placeholder: 'Tenant GUID', required: true }
-    ],
-    lastSync: null
-  },
-  {
-    id: 'shopify',
-    name: 'Shopify',
-    category: 'Finance & Payments',
-    connected: false,
-    logo: 'https://cdn.simpleicons.org/shopify',
-    description: 'Sync customer emails, high-ticket purchasers, and abandoned carts for AI win-back outreach.',
-    config: { storeDomain: '', adminAccessToken: '' },
-    configFields: [
-      { key: 'storeDomain', label: 'Store Domain', type: 'text', placeholder: 'mystore.myshopify.com', required: true },
-      { key: 'adminAccessToken', label: 'Admin API Access Token', type: 'password', placeholder: 'shpat_xxxxxxxxx', required: true }
-    ],
-    lastSync: null
-  },
-
-  // Data & Warehouses
-  {
-    id: 'snowflake',
-    name: 'Snowflake',
-    category: 'Data & Warehouses',
-    connected: false,
-    logo: '/integrations/Snowflake.png',
-    description: 'Sync all B2B lead events, enrichment attributes, and email delivery telemetry into your Snowflake warehouse.',
-    config: { account: '', warehouse: 'COMPUTE_WH', database: 'LEADPULSE', schema: 'PUBLIC', username: '', password: '' },
-    configFields: [
-      { key: 'account', label: 'Account Identifier', type: 'text', placeholder: 'xy12345.us-east-1', required: true },
-      { key: 'warehouse', label: 'Warehouse Name', type: 'text', placeholder: 'COMPUTE_WH', required: true },
-      { key: 'database', label: 'Database Name', type: 'text', placeholder: 'LEADPULSE', required: true },
-      { key: 'username', label: 'Database User', type: 'text', placeholder: 'LEADPULSE_SYNC_USER', required: true },
-      { key: 'password', label: 'Password', type: 'password', placeholder: '••••••••••••', required: true }
-    ],
-    lastSync: null
-  },
-  {
-    id: 'databricks',
-    name: 'Databricks',
-    category: 'Data & Warehouses',
-    connected: false,
-    logo: '/integrations/Databricks.png',
-    description: 'Stream LeadPulse lakehouse telemetry, CRM touchpoints, and conversion models into Delta Lake.',
-    config: { host: '', httpPath: '', token: '' },
-    configFields: [
-      { key: 'host', label: 'Server Hostname', type: 'text', placeholder: 'adb-XXXXXXXX.azuredatabricks.net', required: true },
-      { key: 'httpPath', label: 'HTTP Path', type: 'text', placeholder: '/sql/1.0/endpoints/XXXX', required: true },
-      { key: 'token', label: 'Personal Access Token', type: 'password', placeholder: 'dapiXXXXXXXX', required: true }
-    ],
-    lastSync: null
-  },
-  {
-    id: 'clickhouse',
-    name: 'ClickHouse',
-    category: 'Data & Warehouses',
-    connected: false,
-    logo: '/integrations/ClickHouse.png',
-    description: 'Ultra-fast columnar analytics database for querying millions of outreach events and telemetry metrics.',
-    config: { host: '', port: '8443', database: 'default', username: 'default', password: '' },
-    configFields: [
-      { key: 'host', label: 'Host URL / Endpoint', type: 'text', placeholder: 'clickhouse.company.com', required: true },
-      { key: 'port', label: 'Port', type: 'text', placeholder: '8443' },
-      { key: 'database', label: 'Database Name', type: 'text', placeholder: 'default' },
-      { key: 'username', label: 'Username', type: 'text', placeholder: 'default' },
-      { key: 'password', label: 'Password', type: 'password', placeholder: '••••••••••••' }
-    ],
-    lastSync: null
-  },
-
-  // Analytics
-  {
-    id: 'google-analytics',
-    name: 'Google Analytics',
-    category: 'Analytics',
-    connected: false,
-    logo: '/integrations/Google%20Analytics.png',
-    description: 'Track form submissions, landing page engagement, and email click-through conversions in GA4.',
-    config: { apiKey: '', measurementId: '', apiSecret: '' },
-    configFields: [
-      { key: 'apiKey', label: 'Google Analytics Data API Key', type: 'password', placeholder: 'AIzaSy...', helperText: 'Auto-fetched from Google API Console or paste manually below', required: true },
-      { key: 'measurementId', label: 'GA4 Measurement ID', type: 'text', placeholder: 'G-XXXXXXXXXX', required: true },
-      { key: 'apiSecret', label: 'API Secret (Measurement Protocol)', type: 'password', placeholder: 'Optional API secret' }
-    ],
-    lastSync: null
-  },
-  {
-    id: 'amplitude',
-    name: 'Amplitude',
-    category: 'Analytics',
-    connected: false,
-    logo: '/integrations/Amplitude.png',
-    description: 'Stream product analytics, outbound email events, and conversion funnel metrics to Amplitude.',
-    config: { apiKey: '', secretKey: '' },
-    configFields: [
-      { key: 'apiKey', label: 'Amplitude API Key', type: 'text', placeholder: 'amp_api_key_...', required: true },
-      { key: 'secretKey', label: 'Secret Key', type: 'password', placeholder: 'amp_secret_...' }
-    ],
-    lastSync: null
-  },
-
-  // Developer
-  {
-    id: 'firecrawl',
-    name: 'Firecrawl',
-    category: 'Developer',
-    connected: false,
-    logo: '/integrations/Firecrawl.png',
-    description: 'Crawl and extract clean markdown, founder info, and tech stacks from prospect websites for instant lead enrichment.',
-    config: { apiKey: '' },
-    configFields: [
-      { key: 'apiKey', label: 'Firecrawl API Key', type: 'password', placeholder: 'fc-...', required: true }
-    ],
-    lastSync: null
-  },
-  {
-    id: 'google-maps',
-    name: 'Google Maps',
-    category: 'Developer',
-    connected: false,
-    logo: '/integrations/Google%20Maps.png',
-    description: 'Geocode lead addresses, harvest local storefront data, and calculate territory proximity for field sales.',
-    config: { apiKey: '' },
-    configFields: [
-      { key: 'apiKey', label: 'Google Maps API Key', type: 'password', placeholder: 'AIzaSy...', required: true }
-    ],
-    lastSync: null
-  },
-  {
-    id: 'github',
-    name: 'GitHub',
-    category: 'Developer',
-    connected: false,
-    logo: '/integrations/GitHub.png',
-    description: 'Trigger automated GitHub repository workflows, create issues for deal onboarding, and log developer metrics.',
-    config: { personalAccessToken: '', repository: '' },
-    configFields: [
-      { key: 'personalAccessToken', label: 'Personal Access Token', type: 'password', placeholder: 'ghp_...', required: true },
-      { key: 'repository', label: 'Repository (owner/repo)', type: 'text', placeholder: 'your-org/sales-automation', required: true }
-    ],
-    lastSync: null
-  },
-  {
-    id: 'okta',
-    name: 'Okta (SSO)',
-    category: 'Developer',
-    connected: false,
-    logo: '/integrations/Okta%20(SSO).png',
-    description: 'Enforce enterprise Single Sign-On (SSO), SAML 2.0, and automated SCIM team provisioning via Okta.',
-    config: { domain: '', clientId: '', clientSecret: '' },
-    configFields: [
-      { key: 'domain', label: 'Okta Domain', type: 'text', placeholder: 'yourcompany.okta.com', required: true },
-      { key: 'clientId', label: 'Client ID', type: 'text', placeholder: '0oa...', required: true },
-      { key: 'clientSecret', label: 'Client Secret', type: 'password', placeholder: '••••••••••••', required: true }
-    ],
-    lastSync: null
-  },
-  {
-    id: 'zapier',
-    name: 'Zapier',
-    category: 'Developer',
-    connected: false,
-    logo: 'https://cdn.simpleicons.org/zapier',
-    description: 'Trigger 5,000+ app automations whenever a lead is captured, contacted, or converted.',
-    config: { webhookUrl: '' },
-    configFields: [
-      { key: 'webhookUrl', label: 'Zapier Catch Hook URL', type: 'url', placeholder: 'https://hooks.zapier.com/hooks/catch/...', required: true }
-    ],
-    lastSync: null
-  },
-  {
-    id: 'webhook-custom',
-    name: 'Custom Webhooks',
-    category: 'Developer',
-    connected: false,
-    logo: 'https://cdn.simpleicons.org/webhook',
-    description: 'Send and receive raw JSON HTTP POST payloads directly into your LeadPulse database.',
-    config: { targetEndpoint: `${(process.env.PUBLIC_API_URL || 'http://localhost:3001').replace(/\/$/, '')}/api/leads/form-submit` },
-    configFields: [
-      { key: 'targetEndpoint', label: 'Target Endpoint URL', type: 'url', placeholder: 'https://yourserver.com/api/leadpulse-hook', required: true }
-    ],
-    lastSync: null
+    lastSync: null,
+    badge: 'Billing Gateway',
+    linkedModule: 'billing',
+    linkedTitle: 'Billing & Token Top-Up Gateway',
+    linkedRoute: '/billing'
   }
 ];
 
@@ -835,8 +330,8 @@ const isLegacySandboxConfig = (appId: string, cfg: any): boolean => {
   if (!cfg) return false;
   if (appId === 'slack' && cfg.webhookUrl === 'https://hooks.slack.com/services/T00/B00/XXXXX' && !cfg.authType) return true;
   if (appId === 'hubspot' && cfg.accessToken === 'pat-na1-xxxx-xxxx-xxxx' && !cfg.authType) return true;
-  if (appId === 'gmail-workspace' && cfg.emailAddress === 'sales@leadpulse.io' && !cfg.authType) return true;
-  if (appId === 'webhook-custom' && !cfg.authType && (!cfg.targetEndpoint || cfg.targetEndpoint.includes('localhost:3001'))) return true;
+  if (appId === 'gmail' && cfg.emailAddress === 'sales@leadpulse.io' && !cfg.authType) return true;
+  if (appId === 'webhook' && !cfg.authType && (!cfg.webhookUrl || cfg.webhookUrl.includes('localhost:3001'))) return true;
   return false;
 };
 
@@ -985,7 +480,7 @@ router.post('/connect', async (req, res) => {
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-              properties: { title: 'LeadPulse CRM — Live Mirror' },
+              properties: { title: 'LeadPulse CRM - Live Mirror' },
               sheets: [
                 {
                   properties: {
@@ -1643,7 +1138,7 @@ router.post('/sync-leads', async (req, res) => {
               },
               body: JSON.stringify({
                 properties: {
-                  title: `LeadPulse CRM — Live Mirror (${docsToSync.length} Leads)`
+                  title: `LeadPulse CRM - Live Mirror (${docsToSync.length} Leads)`
                 },
                 sheets: [
                   {
@@ -1734,7 +1229,7 @@ router.post('/sync-leads', async (req, res) => {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              title: `LeadPulse CRM — Live Mirror (${docsToSync.length} Leads)`,
+              title: `LeadPulse CRM - Live Mirror (${docsToSync.length} Leads)`,
               sheetName,
               headers,
               rows,
@@ -1786,8 +1281,8 @@ router.post('/sync-leads', async (req, res) => {
           ? `https://docs.google.com/spreadsheets/d/${sheetId}/edit`
           : 'https://docs.google.com/spreadsheets/create';
         deliveryNote = sheetId
-          ? `Copied ${docsToSync.length} lead(s) to clipboard & opened Google Sheet (${sheetId}) — press Ctrl+V in cell A1!`
-          : `Copied ${docsToSync.length} lead(s) to clipboard & created new Google Sheet — press Ctrl+V in cell A1 to paste all rows!`;
+          ? `Copied ${docsToSync.length} lead(s) to clipboard & opened Google Sheet (${sheetId}) - press Ctrl+V in cell A1!`
+          : `Copied ${docsToSync.length} lead(s) to clipboard & created new Google Sheet - press Ctrl+V in cell A1 to paste all rows!`;
       }
     }
 
@@ -1866,7 +1361,7 @@ router.post('/sync-leads', async (req, res) => {
               ? {
                   text: `🚀 *LeadPulse CRM Sync*: Mirrored *${docsToSync.length} lead(s)*.\nTop Prospects:\n${syncedLeadSummaries
                     .slice(0, 5)
-                    .map(l => `• *${l.businessName}* (${l.phone || l.email || 'No contact'}) — _${l.status}_`)
+                    .map(l => `• *${l.businessName}* (${l.phone || l.email || 'No contact'}) - _${l.status}_`)
                     .join('\n')}`
                 }
               : {

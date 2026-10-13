@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
 import { 
@@ -31,19 +32,20 @@ interface IntegrationApp {
   configFields?: ConfigField[];
   lastSync?: string | null;
   badge?: string;
+  linkedModule?: 'outreach' | 'automations' | 'crm' | 'leads' | 'billing';
+  linkedTitle?: string;
+  linkedRoute?: string;
 }
 
 const CATEGORIES = [
   'All', 
-  'CRM', 
-  'AI & LLM', 
+  'Email & Outreach',
   'Communication', 
-  'Productivity', 
-  'Marketing & Forms', 
-  'Finance & Payments', 
-  'Data & Warehouses', 
-  'Analytics', 
-  'Developer'
+  'Scheduling',
+  'CRM & Pipeline', 
+  'Productivity & Data', 
+  'Developer & Workflows',
+  'Finance & Payments'
 ];
 
 // Complete local icon mapping for all platform integrations
@@ -180,66 +182,93 @@ const IntegrationLogo = ({
 const getAppSteps = (app: IntegrationApp) => {
   const name = app.name;
   const id = app.id.toLowerCase();
-  const cat = app.category.toLowerCase();
   
-  if (id === 'google-sheets') {
+  if (id === 'gmail') {
     return [
-      'Click "Open Google API Console & Auto-Fetch Key" to generate/fetch your Google Sheets API Key',
-      'LeadPulse automatically fetches & populates your Google API Key (AIzaSy...) into the input box below',
-      'Or manually add/edit your Google API Key & target Sheet URL below, then click "Mirror CRM Leads Now"'
+      'Generate a 16-character Google App Password at myaccount.google.com/apppasswords',
+      'Paste your Gmail / Google Workspace account address and App Password below',
+      'Save to link as your verified outbound mail relay for Outreach Studio'
     ];
   }
-  if (['google-drive', 'google-calendar', 'gmail-workspace', 'google-forms', 'google-analytics', 'google-maps', 'gemini'].includes(id)) {
+  if (id === 'resend') {
     return [
-      `Click "Open Google API Console & Auto-Fetch Key" to generate or retrieve your ${name} API Key`,
-      `LeadPulse automatically fetches & adds the Google API Key (AIzaSy...) into the API Key field below`,
-      `Or manually paste/edit your Google API Key and target settings below, then click Save & Activate`
+      'Generate an API Key (re_...) at resend.com/api-keys',
+      'Enter your API Key and verified domain sender address below',
+      'Save to activate HTTPS direct-to-inbox dispatch with 99.9% deliverability'
     ];
   }
-  if (['slack', 'microsoft-teams', 'zapier', 'webhook-custom'].includes(id)) {
+  if (id === 'sendgrid') {
     return [
-      `Create an Incoming Webhook URL in ${name} (use the helper link if you need a new URL)`,
-      `Paste the live Webhook URL below and click "Test Live Webhook" to send a real HTTP POST`,
-      `Save & activate instant pipeline stage and lead alerts`
+      'Generate an API Key (SG...) in SendGrid Settings -> API Keys',
+      'Paste your API Key and verified sender address below',
+      'Save to enable high-volume batch campaign dispatch'
+    ];
+  }
+  if (id === 'whatsapp') {
+    return [
+      'Retrieve your Phone Number ID and Permanent System Token from Meta for Developers',
+      'Paste your Phone Number ID and Access Token below',
+      'Save to enable WhatsApp Click-to-Chat and automated multi-channel sequences'
+    ];
+  }
+  if (id === 'calendly') {
+    return [
+      'Copy your personal 15-minute meeting link from calendly.com',
+      'Paste the link below to auto-inject into {{booking_url}} merge tags',
+      'Save to power interactive booking buttons across all templates'
     ];
   }
   if (id === 'hubspot') {
     return [
-      'Generate a Private App Access Token (pat-na1-...) in your HubSpot Settings',
-      'Paste the token below and click "Test Live API" to verify against HubSpot CRM API v3',
-      'Save & push CRM contacts directly to HubSpot'
+      'Create a Private App with "crm.objects.contacts.write" scopes in HubSpot Settings',
+      'Paste your Private App Token (pat-na1-...) below and verify connection',
+      'Save to enable 1-click lead push and deal pipeline synchronization'
+    ];
+  }
+  if (id === 'google-sheets') {
+    return [
+      'Create a Google Sheet and copy its URL or Spreadsheet ID',
+      'Paste the Sheet URL below and specify your target tab name (default: Sheet1)',
+      'Save to enable real-time CRM mirror and 1-click clipboard export'
+    ];
+  }
+  if (id === 'slack') {
+    return [
+      'Create an Incoming Webhook in your Slack workspace (api.slack.com/apps)',
+      'Paste the Webhook URL below and specify your alert channel (e.g. #lead-alerts)',
+      'Save to receive real-time campaign completion and lead reply alerts'
+    ];
+  }
+  if (id === 'twilio') {
+    return [
+      'Retrieve your Account SID and Auth Token from the Twilio Console',
+      'Paste your credentials and Twilio phone number below',
+      'Save to enable programmatic SMS outreach in Outreach Studio and Automations'
     ];
   }
   if (id === 'airtable') {
     return [
-      'Create a Personal Access Token (pat...) in Airtable Builder Hub',
-      'Enter your Base ID (app...) and Table Name below and click "Test Live API"',
-      'Save & sync leads directly into your Airtable base'
+      'Generate a Personal Access Token (pat...) in Airtable Builder Hub',
+      'Enter your Base ID (app...) and Table Name (e.g. Leads) below',
+      'Save to sync enriched prospect records directly into your Airtable base'
     ];
   }
-  if (id === 'notion') {
+  if (id === 'webhook') {
     return [
-      'Create an Internal Integration Secret (ntn_...) at notion.so/my-integrations',
-      'Share your target Notion Database with the integration and paste the Database ID below',
-      'Test live API connection & activate Notion database sync'
+      'Copy your Webhook URL from Zapier, Make, n8n, or your custom server',
+      'Paste the destination URL and optional secret header below',
+      'Save to trigger external automated workflows on lead discovery and status changes'
     ];
   }
-  if (cat.includes('crm')) {
+  if (id === 'stripe') {
     return [
-      `Copy your API key or access token from ${name}`,
-      `Paste credentials below and verify with "Test Live API"`,
-      `Activate 2-way pipeline & contact synchronization`
-    ];
-  }
-  if (cat.includes('ai')) {
-    return [
-      `Copy your API key from the ${name} console`,
-      `Paste your API key and preferred model below`,
-      `Verify connection and activate AI outreach generation`
+      'Retrieve your Publishable Key (pk_...) and Secret Key from dashboard.stripe.com',
+      'Paste your keys below to link client billing and token purchases',
+      'Save to verify customer subscriptions and token top-ups'
     ];
   }
   return [
-    `Copy your API credentials or webhook endpoint from ${name}`,
+    `Copy your API credentials or endpoint from ${name}`,
     `Enter your configuration below and run "Test Live Connection"`,
     `Save & activate ${name} across your LeadPulse workspace`
   ];
@@ -585,7 +614,7 @@ const GOOGLE_APPS_SCRIPT_SNIPPET = `function doPost(e) {
   var body = JSON.parse(e.postData.contents);
   var ss = null;
   try { ss = SpreadsheetApp.getActiveSpreadsheet(); } catch (err) {}
-  if (!ss) ss = SpreadsheetApp.create(body.title || 'LeadPulse CRM — Live Mirror');
+  if (!ss) ss = SpreadsheetApp.create(body.title || 'LeadPulse CRM - Live Mirror');
   var sheet = ss.getSheets()[0];
   sheet.clear();
   if (body.headers) sheet.appendRow(body.headers);
@@ -594,6 +623,7 @@ const GOOGLE_APPS_SCRIPT_SNIPPET = `function doPost(e) {
 }`;
 
 const Integrations = () => {
+  const navigate = useNavigate();
   const { user, integrations: storeIntegrations = [], integrationLogs = [], setIntegrations, setIntegrationLogs, syncLeadsToIntegration } = useStore();
   const [apps, setApps] = useState<IntegrationApp[]>((storeIntegrations || []) as IntegrationApp[]);
   const [apiKey, setApiKey] = useState('lp_live_workspace_key');
@@ -774,7 +804,7 @@ const Integrations = () => {
       });
       setTestPingResult({
         ok: true,
-        text: `Status: 200 OK (${res.data.latency}) — ${res.data.message || 'Live connection verified!'}`
+        text: `Status: 200 OK (${res.data.latency}) - ${res.data.message || 'Live connection verified!'}`
       });
     } catch (err: any) {
       const serverMsg = err?.response?.data?.message || 'Connection failed. Please check your credentials and URL.';
@@ -868,7 +898,7 @@ const Integrations = () => {
         setAppConfigState(refreshedApp.config || appConfigState);
       }
       setIsConfigModalOpen(false);
-      showToast(`Connected ${selectedApp.name} — Live across your workspace!`);
+      showToast(`Connected ${selectedApp.name} - Live across your workspace!`);
     } catch (err) {
       console.error('Failed to connect app:', err);
       await alertDialog({
@@ -1041,48 +1071,61 @@ const Integrations = () => {
 
   const getCategoryTheme = (cat: string) => {
     switch (cat) {
-      case 'CRM':
+      case 'Email & Outreach':
         return {
-          pill: 'bg-blue-50 text-blue-700 border-blue-200/80',
-          dot: 'bg-blue-600',
-          hookLabel: 'Audience & CRM Sync',
-          accentBorder: 'hover:border-blue-300'
+          pill: 'bg-purple-50 text-purple-700 border-purple-200/80',
+          dot: 'bg-purple-600',
+          hookLabel: 'Outreach Studio & Relays',
+          accentBorder: 'hover:border-purple-300'
         };
       case 'Communication':
         return {
           pill: 'bg-violet-50 text-violet-700 border-violet-200/80',
           dot: 'bg-violet-600',
-          hookLabel: 'Outreach & Stage Alerts',
+          hookLabel: 'Mobile & Real-time Alerts',
           accentBorder: 'hover:border-violet-300'
         };
-      case 'AI & LLMs':
-        return {
-          pill: 'bg-indigo-50 text-indigo-700 border-indigo-200/80',
-          dot: 'bg-indigo-600',
-          hookLabel: 'Email Lookup & AI Copilot',
-          accentBorder: 'hover:border-indigo-300'
-        };
-      case 'Automation & Workflows':
-        return {
-          pill: 'bg-amber-50 text-amber-700 border-amber-200/80',
-          dot: 'bg-amber-500',
-          hookLabel: 'Automations & Booking Tag',
-          accentBorder: 'hover:border-amber-300'
-        };
-      case 'Productivity':
-      case 'Data & Warehouses':
-        return {
-          pill: 'bg-emerald-50 text-emerald-700 border-emerald-200/80',
-          dot: 'bg-emerald-600',
-          hookLabel: '1-Click Sheet / Table Export',
-          accentBorder: 'hover:border-emerald-300'
-        };
-      default:
+      case 'Scheduling':
         return {
           pill: 'bg-sky-50 text-sky-700 border-sky-200/80',
           dot: 'bg-sky-600',
-          hookLabel: 'Live Webhook Stream',
+          hookLabel: '1-Click Calendar Booking',
           accentBorder: 'hover:border-sky-300'
+        };
+      case 'CRM & Pipeline':
+        return {
+          pill: 'bg-blue-50 text-blue-700 border-blue-200/80',
+          dot: 'bg-blue-600',
+          hookLabel: '2-Way CRM Sync',
+          accentBorder: 'hover:border-blue-300'
+        };
+      case 'Productivity & Data':
+        return {
+          pill: 'bg-emerald-50 text-emerald-700 border-emerald-200/80',
+          dot: 'bg-emerald-600',
+          hookLabel: 'Spreadsheet & DB Mirror',
+          accentBorder: 'hover:border-emerald-300'
+        };
+      case 'Developer & Workflows':
+        return {
+          pill: 'bg-amber-50 text-amber-700 border-amber-200/80',
+          dot: 'bg-amber-500',
+          hookLabel: 'Webhooks & Auto Triggers',
+          accentBorder: 'hover:border-amber-300'
+        };
+      case 'Finance & Payments':
+        return {
+          pill: 'bg-rose-50 text-rose-700 border-rose-200/80',
+          dot: 'bg-rose-600',
+          hookLabel: 'Billing & Token Top-Up',
+          accentBorder: 'hover:border-rose-300'
+        };
+      default:
+        return {
+          pill: 'bg-slate-50 text-slate-700 border-slate-200/80',
+          dot: 'bg-slate-600',
+          hookLabel: 'Workspace Connector',
+          accentBorder: 'hover:border-slate-300'
         };
     }
   };
@@ -1317,7 +1360,7 @@ const Integrations = () => {
               </div>
             </div>
 
-            {/* Apps Display — Compact 4-Column Grid View OR Sleek List View (Alphabetical Default) */}
+            {/* Apps Display - Compact 4-Column Grid View OR Sleek List View (Alphabetical Default) */}
             {filteredApps.length === 0 ? (
               <div className="bg-white border border-slate-200 rounded-md p-10 text-center space-y-2">
                 {showActiveOnly ? (
@@ -1393,13 +1436,32 @@ const Integrations = () => {
                         <p className="text-[11px] text-slate-500 font-normal leading-snug line-clamp-2">
                           {app.description}
                         </p>
+
+                        {/* Linked in LeadPulse Badge */}
+                        {app.linkedTitle && (
+                          <div className="flex items-center gap-1.5 px-2 py-1 bg-slate-50 border border-slate-200/80 rounded text-[10px] text-slate-700 font-medium">
+                            <Zap className="w-3 h-3 text-amber-500 shrink-0" />
+                            <span className="truncate">Linked: <strong>{app.linkedTitle}</strong></span>
+                          </div>
+                        )}
                       </div>
 
                       {/* Compact Bottom Action Strip */}
                       <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between gap-2">
-                        <span className="text-[10px] font-delight font-normal text-slate-400 truncate">
-                          {theme.hookLabel}
-                        </span>
+                        {app.linkedRoute ? (
+                          <button
+                            onClick={() => navigate(app.linkedRoute!)}
+                            className="text-[10px] text-slate-600 hover:text-slate-900 font-semibold flex items-center gap-1 cursor-pointer transition-colors"
+                            title={`Jump directly to ${app.linkedTitle || 'linked section'}`}
+                          >
+                            <span>Open in app</span>
+                            <ArrowRight className="w-2.5 h-2.5" />
+                          </button>
+                        ) : (
+                          <span className="text-[10px] font-delight font-normal text-slate-400 truncate">
+                            {theme.hookLabel}
+                          </span>
+                        )}
 
                         {app.connected ? (
                           <button 
@@ -1448,6 +1510,12 @@ const Integrations = () => {
                               <span className={`w-1.5 h-1.5 rounded-full ${theme.dot}`} />
                               {app.category}
                             </span>
+                            {app.linkedTitle && (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-delight font-medium text-slate-600 bg-slate-50 border border-slate-200/80 px-2 py-0.5 rounded">
+                                <Zap className="w-2.5 h-2.5 text-amber-500" />
+                                {app.linkedTitle}
+                              </span>
+                            )}
                             {app.connected && (
                               <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 text-[9px] font-delight font-semibold">
                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
@@ -1462,10 +1530,16 @@ const Integrations = () => {
                       </div>
 
                       {/* Right: Hook Label + Action Button */}
-                      <div className="flex items-center justify-between sm:justify-end gap-4 shrink-0">
-                        <span className="hidden md:inline text-[11px] font-delight font-normal text-slate-400">
-                          {theme.hookLabel}
-                        </span>
+                      <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0">
+                        {app.linkedRoute && (
+                          <button
+                            onClick={() => navigate(app.linkedRoute!)}
+                            className="hidden md:inline-flex items-center gap-1 text-[11px] text-slate-600 hover:text-slate-900 font-semibold cursor-pointer"
+                          >
+                            <span>Open in app</span>
+                            <ArrowRight className="w-3 h-3" />
+                          </button>
+                        )}
 
                         {app.connected ? (
                           <button 

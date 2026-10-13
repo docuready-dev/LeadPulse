@@ -148,6 +148,8 @@ const OutreachCenter = () => {
     }
   }, [isLeadDropdownOpen]);
 
+  const [selectedCalendarSlot, setSelectedCalendarSlot] = useState(0);
+
   // Fetch real leads from DB
   useEffect(() => {
     const fetchUserLeads = async () => {
@@ -992,7 +994,7 @@ const OutreachCenter = () => {
                             </button>
                           </div>
 
-                          {/* Card View Body — Architectural 3-Stage Matrix */}
+                          {/* Card View Body - Architectural 3-Stage Matrix */}
                           <div className="p-4 space-y-4 bg-white">
                             {/* Stage 1: Voice & Tone Matrix (4 Selectable Cards) */}
                             <div>
@@ -1248,8 +1250,91 @@ const OutreachCenter = () => {
                         </div>
                       )}
 
-                      {/* Two Column Section Editors (Side-by-Side Dual Blocks) */}
-                      {(selectedTemplateId === 'two_column' || selectedTemplateId === 'hybrid') && (
+                      {/* Interactive Calendar Booking Card Editor */}
+                      {(selectedTemplateId === 'interactive_calendar' || (selectedTemplateId === 'two_column' && templateData.timeSlots)) && (
+                        <div className="space-y-3.5 p-3.5 bg-slate-50 border border-slate-200 rounded-md">
+                          <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                            <h5 className="font-delight text-xs font-semibold text-slate-800 flex items-center gap-1.5">
+                              <span>Interactive Booking Card Settings</span>
+                            </h5>
+                            <span className="text-[10px] font-delight font-medium text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded">
+                              Live Calendar
+                            </span>
+                          </div>
+
+                          {/* Host Details */}
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                            <div>
+                              <label className="block text-[10px] font-delight font-semibold text-slate-600 mb-1">Host Name</label>
+                              <input 
+                                type="text"
+                                placeholder="Host Name"
+                                value={templateData.hostName || ''}
+                                onChange={(e) => setTemplateData({ ...templateData, hostName: e.target.value })}
+                                className="w-full bg-white border border-slate-200 rounded-md p-2 text-xs font-delight font-medium outline-none focus:border-slate-400"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[10px] font-delight font-semibold text-slate-600 mb-1">Host Title</label>
+                              <input 
+                                type="text"
+                                placeholder="Growth Director"
+                                value={templateData.hostTitle || ''}
+                                onChange={(e) => setTemplateData({ ...templateData, hostTitle: e.target.value })}
+                                className="w-full bg-white border border-slate-200 rounded-md p-2 text-xs font-delight font-medium outline-none focus:border-slate-400"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[10px] font-delight font-semibold text-slate-600 mb-1">Call Duration</label>
+                              <input 
+                                type="text"
+                                placeholder="15 mins"
+                                value={templateData.duration || ''}
+                                onChange={(e) => setTemplateData({ ...templateData, duration: e.target.value })}
+                                className="w-full bg-white border border-slate-200 rounded-md p-2 text-xs font-delight font-medium outline-none focus:border-slate-400"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Host Avatar URL */}
+                          <div>
+                            <label className="block text-[10px] font-delight font-semibold text-slate-600 mb-1">Host Avatar Image URL</label>
+                            <input 
+                              type="text"
+                              placeholder="https://images.unsplash.com/..."
+                              value={templateData.hostAvatar || ''}
+                              onChange={(e) => setTemplateData({ ...templateData, hostAvatar: e.target.value })}
+                              className="w-full bg-white border border-slate-200 rounded-md p-2 text-xs font-sans outline-none focus:border-slate-400"
+                            />
+                          </div>
+
+                          {/* Interactive Time Slots */}
+                          <div>
+                            <label className="block text-[10px] font-delight font-semibold text-slate-700 mb-1">Interactive Time Slots (Clickable Chips)</label>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                              {(templateData.timeSlots || []).map((slot: any, idx: number) => (
+                                <div key={idx} className="p-2 bg-white border border-slate-200 rounded-md flex items-center gap-2">
+                                  <span className="text-[10px] font-bold text-slate-400 w-4">#{idx + 1}</span>
+                                  <input 
+                                    type="text"
+                                    value={slot.label}
+                                    onChange={(e) => {
+                                      const nextSlots = [...(templateData.timeSlots || [])];
+                                      nextSlots[idx] = { ...nextSlots[idx], label: e.target.value };
+                                      setTemplateData({ ...templateData, timeSlots: nextSlots });
+                                    }}
+                                    className="flex-1 text-xs font-delight border-0 outline-none p-0"
+                                    placeholder="Slot Label"
+                                  />
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Legacy Two Column Section Editors (Side-by-Side Dual Blocks) */}
+                      {(selectedTemplateId === 'two_column' && !templateData.timeSlots) || selectedTemplateId === 'hybrid' ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-3.5 bg-slate-50 border border-slate-200 rounded-md">
                           <div className="space-y-2">
                             <div className="flex items-center justify-between">
@@ -1337,10 +1422,134 @@ const OutreachCenter = () => {
                             </div>
                           </div>
                         </div>
+                      ) : null}
+
+                      {/* Interactive ROI & Benchmark Editor */}
+                      {(selectedTemplateId === 'interactive_roi' || (selectedTemplateId === 'zig_zag' && templateData.comparisonPulse)) && (
+                        <div className="space-y-3.5 p-3.5 bg-slate-50 border border-slate-200 rounded-md">
+                          <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                            <h5 className="font-delight text-xs font-semibold text-slate-800 flex items-center gap-1.5">
+                              <span>Interactive Cost Benchmark & ROI Comparison</span>
+                            </h5>
+                            <span className="text-[10px] font-delight font-medium text-blue-700 bg-blue-100 px-2 py-0.5 rounded">
+                              Value Audit
+                            </span>
+                          </div>
+
+                          {/* Side-by-side Benchmark Inputs */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            {/* Legacy Side */}
+                            <div className="p-3 bg-white border border-rose-200 rounded-md space-y-2">
+                              <span className="text-[10px] font-delight font-bold text-rose-700 uppercase">Legacy Method / Competitor</span>
+                              <input 
+                                type="text"
+                                placeholder="Method Title (e.g. Traditional Agency)"
+                                value={templateData.comparisonCurrent?.title || ''}
+                                onChange={(e) => setTemplateData({ 
+                                  ...templateData, 
+                                  comparisonCurrent: { ...(templateData.comparisonCurrent || {}), title: e.target.value } 
+                                })}
+                                className="w-full border border-slate-200 rounded-md p-1.5 text-xs font-delight font-medium outline-none focus:border-slate-400"
+                              />
+                              <div className="grid grid-cols-2 gap-2">
+                                <input 
+                                  type="text"
+                                  placeholder="Cost (e.g. ₹45,000 / mo)"
+                                  value={templateData.comparisonCurrent?.monthlyCost || ''}
+                                  onChange={(e) => setTemplateData({ 
+                                    ...templateData, 
+                                    comparisonCurrent: { ...(templateData.comparisonCurrent || {}), monthlyCost: e.target.value } 
+                                  })}
+                                  className="w-full border border-slate-200 rounded-md p-1.5 text-xs font-delight font-medium outline-none focus:border-slate-400"
+                                />
+                                <input 
+                                  type="text"
+                                  placeholder="Time (e.g. 14 hrs/week)"
+                                  value={templateData.comparisonCurrent?.timeSpent || ''}
+                                  onChange={(e) => setTemplateData({ 
+                                    ...templateData, 
+                                    comparisonCurrent: { ...(templateData.comparisonCurrent || {}), timeSpent: e.target.value } 
+                                  })}
+                                  className="w-full border border-slate-200 rounded-md p-1.5 text-xs font-delight font-medium outline-none focus:border-slate-400"
+                                />
+                              </div>
+                            </div>
+
+                            {/* LeadPulse Side */}
+                            <div className="p-3 bg-white border border-emerald-300 rounded-md space-y-2">
+                              <span className="text-[10px] font-delight font-bold text-emerald-700 uppercase">LeadPulse Autonomous Engine</span>
+                              <input 
+                                type="text"
+                                placeholder="Pulse Title (e.g. LeadPulse Autonomous Engine)"
+                                value={templateData.comparisonPulse?.title || ''}
+                                onChange={(e) => setTemplateData({ 
+                                  ...templateData, 
+                                  comparisonPulse: { ...(templateData.comparisonPulse || {}), title: e.target.value } 
+                                })}
+                                className="w-full border border-slate-200 rounded-md p-1.5 text-xs font-delight font-medium outline-none focus:border-slate-400"
+                              />
+                              <div className="grid grid-cols-2 gap-2">
+                                <input 
+                                  type="text"
+                                  placeholder="Cost (e.g. ₹699 / mo)"
+                                  value={templateData.comparisonPulse?.monthlyCost || ''}
+                                  onChange={(e) => setTemplateData({ 
+                                    ...templateData, 
+                                    comparisonPulse: { ...(templateData.comparisonPulse || {}), monthlyCost: e.target.value } 
+                                  })}
+                                  className="w-full border border-slate-200 rounded-md p-1.5 text-xs font-delight font-medium outline-none focus:border-slate-400"
+                                />
+                                <input 
+                                  type="text"
+                                  placeholder="Badge (e.g. 8.4x Lower CAC)"
+                                  value={templateData.comparisonPulse?.badge || ''}
+                                  onChange={(e) => setTemplateData({ 
+                                    ...templateData, 
+                                    comparisonPulse: { ...(templateData.comparisonPulse || {}), badge: e.target.value } 
+                                  })}
+                                  className="w-full border border-slate-200 rounded-md p-1.5 text-xs font-delight font-medium outline-none focus:border-slate-400"
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* 3 Metric Pills */}
+                          <div>
+                            <label className="block text-[10px] font-delight font-semibold text-slate-700 mb-1">Key ROI Highlight Counters</label>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                              {(templateData.roiMetrics || []).map((m: any, idx: number) => (
+                                <div key={idx} className="p-2 bg-white border border-slate-200 rounded-md space-y-1">
+                                  <input 
+                                    type="text"
+                                    value={m.metric}
+                                    onChange={(e) => {
+                                      const next = [...(templateData.roiMetrics || [])];
+                                      next[idx] = { ...next[idx], metric: e.target.value };
+                                      setTemplateData({ ...templateData, roiMetrics: next });
+                                    }}
+                                    className="w-full font-bold text-xs font-delight border-0 outline-none p-0 text-slate-900"
+                                    placeholder="Metric (e.g. ₹44,301)"
+                                  />
+                                  <input 
+                                    type="text"
+                                    value={m.label}
+                                    onChange={(e) => {
+                                      const next = [...(templateData.roiMetrics || [])];
+                                      next[idx] = { ...next[idx], label: e.target.value };
+                                      setTemplateData({ ...templateData, roiMetrics: next });
+                                    }}
+                                    className="w-full text-[10px] text-slate-500 border-0 outline-none p-0"
+                                    placeholder="Label"
+                                  />
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
                       )}
 
-                      {/* Zig-Zag Section Editors */}
-                      {selectedTemplateId === 'zig_zag' && (
+                      {/* Legacy Zig-Zag Section Editors */}
+                      {selectedTemplateId === 'zig_zag' && !templateData.comparisonPulse && (
                         <div className="space-y-3 p-3.5 bg-slate-50 border border-slate-200 rounded-md">
                           <h5 className="font-delight text-xs font-semibold text-slate-800">Alternating Story Blocks (Z-Pattern)</h5>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -2098,9 +2307,127 @@ const OutreachCenter = () => {
                   )}
 
                   {/* ---------------------------------------------------- */}
-                  {/* TEMPLATE STRUCTURE 3: TWO COLUMN                     */}
+                  {/* TEMPLATE STRUCTURE 3: INTERACTIVE CALENDAR BOOKING CARD */}
                   {/* ---------------------------------------------------- */}
-                  {selectedTemplateId === 'two_column' && (
+                  {(selectedTemplateId === 'interactive_calendar' || (selectedTemplateId === 'two_column' && templateData.timeSlots)) && (
+                    <div className="p-6 sm:p-8 space-y-4">
+                      {/* Top live scheduling pill */}
+                      <div className="text-center">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-delight font-bold">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                          <span>Live Calendar Access &bull; Instant Confirmation</span>
+                        </span>
+                      </div>
+
+                      {/* Host Profile Header */}
+                      <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <img 
+                            src={templateData.hostAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80'} 
+                            alt={templateData.hostName || 'Alex Roberts'} 
+                            className="w-11 h-11 rounded-full object-cover border-2 border-white shadow-2xs shrink-0"
+                          />
+                          <div className="min-w-0">
+                            <h4 className="font-bold text-xs text-slate-900 font-delight truncate">
+                              {templateData.hostName || 'Alex Roberts'}
+                            </h4>
+                            <p className="text-[11px] text-slate-500 truncate">
+                              {templateData.hostTitle || 'Growth Director, LeadPulse'}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="shrink-0 px-2.5 py-1 rounded bg-white border border-slate-200 text-[11px] font-delight font-semibold text-slate-700">
+                          ⏱️ {templateData.duration || '15 mins'}
+                        </div>
+                      </div>
+
+                      {/* Headline & Narrative */}
+                      <div className="text-center space-y-1.5">
+                        <h2 
+                          className="text-base font-bold text-slate-900 tracking-tight leading-snug"
+                          dangerouslySetInnerHTML={{ __html: renderPreviewHtml(templateData.headline) }}
+                        />
+                        {templateData.subheadline && (
+                          <p 
+                            className="text-xs text-slate-500 font-sans"
+                            dangerouslySetInnerHTML={{ __html: renderPreviewHtml(templateData.subheadline) }}
+                          />
+                        )}
+                        <div 
+                          className="text-xs text-slate-700 leading-relaxed text-left whitespace-pre-wrap font-sans pt-1"
+                          dangerouslySetInnerHTML={{ __html: renderPreviewHtml(templateData.body) }}
+                        />
+                      </div>
+
+                      {/* Interactive Time Slots Grid */}
+                      <div className="space-y-2 pt-1">
+                        <div className="text-center">
+                          <span className="text-[11px] font-delight font-bold uppercase tracking-wider text-slate-600">
+                            Select a Preferred Time Slot (Google Meet)
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          {(templateData.timeSlots || [
+                            { label: 'Tomorrow 10:30 AM', time: '10:30 AM' },
+                            { label: 'Tomorrow 2:00 PM', time: '2:00 PM' },
+                            { label: 'Friday 4:30 PM', time: '4:30 PM' },
+                            { label: 'View All Available Slots →', time: 'All Slots' }
+                          ]).map((slot: any, idx: number) => {
+                            const isSelected = selectedCalendarSlot === idx;
+                            return (
+                              <button
+                                key={idx}
+                                type="button"
+                                onClick={() => setSelectedCalendarSlot(idx)}
+                                className={`p-2.5 rounded-md border text-xs font-delight font-semibold text-center transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                                  isSelected 
+                                    ? 'border-indigo-600 bg-indigo-50/80 text-indigo-950 shadow-xs ring-1 ring-indigo-600' 
+                                    : 'border-slate-200 bg-white hover:border-slate-400 text-slate-800'
+                                }`}
+                              >
+                                <span className={`w-2 h-2 rounded-full shrink-0 ${isSelected ? 'bg-indigo-600' : 'bg-emerald-500'}`} />
+                                <span className="truncate">{slot.label}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Meeting Agenda Bullets */}
+                      {templateData.meetingAgenda && templateData.meetingAgenda.length > 0 && (
+                        <div className="p-3 bg-slate-50 border border-slate-200 rounded-md space-y-1.5">
+                          <span className="text-[10px] font-delight font-bold uppercase tracking-wider text-slate-500 block mb-1">
+                            Session Agenda:
+                          </span>
+                          {templateData.meetingAgenda.map((item: string, idx: number) => (
+                            <div key={idx} className="flex items-start gap-2 text-xs text-slate-700">
+                              <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                              <span dangerouslySetInnerHTML={{ __html: renderPreviewHtml(item) }} />
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Primary CTA */}
+                      <div className="text-center pt-2">
+                        <a 
+                          href={templateData.ctaUrl || '#'}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-block px-6 py-2.5 rounded-md text-xs font-delight font-semibold text-white shadow-xs hover:opacity-95 transition-all cursor-pointer"
+                          style={{ backgroundColor: templateStyling.accentColor }}
+                        >
+                          {templateData.ctaText || 'Reserve Preferred Time Slot →'}
+                        </a>
+                        <p className="text-[11px] text-slate-400 font-sans mt-2">
+                          Direct Google Meet invite &bull; Instant calendar sync
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Legacy Fallback: Two Column */}
+                  {selectedTemplateId === 'two_column' && !templateData.timeSlots && (
                     <div className="p-6 sm:p-8 space-y-4">
                       <div className="text-center space-y-2">
                         <div className="w-7 h-7 rounded-sm bg-slate-900 text-white flex items-center justify-center font-delight font-bold text-xs mx-auto">
@@ -2299,9 +2626,128 @@ const OutreachCenter = () => {
                   )}
 
                   {/* ---------------------------------------------------- */}
-                  {/* TEMPLATE STRUCTURE 6: ZIG ZAG                        */}
+                  {/* TEMPLATE STRUCTURE 6: INTERACTIVE ROI & COST BENCHMARK */}
                   {/* ---------------------------------------------------- */}
-                  {selectedTemplateId === 'zig_zag' && (
+                  {(selectedTemplateId === 'interactive_roi' || (selectedTemplateId === 'zig_zag' && templateData.comparisonPulse)) && (
+                    <div className="p-6 sm:p-8 space-y-4">
+                      {/* Top benchmark pill */}
+                      <div className="text-center">
+                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-800 text-[11px] font-delight font-bold">
+                          <span>Cost Benchmark &bull; Projected ROI Analysis</span>
+                        </span>
+                      </div>
+
+                      {/* Headline & Subhead */}
+                      <div className="text-center space-y-1">
+                        <h2 
+                          className="text-base font-bold text-slate-900 tracking-tight leading-snug"
+                          dangerouslySetInnerHTML={{ __html: renderPreviewHtml(templateData.headline) }}
+                        />
+                        {templateData.subheadline && (
+                          <p 
+                            className="text-xs text-slate-500 font-sans"
+                            dangerouslySetInnerHTML={{ __html: renderPreviewHtml(templateData.subheadline) }}
+                          />
+                        )}
+                        <div 
+                          className="text-xs text-slate-700 leading-relaxed text-left whitespace-pre-wrap font-sans pt-1"
+                          dangerouslySetInnerHTML={{ __html: renderPreviewHtml(templateData.body) }}
+                        />
+                      </div>
+
+                      {/* Comparative Side-by-Side Cards */}
+                      <div className={`grid gap-3 pt-1 ${previewViewport === 'mobile' ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                        {/* Current Legacy */}
+                        <div className="p-4 bg-rose-50/60 border border-rose-200 rounded-lg space-y-2">
+                          <span className="text-[10px] font-delight font-bold uppercase tracking-wider text-rose-700 bg-rose-100 px-2 py-0.5 rounded">
+                            {templateData.comparisonCurrent?.badge || 'Legacy Method'}
+                          </span>
+                          <h4 className="font-bold text-xs text-rose-950 font-delight">
+                            {templateData.comparisonCurrent?.title || 'Traditional Agency'}
+                          </h4>
+                          <div className="text-lg font-extrabold text-rose-800 line-through">
+                            {templateData.comparisonCurrent?.monthlyCost || '₹45,000 / mo'}
+                          </div>
+                          <div className="text-[11px] text-rose-800 space-y-0.5 font-sans">
+                            <div>&bull; Time: <strong>{templateData.comparisonCurrent?.timeSpent || '14 hrs/week'}</strong></div>
+                            <div>&bull; Success: <strong>{templateData.comparisonCurrent?.replyRate || '1.8% Response'}</strong></div>
+                          </div>
+                        </div>
+
+                        {/* LeadPulse Solution */}
+                        <div className="p-4 bg-emerald-50/70 border-2 border-emerald-400 rounded-lg space-y-2 shadow-xs">
+                          <span className="text-[10px] font-delight font-bold uppercase tracking-wider text-emerald-800 bg-emerald-200 px-2 py-0.5 rounded">
+                            {templateData.comparisonPulse?.badge || '8.4x Lower CAC'}
+                          </span>
+                          <h4 className="font-bold text-xs text-emerald-950 font-delight">
+                            {templateData.comparisonPulse?.title || 'LeadPulse Autonomous Engine'}
+                          </h4>
+                          <div className="text-xl font-extrabold text-emerald-900">
+                            {templateData.comparisonPulse?.monthlyCost || '₹699 / mo'}
+                          </div>
+                          <div className="text-[11px] text-emerald-800 space-y-0.5 font-sans">
+                            <div>&bull; Time: <strong>{templateData.comparisonPulse?.timeSpent || '15 mins/week'}</strong></div>
+                            <div>&bull; Success: <strong>{templateData.comparisonPulse?.replyRate || '28.4% Response'}</strong></div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 3 Metric Pills */}
+                      <div className="grid grid-cols-3 gap-2 pt-1">
+                        {(templateData.roiMetrics || [
+                          { metric: '₹44,301', label: 'Monthly Cost Savings', highlight: true },
+                          { metric: '99.4%', label: 'Inbox Deliverability', highlight: false },
+                          { metric: '300+', label: 'Verified Leads / Month', highlight: false }
+                        ]).map((m: any, idx: number) => (
+                          <div 
+                            key={idx} 
+                            className={`p-2.5 rounded-lg border text-center ${
+                              m.highlight 
+                                ? 'bg-indigo-50 border-indigo-200 text-indigo-950' 
+                                : 'bg-slate-50 border-slate-200 text-slate-800'
+                            }`}
+                          >
+                            <div className="text-sm font-extrabold font-delight">{m.metric}</div>
+                            <div className="text-[10px] text-slate-500 font-medium leading-tight mt-0.5">{m.label}</div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Checklist Features */}
+                      {templateData.benefitsList && templateData.benefitsList.length > 0 && (
+                        <div className="p-3 bg-slate-50 border border-slate-200 rounded-md space-y-1.5">
+                          <span className="text-[10px] font-delight font-bold uppercase tracking-wider text-slate-500 block mb-1">
+                            Included in Package:
+                          </span>
+                          {templateData.benefitsList.map((b: string, idx: number) => (
+                            <div key={idx} className="flex items-start gap-2 text-xs text-slate-700">
+                              <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                              <span dangerouslySetInnerHTML={{ __html: renderPreviewHtml(b) }} />
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Primary CTA */}
+                      <div className="text-center pt-2">
+                        <a 
+                          href={templateData.ctaUrl || '#'}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-block px-6 py-2.5 rounded-md text-xs font-delight font-semibold text-white shadow-xs hover:opacity-95 transition-all cursor-pointer"
+                          style={{ backgroundColor: templateStyling.accentColor }}
+                        >
+                          {templateData.ctaText || 'Claim Growth Tier →'}
+                        </a>
+                        <p className="text-[11px] text-slate-400 font-sans mt-2">
+                          Instant deployment &bull; 30-day money-back satisfaction guarantee
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Legacy Fallback: Zig Zag */}
+                  {selectedTemplateId === 'zig_zag' && !templateData.comparisonPulse && (
                     <div className="p-6 sm:p-8 space-y-4">
                       <div className="text-center space-y-1">
                         {templateData.preheader && (
