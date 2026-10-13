@@ -24,7 +24,7 @@ const OutreachCenter = () => {
   const { user, integrations, setUpgradeModalOpen, recordEmailDispatch, recordAiGeneration } = useStore();
   const [activeChannel, setActiveChannel] = useState<'email' | 'whatsapp' | 'sms'>('email');
 
-  const defaultBookingHost = (import.meta as any).env?.VITE_EASYAPPOINTMENTS_URL || localStorage.getItem('leadpulse_booking_host') || 'http://localhost:8080';
+  const defaultBookingHost = (import.meta as any).env?.VITE_EASYAPPOINTMENTS_URL || localStorage.getItem('leadpulse_booking_host') || 'http://localhost:8088';
   const calendlyIntegration = integrations.find(i => (i.id === 'calendly' || i.id === 'easyappointments') && i.connected);
   const [bookingHostUrl, setBookingHostUrl] = useState<string>(
     calendlyIntegration?.config?.bookingUrl || defaultBookingHost
@@ -1430,7 +1430,7 @@ const OutreachCenter = () => {
                                 type="text" 
                                 value={templateData.ctaUrl || ''}
                                 onChange={(e) => setTemplateData({ ...templateData, ctaUrl: e.target.value })}
-                                placeholder="http://localhost:8080 (Easy!Appointments)"
+                                placeholder="http://localhost:8088 (Easy!Appointments)"
                                 className="flex-1 text-xs font-delight font-medium text-indigo-600 bg-transparent border-0 outline-none p-0"
                               />
                             </div>

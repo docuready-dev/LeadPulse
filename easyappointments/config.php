@@ -13,7 +13,7 @@ class Config
     // GENERAL SETTINGS
     // ------------------------------------------------------------------------
 
-    const BASE_URL = 'http://localhost:8080';
+    const BASE_URL = 'http://localhost:8088';
     const LANGUAGE = 'english';
     const DEBUG_MODE = false;
 

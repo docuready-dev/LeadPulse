@@ -213,7 +213,7 @@ const getAppSteps = (app: IntegrationApp) => {
   }
   if (id === 'calendly' || id === 'easyappointments') {
     return [
-      'Enter your Easy!Appointments instance URL (default: http://localhost:8080) or custom Calendly link',
+      'Enter your Easy!Appointments instance URL (default: http://localhost:8088) or custom Calendly link',
       'Automatically resolves into {{booking_link}} merge tags and interactive email templates',
       'Powers the live booking engine and calendar scheduling across LeadPulse'
     ];

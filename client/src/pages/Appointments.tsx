@@ -20,7 +20,7 @@ const Appointments = () => {
   const [copiedLink, setCopiedLink] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
 
-  const bookingHost = (import.meta as any).env?.VITE_EASYAPPOINTMENTS_URL || 'http://localhost:8080';
+  const bookingHost = (import.meta as any).env?.VITE_EASYAPPOINTMENTS_URL || 'http://localhost:8088';
   const apiBase = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3001';
 
   const showToast = (msg: string) => {
@@ -304,7 +304,7 @@ const Appointments = () => {
                   <ul className="space-y-2 text-xs text-slate-700 font-mono">
                     <li className="flex items-center justify-between p-2 bg-white rounded border border-slate-200">
                       <span>easyappointments (PHP 8.2)</span>
-                      <span className="font-bold text-emerald-700">Port 8080:80</span>
+                      <span className="font-bold text-emerald-700">Port 8088:80</span>
                     </li>
                     <li className="flex items-center justify-between p-2 bg-white rounded border border-slate-200">
                       <span>mysql (MySQL 8.0)</span>

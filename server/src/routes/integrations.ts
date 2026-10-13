@@ -177,9 +177,9 @@ export const DEFAULT_APPS: IntegrationApp[] = [
     connected: true,
     logo: '/integrations/Calendly.png',
     description: 'Self-hosted or cloud appointment scheduler. Automatically injects your booking URL into {{booking_link}} merge tags, outreach templates, and CRM meeting invitations.',
-    config: { bookingUrl: process.env.EASYAPPOINTMENTS_URL || 'http://localhost:8080', apiKey: '' },
+    config: { bookingUrl: process.env.EASYAPPOINTMENTS_URL || 'http://localhost:8088', apiKey: '' },
     configFields: [
-      { key: 'bookingUrl', label: 'Booking Scheduler URL', type: 'url', placeholder: 'http://localhost:8080', required: true },
+      { key: 'bookingUrl', label: 'Booking Scheduler URL', type: 'url', placeholder: 'http://localhost:8088', required: true },
       { key: 'apiKey', label: 'API Key or Access Token', type: 'password', placeholder: 'Optional API token' }
     ],
     lastSync: new Date().toISOString(),

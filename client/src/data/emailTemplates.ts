@@ -130,7 +130,7 @@ Best regards,
 {{sender_name}}
 {{company_name}}`,
       ctaText: 'Book an Appointment ',
-      ctaUrl: 'http://localhost:8080'
+      ctaUrl: 'http://localhost:8088'
     }
   },
 
@@ -178,10 +178,10 @@ Select an available time slot below to lock in a quick 15-minute introductory ch
       hostAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
       duration: '15 mins',
       timeSlots: [
-        { label: 'Tomorrow 10:30 AM', time: '10:30 AM', date: 'Tomorrow', url: 'http://localhost:8080' },
-        { label: 'Tomorrow 2:00 PM', time: '2:00 PM', date: 'Tomorrow', url: 'http://localhost:8080' },
-        { label: 'Friday 4:30 PM', time: '4:30 PM', date: 'Friday', url: 'http://localhost:8080' },
-        { label: 'View All Available Slots →', time: 'All Slots', date: 'Next 7 Days', url: 'http://localhost:8080' }
+        { label: 'Tomorrow 10:30 AM', time: '10:30 AM', date: 'Tomorrow', url: 'http://localhost:8088' },
+        { label: 'Tomorrow 2:00 PM', time: '2:00 PM', date: 'Tomorrow', url: 'http://localhost:8088' },
+        { label: 'Friday 4:30 PM', time: '4:30 PM', date: 'Friday', url: 'http://localhost:8088' },
+        { label: 'View All Available Slots →', time: 'All Slots', date: 'Next 7 Days', url: 'http://localhost:8088' }
       ],
       meetingAgenda: [
         'Review {{business_name}}’s current lead acquisition cost in {{location}}',
@@ -189,7 +189,7 @@ Select an available time slot below to lock in a quick 15-minute introductory ch
         '30-day projected pipeline estimate with zero manual cold calls'
       ],
       ctaText: 'Book an Appointment ',
-      ctaUrl: 'http://localhost:8080'
+      ctaUrl: 'http://localhost:8088'
     }
   },
 
@@ -378,10 +378,10 @@ Select an available time slot below to lock in a quick 15-minute introductory ch
       hostAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
       duration: '15 mins',
       timeSlots: [
-        { label: 'Tomorrow 10:30 AM', time: '10:30 AM', date: 'Tomorrow', url: 'http://localhost:8080' },
-        { label: 'Tomorrow 2:00 PM', time: '2:00 PM', date: 'Tomorrow', url: 'http://localhost:8080' },
-        { label: 'Friday 4:30 PM', time: '4:30 PM', date: 'Friday', url: 'http://localhost:8080' },
-        { label: 'View All Available Slots →', time: 'All Slots', date: 'Next 7 Days', url: 'http://localhost:8080' }
+        { label: 'Tomorrow 10:30 AM', time: '10:30 AM', date: 'Tomorrow', url: 'http://localhost:8088' },
+        { label: 'Tomorrow 2:00 PM', time: '2:00 PM', date: 'Tomorrow', url: 'http://localhost:8088' },
+        { label: 'Friday 4:30 PM', time: '4:30 PM', date: 'Friday', url: 'http://localhost:8088' },
+        { label: 'View All Available Slots →', time: 'All Slots', date: 'Next 7 Days', url: 'http://localhost:8088' }
       ],
       meetingAgenda: [
         'Review {{business_name}}’s current lead acquisition cost in {{location}}',
@@ -389,7 +389,7 @@ Select an available time slot below to lock in a quick 15-minute introductory ch
         '30-day projected pipeline estimate with zero manual cold calls'
       ],
       ctaText: 'Book an Appointment ',
-      ctaUrl: 'http://localhost:8080'
+      ctaUrl: 'http://localhost:8088'
     }
   },
 
