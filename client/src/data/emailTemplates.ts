@@ -129,8 +129,8 @@ Would you have 5 minutes this Thursday for a quick chat?
 Best regards,
 {{sender_name}}
 {{company_name}}`,
-      ctaText: 'Book a 5-Min Intro Call',
-      ctaUrl: 'https://calendly.com/leadpulse/demo'
+      ctaText: 'Book an Appointment ',
+      ctaUrl: 'http://localhost:8080'
     }
   },
 
@@ -159,7 +159,7 @@ With LeadPulse, {{business_name}} gains direct access to an autonomous local pip
     name: '3. Interactive Calendar Booking Card',
     tagline: 'Live 1-Click Meeting & Time Slot Scheduling',
     bestFor: 'Executive discovery calls, product demos, consult bookings, agency sales intros',
-    purpose: 'Embeds an interactive booking widget with clickable time-slot chips, host avatar, live status, and direct sync to Calendly or custom booking URLs.',
+    purpose: 'Embeds an interactive booking widget with clickable time-slot chips, host avatar, live status, and direct sync to Easy!Appointments or custom booking URLs.',
     category: 'direct',
     defaultData: {
       subject: '15-Min Strategy Session for {{business_name}} | Quick Intro',
@@ -178,18 +178,18 @@ Select an available time slot below to lock in a quick 15-minute introductory ch
       hostAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
       duration: '15 mins',
       timeSlots: [
-        { label: 'Tomorrow 10:30 AM', time: '10:30 AM', date: 'Tomorrow', url: 'https://calendly.com/leadpulse/demo' },
-        { label: 'Tomorrow 2:00 PM', time: '2:00 PM', date: 'Tomorrow', url: 'https://calendly.com/leadpulse/demo' },
-        { label: 'Friday 4:30 PM', time: '4:30 PM', date: 'Friday', url: 'https://calendly.com/leadpulse/demo' },
-        { label: 'View All Available Slots →', time: 'All Slots', date: 'Next 7 Days', url: 'https://calendly.com/leadpulse/demo' }
+        { label: 'Tomorrow 10:30 AM', time: '10:30 AM', date: 'Tomorrow', url: 'http://localhost:8080' },
+        { label: 'Tomorrow 2:00 PM', time: '2:00 PM', date: 'Tomorrow', url: 'http://localhost:8080' },
+        { label: 'Friday 4:30 PM', time: '4:30 PM', date: 'Friday', url: 'http://localhost:8080' },
+        { label: 'View All Available Slots →', time: 'All Slots', date: 'Next 7 Days', url: 'http://localhost:8080' }
       ],
       meetingAgenda: [
         'Review {{business_name}}’s current lead acquisition cost in {{location}}',
         'Live demonstration of autonomous Google Maps scraper and enrichment',
         '30-day projected pipeline estimate with zero manual cold calls'
       ],
-      ctaText: 'Reserve Preferred Time Slot →',
-      ctaUrl: 'https://calendly.com/leadpulse/demo'
+      ctaText: 'Book an Appointment ',
+      ctaUrl: 'http://localhost:8080'
     }
   },
 
@@ -378,18 +378,18 @@ Select an available time slot below to lock in a quick 15-minute introductory ch
       hostAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
       duration: '15 mins',
       timeSlots: [
-        { label: 'Tomorrow 10:30 AM', time: '10:30 AM', date: 'Tomorrow', url: 'https://calendly.com/leadpulse/demo' },
-        { label: 'Tomorrow 2:00 PM', time: '2:00 PM', date: 'Tomorrow', url: 'https://calendly.com/leadpulse/demo' },
-        { label: 'Friday 4:30 PM', time: '4:30 PM', date: 'Friday', url: 'https://calendly.com/leadpulse/demo' },
-        { label: 'View All Available Slots →', time: 'All Slots', date: 'Next 7 Days', url: 'https://calendly.com/leadpulse/demo' }
+        { label: 'Tomorrow 10:30 AM', time: '10:30 AM', date: 'Tomorrow', url: 'http://localhost:8080' },
+        { label: 'Tomorrow 2:00 PM', time: '2:00 PM', date: 'Tomorrow', url: 'http://localhost:8080' },
+        { label: 'Friday 4:30 PM', time: '4:30 PM', date: 'Friday', url: 'http://localhost:8080' },
+        { label: 'View All Available Slots →', time: 'All Slots', date: 'Next 7 Days', url: 'http://localhost:8080' }
       ],
       meetingAgenda: [
         'Review {{business_name}}’s current lead acquisition cost in {{location}}',
         'Live demonstration of autonomous Google Maps scraper and enrichment',
         '30-day projected pipeline estimate with zero manual cold calls'
       ],
-      ctaText: 'Reserve Preferred Time Slot →',
-      ctaUrl: 'https://calendly.com/leadpulse/demo'
+      ctaText: 'Book an Appointment ',
+      ctaUrl: 'http://localhost:8080'
     }
   },
 

@@ -32,7 +32,7 @@ interface IntegrationApp {
   configFields?: ConfigField[];
   lastSync?: string | null;
   badge?: string;
-  linkedModule?: 'outreach' | 'automations' | 'crm' | 'leads' | 'billing';
+  linkedModule?: 'outreach' | 'automations' | 'crm' | 'leads' | 'billing' | 'appointments';
   linkedTitle?: string;
   linkedRoute?: string;
 }
@@ -211,11 +211,11 @@ const getAppSteps = (app: IntegrationApp) => {
       'Save to enable WhatsApp Click-to-Chat and automated multi-channel sequences'
     ];
   }
-  if (id === 'calendly') {
+  if (id === 'calendly' || id === 'easyappointments') {
     return [
-      'Copy your personal 15-minute meeting link from calendly.com',
-      'Paste the link below to auto-inject into {{booking_url}} merge tags',
-      'Save to power interactive booking buttons across all templates'
+      'Enter your Easy!Appointments instance URL (default: http://localhost:8080) or custom Calendly link',
+      'Automatically resolves into {{booking_link}} merge tags and interactive email templates',
+      'Powers the live booking engine and calendar scheduling across LeadPulse'
     ];
   }
   if (id === 'hubspot') {

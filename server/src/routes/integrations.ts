@@ -83,7 +83,7 @@ export interface IntegrationApp {
   configFields: ConfigField[];
   lastSync?: string | null;
   badge?: string;
-  linkedModule?: 'outreach' | 'automations' | 'crm' | 'leads' | 'billing';
+  linkedModule?: 'outreach' | 'automations' | 'crm' | 'leads' | 'billing' | 'appointments';
   linkedTitle?: string;
   linkedRoute?: string;
 }
@@ -169,24 +169,24 @@ export const DEFAULT_APPS: IntegrationApp[] = [
     linkedTitle: 'WhatsApp Studio & Multi-Channel Journeys',
     linkedRoute: '/outreach'
   },
-  // 5. Calendly
+  // 5. Easy!Appointments / Calendly
   {
     id: 'calendly',
-    name: 'Calendly',
+    name: 'Easy!Appointments / Calendly',
     category: 'Scheduling',
-    connected: false,
+    connected: true,
     logo: '/integrations/Calendly.png',
-    description: '1-Click meeting booking embeds. Automatically injects your live scheduling link into {{booking_url}} merge tags and the Interactive Calendar template.',
-    config: { bookingUrl: '', apiKey: '' },
+    description: 'Self-hosted or cloud appointment scheduler. Automatically injects your booking URL into {{booking_link}} merge tags, outreach templates, and CRM meeting invitations.',
+    config: { bookingUrl: process.env.EASYAPPOINTMENTS_URL || 'http://localhost:8080', apiKey: '' },
     configFields: [
-      { key: 'bookingUrl', label: 'Calendly Booking URL', type: 'url', placeholder: 'https://calendly.com/your-name/15min', required: true },
-      { key: 'apiKey', label: 'Personal Access Token', type: 'password', placeholder: 'cal_...' }
+      { key: 'bookingUrl', label: 'Booking Scheduler URL', type: 'url', placeholder: 'http://localhost:8080', required: true },
+      { key: 'apiKey', label: 'API Key or Access Token', type: 'password', placeholder: 'Optional API token' }
     ],
-    lastSync: null,
-    badge: '1-Click Booking',
-    linkedModule: 'outreach',
-    linkedTitle: 'Interactive Calendar Template & Merge Tags',
-    linkedRoute: '/outreach'
+    lastSync: new Date().toISOString(),
+    badge: 'Live Scheduler',
+    linkedModule: 'appointments',
+    linkedTitle: 'Easy!Appointments Engine & Outreach Templates',
+    linkedRoute: '/appointments'
   },
   // 6. HubSpot CRM
   {

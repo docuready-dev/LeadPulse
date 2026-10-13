@@ -19,7 +19,7 @@ export const WHATSAPP_TEMPLATES: WhatsAppTemplate[] = [
     badge: 'High Response Rate',
     defaultMessage: `Hey {{first_name}}, came across {{business_name}} while researching top-rated {{tag}} leaders in {{location}}. Really impressed by your customer reputation! 
 
-Quick question — are you guys currently taking on new high-value client bookings this month, or is your schedule completely full?`,
+Quick question: are you guys currently taking on new high-value client bookings this month, or is your schedule completely full?`,
     followUpScript: `Awesome to hear! Instead of cramming files into messy WhatsApp chat history, what is the best email address to drop our partnership overview over to?`
   },
   {
@@ -65,7 +65,7 @@ Curious if you are looking to scale customer footfall this quarter?`,
     hookType: 'Response Speed Blind Spot',
     description: 'Highlights how slow weekend/after-hours response times leak qualified leads.',
     badge: 'High Conversion',
-    defaultMessage: `Hi {{business_name}} team — quick observation: when potential customers message {{tag}} providers in {{location}} after 7 PM or on Sundays, 68% drop off if they don't get an immediate reply.
+    defaultMessage: `Hi {{business_name}} team: quick observation: when potential customers message {{tag}} providers in {{location}} after 7 PM or on Sundays, 68% drop off if they don't get an immediate reply.
 
 We built an automated 60-second booking bot for local businesses. Would you be open to a quick demo of how it works for {{business_name}}?`,
     followUpScript: `Sounds good! What is the best email address to send your interactive simulator link to?`
@@ -101,7 +101,7 @@ We have an automated SMS/WhatsApp trigger that helps {{tag}} businesses safely c
     hookType: 'Soft Qualification Question',
     description: 'A low-friction discovery question to qualify their current CRM or outreach software.',
     badge: 'Software Synergy',
-    defaultMessage: `Hey {{business_name}} team! Quick tech question — are you currently using an automated CRM or pipeline tracker for managing inbound customer leads for {{business_name}}, or is everything handled manually on WhatsApp?
+    defaultMessage: `Hey {{business_name}} team! Quick tech question: are you currently using an automated CRM or pipeline tracker for managing inbound customer leads for {{business_name}}, or is everything handled manually on WhatsApp?
 
 We just launched a streamlined system built specifically for {{tag}} in {{location}}.`,
     followUpScript: `Understood! What is your direct email so I can send over our 3-minute feature walkthrough?`
