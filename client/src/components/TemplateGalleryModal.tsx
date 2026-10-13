@@ -250,42 +250,42 @@ const TemplateGalleryModal = ({
 
   return (
     <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <div className="bg-white rounded-md border border-slate-200 w-full max-w-5xl shadow-xl overflow-hidden my-6 animate-in fade-in zoom-in-95 duration-150">
+      <div className="bg-white rounded-2xl border border-slate-200/90 w-full max-w-5xl shadow-2xl overflow-hidden my-6 animate-in fade-in zoom-in-95 duration-150">
         
         {/* Header */}
-        <div className="p-5 sm:p-6 bg-slate-950 text-white flex items-start justify-between border-b border-slate-800">
+        <div className="p-5 sm:p-6 bg-gradient-to-r from-indigo-600 via-indigo-700 to-purple-600 text-white flex items-start justify-between shadow-2xs">
           <div>
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-sm bg-blue-500/10 border border-blue-500/20 text-blue-400 font-delight text-[11px] font-semibold mb-2">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 backdrop-blur-xs border border-white/20 text-white font-delight text-[11px] font-bold mb-2.5">
               <Layout className="w-3.5 h-3.5" />
               <span>Email Template Studio (Link Mobility Standards)</span>
             </div>
-            <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
+            <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-white font-delight">
               Select an Email Layout Architecture
             </h2>
-            <p className="text-xs text-slate-400 mt-1 max-w-2xl leading-relaxed">
+            <p className="text-xs text-indigo-100 mt-1 max-w-2xl leading-relaxed font-delight">
               Choose from the 8 industry-standard structural templates. Each layout is engineered with responsive desktop/mobile breakpoints and automatic CAN-SPAM compliance footers.
             </p>
           </div>
 
           <button 
             onClick={onClose}
-            className="w-7 h-7 rounded-md bg-slate-900 hover:bg-slate-800 border border-slate-800 flex items-center justify-center text-slate-400 hover:text-white transition-colors cursor-pointer"
+            className="w-8 h-8 rounded-xl bg-white/15 hover:bg-white/25 border border-white/20 flex items-center justify-center text-white transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Filter Categories */}
-        <div className="p-3 bg-slate-50 border-b border-slate-200 flex flex-wrap gap-2 items-center px-6">
-          <span className="text-xs font-delight font-medium text-slate-500 uppercase tracking-wider mr-2">Filter By:</span>
+        <div className="p-3 bg-slate-50/80 border-b border-slate-100 flex flex-wrap gap-2 items-center px-6">
+          <span className="text-xs font-delight font-bold text-slate-500 uppercase tracking-wider mr-2">Filter By:</span>
           {(['all', 'direct', 'promotional', 'newsletter', 'ecommerce'] as const).map((cat) => (
             <button
               key={cat}
               onClick={() => setFilterCategory(cat)}
-              className={`px-3 py-1 rounded-md text-xs font-delight font-medium transition-all cursor-pointer ${
+              className={`px-3 py-1 rounded-xl text-xs font-delight font-semibold transition-all cursor-pointer ${
                 filterCategory === cat 
-                  ? 'bg-slate-900 text-white border border-slate-900 shadow-xs' 
-                  : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
+                  ? 'bg-indigo-600 text-white shadow-2xs shadow-indigo-200' 
+                  : 'bg-white border border-slate-200 text-slate-600 hover:bg-indigo-50/40 hover:border-indigo-200'
               }`}
             >
               {cat === 'all' ? 'All 8 Structures' : cat}
@@ -312,71 +312,71 @@ const TemplateGalleryModal = ({
                     onSelectTemplate(template.id);
                     onClose();
                   }}
-                  className={`rounded-md border p-3.5 cursor-pointer transition-all flex flex-col justify-between hover:border-slate-400 group relative ${
+                  className={`rounded-2xl border p-4 cursor-pointer transition-all flex flex-col justify-between group relative shadow-2xs ${
                     isLocked 
-                      ? 'border-slate-200 bg-slate-50/60 opacity-95'
+                      ? 'border-slate-200 bg-slate-50/60 opacity-95 hover:border-amber-300'
                       : isSelected 
-                        ? 'border-blue-600 bg-blue-50/20 ring-1 ring-blue-600' 
-                        : 'border-slate-200 bg-white hover:border-slate-300'
+                        ? 'border-indigo-600 bg-indigo-50/30 ring-2 ring-indigo-500/20 shadow-xs' 
+                        : 'border-slate-200/80 bg-white hover:border-indigo-300 hover:shadow-xs'
                   }`}
                 >
                   <div>
                     {/* Visual Wireframe Preview */}
-                    <div className="mb-3 relative overflow-hidden rounded-md border border-slate-200">
+                    <div className="mb-3 relative overflow-hidden rounded-xl border border-slate-200/90 shadow-2xs">
                       {renderWireframe(template.id)}
                       
                       {isLocked && (
                         <div className="absolute inset-0 bg-slate-950/40 backdrop-blur-2xs flex flex-col items-center justify-center text-white gap-1 p-2">
-                          <div className="w-7 h-7 rounded-full bg-slate-900/90 border border-white/20 flex items-center justify-center">
-                            <Lock className="w-3.5 h-3.5 text-amber-400" />
+                          <div className="w-8 h-8 rounded-full bg-slate-900/90 border border-white/20 flex items-center justify-center shadow-xs">
+                            <Lock className="w-4 h-4 text-amber-400" />
                           </div>
-                          <span className="text-[10px] font-delight font-bold uppercase tracking-wider bg-[#191716] px-2 py-0.5 rounded text-amber-400 border border-amber-400/30">
+                          <span className="text-[10px] font-delight font-bold uppercase tracking-wider bg-slate-900/90 px-2 py-0.5 rounded-full text-amber-300 border border-amber-400/30">
                             Basic Plan (₹699)
                           </span>
                         </div>
                       )}
 
                       {!isLocked && isSelected && (
-                        <div className="absolute top-2 right-2 w-5 h-5 rounded-sm bg-blue-600 text-white flex items-center justify-center shadow-xs">
+                        <div className="absolute top-2 right-2 w-6 h-6 rounded-lg bg-indigo-600 text-white flex items-center justify-center shadow-xs">
                           <Check className="w-3.5 h-3.5" />
                         </div>
                       )}
                     </div>
 
                     <div className="flex items-center justify-between gap-1 mb-0.5">
-                      <h4 className="font-bold text-sm text-slate-900 group-hover:text-blue-600 transition-colors">
+                      <h4 className="font-bold text-sm text-slate-900 group-hover:text-indigo-600 transition-colors font-delight">
                         {template.name}
                       </h4>
                       {isLocked && (
-                        <span className="text-[9.5px] font-delight font-bold text-amber-600 bg-amber-50 border border-amber-200 px-1.5 py-0.2 rounded shrink-0">
+                        <span className="text-[9.5px] font-delight font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full shrink-0">
                           Basic Tier
                         </span>
                       )}
                     </div>
-                    <p className="text-[11px] font-delight text-blue-600 mb-2 font-medium">
+                    <p className="text-[11px] font-delight text-indigo-600 mb-2 font-bold">
                       {template.tagline}
                     </p>
-                    <p className="text-xs text-slate-500 leading-snug mb-3">
+                    <p className="text-xs text-slate-500 leading-snug mb-3 font-delight">
                       {template.purpose}
                     </p>
                   </div>
 
-                  <div className="pt-2 border-t border-slate-100">
-                    <span className="text-[10px] font-delight font-normal text-slate-400 block mb-2">
+                  <div className="pt-3 border-t border-slate-100">
+                    <span className="text-[10px] font-delight font-normal text-slate-400 block mb-2.5">
                       Best For: <strong className="text-slate-700 font-semibold">{template.bestFor}</strong>
                     </span>
                     <button 
-                      className={`w-full py-1.5 rounded-md text-xs font-delight font-medium transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                      className={`w-full py-2 rounded-xl text-xs font-delight font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                         isLocked
-                          ? 'bg-amber-500 hover:bg-amber-600 text-white font-bold shadow-xs'
+                          ? 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-2xs'
                           : isSelected 
-                            ? 'bg-blue-600 text-white shadow-xs' 
-                            : 'bg-slate-100 text-slate-700 group-hover:bg-slate-900 group-hover:text-white'
+                            ? 'bg-indigo-600 text-white shadow-xs' 
+                            : 'bg-slate-100 text-slate-700 group-hover:bg-indigo-600 group-hover:text-white'
                       }`}
                     >
                       {isLocked ? (
                         <>
-                          <Lock className="w-3 h-3 text-white" />
+                          <Lock className="w-3.5 h-3.5 text-white" />
                           <span>Unlock with Basic Tier &rarr;</span>
                         </>
                       ) : (

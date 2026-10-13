@@ -545,21 +545,27 @@ const OutreachCenter = () => {
   };
 
   return (
-    <div className="flex w-full min-h-screen bg-transparent font-sans text-[#191716]">
+    <div className="flex w-full min-h-screen bg-[#FBFBFA] font-sans text-slate-900">
       <Sidebar />
 
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 bg-[#FBFBFA] relative">
+        {/* Subtle ambient light gradient at the top */}
+        <div className="absolute top-0 left-0 right-0 h-96 bg-gradient-to-b from-indigo-50/50 via-amber-50/20 to-transparent pointer-events-none" />
+
         <Header title="Multi-Channel Outreach & Email Template Studio" />
 
-        <div className="p-6 sm:p-8 flex flex-col gap-6 min-h-0">
+        <div className="p-6 sm:p-8 flex flex-col gap-6 min-h-0 relative z-10">
           
           {/* Dispatch Live Notification Banner */}
           {dispatchNotification && (
-            <div className="p-3.5 rounded-md border border-slate-200 bg-white shadow-xs flex flex-wrap items-center justify-between gap-3 animate-in fade-in duration-150">
-              <div className="flex items-center gap-2.5 text-slate-800">
+            <div className="p-4 rounded-xl border border-emerald-200/90 bg-gradient-to-r from-emerald-50/90 via-teal-50/60 to-white shadow-sm flex flex-wrap items-center justify-between gap-3 animate-in fade-in duration-150">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-2xs">
+                  <CheckCircle2 className="w-4 h-4" />
+                </div>
                 <div>
-                  <div className="font-delight text-xs font-semibold text-slate-900">Direct Dispatch Status</div>
-                  <div className="text-xs text-slate-600">{dispatchNotification.message}</div>
+                  <div className="font-delight text-xs font-bold text-emerald-950">Direct Dispatch Status</div>
+                  <div className="text-xs text-emerald-800/90 font-medium">{dispatchNotification.message}</div>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -568,7 +574,7 @@ const OutreachCenter = () => {
                     href={dispatchNotification.previewUrl} 
                     target="_blank" 
                     rel="noreferrer"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-md text-xs font-delight font-medium shadow-xs transition-colors cursor-pointer border border-slate-900"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-xs font-delight font-semibold shadow-xs transition-colors cursor-pointer"
                   >
                     <span>Inspect Delivered Inbox</span>
                     <ExternalLink className="w-3.5 h-3.5" />
@@ -576,7 +582,7 @@ const OutreachCenter = () => {
                 )}
                 <button 
                   onClick={() => setDispatchNotification(null)}
-                  className="text-slate-500 hover:text-slate-900 text-xs font-delight font-medium px-2 py-1 cursor-pointer"
+                  className="text-slate-500 hover:text-slate-800 text-xs font-delight font-medium px-2.5 py-1 cursor-pointer"
                 >
                   Dismiss
                 </button>
@@ -585,33 +591,45 @@ const OutreachCenter = () => {
           )}
 
           {/* Architectural Transport & Scheduling Bar */}
-          <div className="bg-white border border-slate-200 rounded-md px-4 py-2 flex flex-wrap items-center justify-between gap-3">
+          <div className="bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-2xl px-5 py-3 flex flex-wrap items-center justify-between gap-3 shadow-xs">
             <div className="flex flex-wrap items-center gap-4 text-xs font-delight">
-              <div className="flex items-center gap-2 text-slate-600">
-                <span className={`w-1.5 h-1.5 rounded-full ${activeMailTransport ? 'bg-emerald-500' : 'bg-[#191716]'}`}></span>
-                <span className="text-slate-400">Relay:</span>
-                <span className="text-[#191716] font-semibold">{activeMailTransport ? activeMailTransport.name : 'Direct Cloud SMTP'}</span>
+              <div className="flex items-center gap-2 text-slate-700">
+                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Relay:</span>
+                <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                  activeMailTransport 
+                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/80' 
+                    : 'bg-indigo-50 text-indigo-700 border border-indigo-200/80'
+                }`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${activeMailTransport ? 'bg-emerald-500' : 'bg-indigo-500'}`} />
+                  <span>{activeMailTransport ? activeMailTransport.name : 'Direct Cloud SMTP'}</span>
+                </span>
               </div>
-              <div className="h-3.5 w-px bg-slate-200 hidden sm:block" />
-              <div className="flex items-center gap-2 text-slate-600">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                <span className="text-slate-400">WhatsApp:</span>
-                <span className="text-[#191716] font-semibold">{activeSmsTransport ? activeSmsTransport.name : 'Direct Web Bridge'}</span>
+
+              <div className="h-4 w-px bg-slate-200 hidden sm:block" />
+
+              <div className="flex items-center gap-2 text-slate-700">
+                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">WhatsApp:</span>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  <span>{activeSmsTransport ? activeSmsTransport.name : 'Direct Web Bridge'}</span>
+                </span>
               </div>
-              <div className="h-3.5 w-px bg-slate-200 hidden md:block" />
-              <div className="flex items-center gap-2 text-slate-600">
-                <span className="text-slate-400">Booking:</span>
+
+              <div className="h-4 w-px bg-slate-200 hidden md:block" />
+
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Booking:</span>
                 <a 
                   href={resolvedBookingUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-delight font-semibold text-xs text-indigo-600 hover:text-indigo-800 flex items-center gap-1 group underline"
+                  className="font-delight font-semibold text-xs text-indigo-700 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200/80 px-2.5 py-0.5 rounded-full inline-flex items-center gap-1.5 transition-all shadow-2xs group"
                   title="Open Easy!Appointments Scheduler"
                 >
                   <span>Book an Appointment </span>
-                  <ExternalLink className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                  <ExternalLink className="w-3 h-3 group-hover:translate-x-0.5 transition-transform text-indigo-600" />
                 </a>
-                <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-delight font-medium ${
+                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-delight font-semibold ${
                   bookingOnline 
                     ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
                     : 'bg-slate-100 text-slate-600 border border-slate-200'
@@ -621,22 +639,23 @@ const OutreachCenter = () => {
                 </span>
                 <Link 
                   to="/appointments" 
-                  className="text-[11px] font-delight font-medium text-slate-400 hover:text-slate-700 underline"
+                  className="text-[11px] font-delight font-semibold text-indigo-600 hover:text-indigo-800 underline ml-0.5"
                   title="Open LeadPulse Appointments Hub"
                 >
                   (Hub)
                 </Link>
               </div>
             </div>
+
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => insertTag('{{booking_link}}')}
-                className="px-2.5 py-1 bg-slate-100 hover:bg-[#191716] text-[#191716] hover:text-white border border-slate-200 rounded text-[11px] font-delight font-semibold transition-colors cursor-pointer flex items-center gap-1.5"
+                className="px-3.5 py-1.5 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white rounded-xl text-xs font-delight font-bold transition-all shadow-xs hover:shadow-indigo-200 cursor-pointer flex items-center gap-1.5"
                 title="Insert Easy!Appointments booking tag into template"
               >
-                <Calendar className="w-3 h-3 text-indigo-600" />
-                + Insert 'Book an Appointment '
+                <Calendar className="w-3.5 h-3.5" />
+                <span>+ Insert 'Book an Appointment '</span>
               </button>
             </div>
           </div>
@@ -646,40 +665,43 @@ const OutreachCenter = () => {
           {/* ======================================================== */}
           {/* LEFT: ARCHITECTURAL STUDIO COMPOSER                      */}
           {/* ======================================================== */}
-          <div className="w-full xl:w-[50%] flex flex-col bg-white border border-slate-200 rounded-md overflow-hidden min-h-[750px]">
+          <div className="w-full xl:w-[50%] flex flex-col bg-white border border-slate-200/90 rounded-2xl overflow-hidden min-h-[750px] shadow-sm">
             
             {/* Channel Tabs & A/B Testing */}
-            <div className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-2.5 gap-2">
-              <div className="flex gap-1 bg-slate-100 p-0.5 rounded-md border border-slate-200/80">
+            <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/50 px-4 py-3 gap-2">
+              <div className="flex gap-1.5 bg-white p-1 rounded-xl border border-slate-200/80 shadow-2xs">
                 <button 
                   onClick={() => setActiveChannel('email')}
-                  className={`px-3 py-1.5 text-xs font-delight flex items-center gap-1.5 rounded-sm transition-all cursor-pointer ${
+                  className={`px-3.5 py-1.5 text-xs font-delight flex items-center gap-2 rounded-lg transition-all cursor-pointer ${
                     activeChannel === 'email' 
-                      ? 'bg-[#191716] text-white font-semibold' 
-                      : 'text-slate-500 hover:text-[#191716] font-medium'
+                      ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white font-semibold shadow-xs shadow-indigo-200' 
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-medium'
                   }`}
                 >
-                  <Mail className="w-3.5 h-3.5" /> Email Studio
+                  <Mail className="w-3.5 h-3.5" /> 
+                  <span>Email Studio</span>
                 </button>
                 <button 
                   onClick={() => setActiveChannel('whatsapp')}
-                  className={`px-3 py-1.5 text-xs font-delight flex items-center gap-1.5 rounded-sm transition-all cursor-pointer ${
+                  className={`px-3.5 py-1.5 text-xs font-delight flex items-center gap-2 rounded-lg transition-all cursor-pointer ${
                     activeChannel === 'whatsapp' 
-                      ? 'bg-[#191716] text-white font-semibold' 
-                      : 'text-slate-500 hover:text-[#191716] font-medium'
+                      ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-semibold shadow-xs shadow-emerald-200' 
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-medium'
                   }`}
                 >
-                  <MessageCircle className="w-3.5 h-3.5" /> WhatsApp API
+                  <MessageCircle className="w-3.5 h-3.5" /> 
+                  <span>WhatsApp API</span>
                 </button>
                 <button 
                   onClick={() => setActiveChannel('sms')}
-                  className={`px-3 py-1.5 text-xs font-delight flex items-center gap-1.5 rounded-sm transition-all cursor-pointer ${
+                  className={`px-3.5 py-1.5 text-xs font-delight flex items-center gap-2 rounded-lg transition-all cursor-pointer ${
                     activeChannel === 'sms' 
-                      ? 'bg-[#191716] text-white font-semibold' 
-                      : 'text-slate-500 hover:text-[#191716] font-medium'
+                      ? 'bg-gradient-to-r from-purple-600 to-violet-600 text-white font-semibold shadow-xs shadow-purple-200' 
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-medium'
                   }`}
                 >
-                  <MessageSquare className="w-3.5 h-3.5" /> SMS Pathways
+                  <MessageSquare className="w-3.5 h-3.5" /> 
+                  <span>SMS Pathways</span>
                 </button>
               </div>
               
@@ -703,34 +725,34 @@ const OutreachCenter = () => {
                       setActiveVariant('A');
                     }
                   }}
-                  className={`flex items-center gap-2 px-2.5 py-1.5 rounded-md border transition-all cursor-pointer font-delight text-xs ${
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border transition-all cursor-pointer font-delight text-xs ${
                     isAbTesting 
-                      ? 'bg-[#191716] border-[#191716] text-white font-semibold' 
-                      : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:text-[#191716]'
+                      ? 'bg-indigo-50 border-indigo-300 text-indigo-700 font-semibold shadow-2xs' 
+                      : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:text-slate-900'
                   }`}
                   title="Enable A/B split testing to compare Variant A and Variant B"
                 >
-                  <div className={`w-6 h-3.5 rounded-full relative transition-colors ${isAbTesting ? 'bg-emerald-500' : 'bg-slate-200'}`}>
-                    <div className={`w-2.5 h-2.5 rounded-full bg-white absolute top-0.5 transition-all ${isAbTesting ? 'left-3' : 'left-0.5'}`} />
+                  <div className={`w-7 h-4 rounded-full relative transition-colors ${isAbTesting ? 'bg-indigo-600' : 'bg-slate-200'}`}>
+                    <div className={`w-3 h-3 rounded-full bg-white absolute top-0.5 transition-all ${isAbTesting ? 'left-3.5' : 'left-0.5'}`} />
                   </div>
-                  <span className="text-[11px]">A/B Split</span>
+                  <span className="text-[11px] font-semibold">A/B Split</span>
                 </button>
               </div>
             </div>
 
             {/* A/B Testing Variant Ribbon */}
             {isAbTesting && (
-              <div className="px-4 py-2 bg-slate-900 text-white border-b border-slate-800 flex flex-wrap items-center justify-between gap-2.5">
+              <div className="px-4 py-2 bg-gradient-to-r from-indigo-900 via-slate-900 to-indigo-950 text-white border-b border-indigo-800/50 flex flex-wrap items-center justify-between gap-2.5">
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-delight uppercase tracking-wider text-slate-400">Variant:</span>
-                  <div className="flex items-center gap-1 bg-slate-800 p-0.5 rounded border border-slate-700">
+                  <span className="text-[10px] font-delight uppercase tracking-wider text-indigo-200 font-bold">Variant:</span>
+                  <div className="flex items-center gap-1 bg-white/10 p-0.5 rounded-lg border border-white/15">
                     <button
                       type="button"
                       onClick={() => setActiveVariant('A')}
-                      className={`px-2.5 py-1 rounded-xs text-xs font-delight font-medium transition-all cursor-pointer flex items-center gap-1.5 ${
+                      className={`px-3 py-1 rounded-md text-xs font-delight transition-all cursor-pointer flex items-center gap-1.5 ${
                         activeVariant === 'A' 
-                          ? 'bg-white text-[#191716] font-semibold' 
-                          : 'text-slate-400 hover:text-white'
+                          ? 'bg-white text-indigo-950 font-bold shadow-xs' 
+                          : 'text-indigo-200 hover:text-white'
                       }`}
                     >
                       <span>Variant A (50%)</span>
@@ -738,10 +760,10 @@ const OutreachCenter = () => {
                     <button
                       type="button"
                       onClick={() => setActiveVariant('B')}
-                      className={`px-2.5 py-1 rounded-xs text-xs font-delight font-medium transition-all cursor-pointer flex items-center gap-1.5 ${
+                      className={`px-3 py-1 rounded-md text-xs font-delight transition-all cursor-pointer flex items-center gap-1.5 ${
                         activeVariant === 'B' 
-                          ? 'bg-white text-[#191716] font-semibold' 
-                          : 'text-slate-400 hover:text-white'
+                          ? 'bg-white text-indigo-950 font-bold shadow-xs' 
+                          : 'text-indigo-200 hover:text-white'
                       }`}
                     >
                       <span>Variant B (50%)</span>
@@ -764,9 +786,9 @@ const OutreachCenter = () => {
                     }
                     setActiveVariant('B');
                   }}
-                  className="text-[11px] font-delight bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-2.5 py-1 rounded transition-colors cursor-pointer flex items-center gap-1.5"
+                  className="text-[11px] font-delight bg-white/15 hover:bg-white/25 text-white border border-white/20 px-3 py-1 rounded-md transition-colors cursor-pointer flex items-center gap-1.5 font-semibold"
                 >
-                  <Sparkles className="w-3 h-3 text-slate-300" />
+                  <Sparkles className="w-3 h-3 text-amber-300" />
                   <span>Clone A &rarr; B</span>
                 </button>
               </div>
@@ -774,20 +796,20 @@ const OutreachCenter = () => {
 
             {/* Email Template Selector Bar */}
             {activeChannel === 'email' && (
-              <div className="px-4 py-2 border-b border-slate-200 bg-slate-50/60 flex flex-wrap items-center justify-between gap-2">
+              <div className="px-4 py-2.5 border-b border-slate-100 bg-white flex flex-wrap items-center justify-between gap-2.5">
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setIsGalleryOpen(true)}
-                    className="bg-white hover:bg-slate-50 border border-slate-200 text-[#191716] px-2.5 py-1 rounded text-xs font-delight font-semibold transition-colors flex items-center gap-1.5 cursor-pointer"
+                    className="bg-gradient-to-r from-indigo-50/60 to-purple-50/40 hover:from-indigo-100/80 hover:to-purple-100/60 border border-indigo-200/80 text-indigo-950 px-3 py-1.5 rounded-lg text-xs font-delight font-bold transition-all flex items-center gap-2 cursor-pointer shadow-2xs group"
                   >
-                    <Layout className="w-3.5 h-3.5 text-slate-500" />
+                    <Layout className="w-3.5 h-3.5 text-indigo-600 group-hover:scale-105 transition-transform" />
                     <span>{activeTemplateConfig.name}</span>
-                    <span className="text-[10px] font-delight font-normal text-slate-400 ml-1">Change (8)</span>
+                    <span className="text-[10px] font-delight font-medium text-indigo-500 bg-white px-1.5 py-0.2 rounded-md border border-indigo-200/60">Change (8)</span>
                   </button>
 
                   <button
                     onClick={() => setIsProviderModalOpen(true)}
-                    className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 hover:text-[#191716] px-2.5 py-1 rounded text-xs font-delight font-medium transition-colors flex items-center gap-1.5 cursor-pointer"
+                    className="bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-700 px-2.5 py-1.5 rounded-lg text-xs font-delight font-semibold transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
                     title="Configure Gmail, Resend, or Custom SMTP"
                   >
                     <Key className="w-3 h-3 text-slate-400" />
@@ -803,22 +825,22 @@ const OutreachCenter = () => {
                       setEditorLayer('content');
                       setIsCopilotOpen(prev => !prev);
                     }}
-                    className={`px-2.5 py-1 rounded text-xs font-delight font-semibold transition-all flex items-center gap-1.5 cursor-pointer border ${
+                    className={`px-3 py-1.5 rounded-lg text-xs font-delight font-bold transition-all flex items-center gap-1.5 cursor-pointer border ${
                       isCopilotOpen
-                        ? 'bg-[#191716] text-white border-[#191716]'
-                        : 'bg-white hover:bg-slate-100 text-[#191716] border-slate-300'
+                        ? 'bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 text-white border-transparent shadow-xs'
+                        : 'bg-gradient-to-r from-amber-50 to-orange-50 hover:from-amber-100 hover:to-orange-100 text-amber-900 border-amber-200/80 shadow-2xs'
                     }`}
                   >
-                    <Wand2 className="w-3.5 h-3.5" />
+                    <Wand2 className={`w-3.5 h-3.5 ${isCopilotOpen ? 'text-white' : 'text-amber-600'}`} />
                     <span>AI Copilot</span>
                   </button>
 
                   {/* Two-Layer Architecture Switcher */}
-                  <div className="flex bg-slate-200/70 p-0.5 rounded border border-slate-200 text-xs font-delight">
+                  <div className="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200/80 text-xs font-delight">
                     <button
                       onClick={() => setEditorLayer('content')}
-                      className={`px-2.5 py-0.5 rounded-xs transition-all flex items-center gap-1 cursor-pointer ${
-                        editorLayer === 'content' ? 'bg-white text-[#191716] font-semibold shadow-2xs' : 'text-slate-500 hover:text-[#191716]'
+                      className={`px-2.5 py-1 rounded-md transition-all flex items-center gap-1 cursor-pointer ${
+                        editorLayer === 'content' ? 'bg-white text-indigo-900 font-bold shadow-2xs' : 'text-slate-600 hover:text-slate-900 font-medium'
                       }`}
                     >
                       <Edit3 className="w-3 h-3" />
@@ -826,8 +848,8 @@ const OutreachCenter = () => {
                     </button>
                     <button
                       onClick={() => setEditorLayer('template')}
-                      className={`px-2.5 py-0.5 rounded-xs transition-all flex items-center gap-1 cursor-pointer ${
-                        editorLayer === 'template' ? 'bg-white text-[#191716] font-semibold shadow-2xs' : 'text-slate-500 hover:text-[#191716]'
+                      className={`px-2.5 py-1 rounded-md transition-all flex items-center gap-1 cursor-pointer ${
+                        editorLayer === 'template' ? 'bg-white text-indigo-900 font-bold shadow-2xs' : 'text-slate-600 hover:text-slate-900 font-medium'
                       }`}
                     >
                       <Sliders className="w-3 h-3" />
@@ -840,10 +862,10 @@ const OutreachCenter = () => {
 
             {/* WhatsApp Template Selector Bar */}
             {activeChannel === 'whatsapp' && (
-              <div className="px-4 py-2 border-b border-slate-200 bg-slate-50/60 flex flex-wrap items-center justify-between gap-3">
+              <div className="px-4 py-2.5 border-b border-slate-100 bg-white flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-2 text-xs font-delight">
-                  <span className="text-slate-400">Active Script:</span>
-                  <span className="font-semibold text-[#191716]">
+                  <span className="text-slate-400 font-medium">Active Script:</span>
+                  <span className="font-bold text-slate-900 bg-emerald-50 text-emerald-800 px-2.5 py-0.5 rounded-full border border-emerald-200">
                     {WHATSAPP_TEMPLATES.find(t => t.id === selectedWhatsAppId)?.name || '1. The Local Compliment Hook'}
                   </span>
                 </div>
@@ -851,15 +873,15 @@ const OutreachCenter = () => {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={handleCopyWhatsApp}
-                    className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 px-2.5 py-1 rounded text-xs font-delight font-medium transition-colors flex items-center gap-1.5 cursor-pointer"
+                    className="bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-delight font-semibold transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
                   >
-                    {copiedWhatsApp ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <ExternalLink className="w-3.5 h-3.5 text-slate-400" />}
+                    {copiedWhatsApp ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-slate-400" />}
                     <span>{copiedWhatsApp ? 'Copied' : 'Copy Script'}</span>
                   </button>
 
                   <button
                     onClick={() => handleOpenWhatsAppWeb(previewLead)}
-                    className="bg-[#191716] text-white px-3 py-1 rounded text-xs font-delight font-semibold hover:bg-slate-800 transition-colors flex items-center gap-1.5 cursor-pointer"
+                    className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white px-3.5 py-1.5 rounded-lg text-xs font-delight font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs shadow-emerald-200"
                   >
                     <Send className="w-3 h-3" />
                     <span>WhatsApp Web</span>
@@ -875,77 +897,99 @@ const OutreachCenter = () => {
               {activeChannel === 'whatsapp' && (
                 <div className="space-y-4">
                   {/* 10 Structured WhatsApp Hook Selector Pills */}
-                  <div className="border border-slate-200 rounded-md p-3.5">
-                    <label className="block text-xs font-delight font-semibold text-[#191716] mb-2.5">
-                      Conversational Hook Frameworks
-                    </label>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
-                      {WHATSAPP_TEMPLATES.map((tpl) => (
-                        <button
-                          key={tpl.id}
-                          type="button"
-                          onClick={() => handleSelectWhatsAppTemplate(tpl)}
-                          className={`text-left p-2.5 rounded border text-xs transition-all flex flex-col justify-between cursor-pointer ${
-                            selectedWhatsAppId === tpl.id 
-                              ? 'bg-slate-900 text-white border-slate-900' 
-                              : 'bg-white border-slate-200 hover:border-slate-300 text-slate-800'
-                          }`}
-                        >
-                          <div className="flex items-center justify-between w-full mb-0.5">
-                            <span className="font-delight font-semibold truncate">{tpl.name}</span>
-                            <span className={`text-[9px] font-delight font-medium px-1.5 py-0.2 rounded shrink-0 ml-1 ${
-                              selectedWhatsAppId === tpl.id ? 'bg-white/15 text-white' : 'bg-slate-100 text-slate-500'
-                            }`}>
-                              {tpl.badge}
+                  <div className="border border-slate-200/90 rounded-xl p-4 bg-gradient-to-b from-slate-50/50 to-white shadow-2xs">
+                    <div className="flex items-center justify-between mb-3">
+                      <label className="text-xs font-delight font-bold text-slate-900 flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                        <span>Conversational Hook Frameworks</span>
+                      </label>
+                      <span className="text-[10px] font-delight font-medium text-slate-400">
+                        {WHATSAPP_TEMPLATES.length} Proven Angles
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
+                      {WHATSAPP_TEMPLATES.map((tpl) => {
+                        const isSelected = selectedWhatsAppId === tpl.id;
+                        return (
+                          <button
+                            key={tpl.id}
+                            type="button"
+                            onClick={() => handleSelectWhatsAppTemplate(tpl)}
+                            className={`text-left p-3 rounded-xl border text-xs transition-all flex flex-col justify-between cursor-pointer ${
+                              isSelected 
+                                ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white border-transparent shadow-xs shadow-emerald-200' 
+                                : 'bg-white border-slate-200 hover:border-emerald-300 hover:bg-emerald-50/20 text-slate-800 shadow-2xs'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between w-full mb-1">
+                              <span className="font-delight font-bold truncate">{tpl.name}</span>
+                              <span className={`text-[9px] font-delight font-bold px-1.5 py-0.2 rounded-full shrink-0 ml-1.5 ${
+                                isSelected ? 'bg-white/20 text-white' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                              }`}>
+                                {tpl.badge}
+                              </span>
+                            </div>
+                            <span className={`text-[11px] font-medium line-clamp-1 ${isSelected ? 'text-emerald-100' : 'text-slate-500'}`}>
+                              {tpl.hookType}
                             </span>
-                          </div>
-                          <span className={`text-[11px] line-clamp-1 ${selectedWhatsAppId === tpl.id ? 'text-slate-300' : 'text-slate-400'}`}>
-                            {tpl.hookType}
-                          </span>
-                        </button>
-                      ))}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
 
                   {/* Merge Tags & Message Body */}
-                  <div className="border border-slate-200 rounded-md overflow-hidden">
-                    <div className="px-3.5 py-2 bg-slate-50 border-b border-slate-200 flex items-center justify-between flex-wrap gap-1.5">
-                      <label className="text-xs font-delight font-semibold text-[#191716]">Message Script</label>
-                      <div className="flex items-center gap-1 flex-wrap">
-                        {mergeTags.map((tag) => (
-                          <button
-                            key={tag}
-                            type="button"
-                            onClick={() => insertTag(tag)}
-                            className="text-[10px] font-delight font-medium bg-white hover:bg-[#191716] text-slate-600 hover:text-white px-2 py-0.5 rounded border border-slate-200 transition-colors cursor-pointer"
-                          >
-                            + {tag}
-                          </button>
-                        ))}
+                  <div className="border border-slate-200/90 rounded-xl overflow-hidden shadow-2xs bg-white">
+                    <div className="px-4 py-2.5 bg-slate-50/70 border-b border-slate-100 flex items-center justify-between flex-wrap gap-2">
+                      <label className="text-xs font-delight font-bold text-slate-700">Message Script</label>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {mergeTags.map((tag) => {
+                          const isBooking = tag.includes('booking');
+                          const isName = tag.includes('name');
+                          const isLoc = tag.includes('location');
+                          const colorClass = isBooking 
+                            ? 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100 hover:border-indigo-300'
+                            : isName
+                            ? 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100 hover:border-amber-300'
+                            : isLoc
+                            ? 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100 hover:border-emerald-300'
+                            : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200 hover:border-slate-300';
+                          return (
+                            <button
+                              key={tag}
+                              type="button"
+                              onClick={() => insertTag(tag)}
+                              className={`text-[10px] font-delight font-semibold px-2 py-0.5 rounded-md border transition-all cursor-pointer shadow-2xs ${colorClass}`}
+                            >
+                              + {tag}
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
                     <textarea 
                       rows={6}
                       value={whatsAppMessage}
                       onChange={(e) => setWhatsAppMessage(e.target.value)}
-                      className="w-full p-3.5 text-xs font-sans outline-none leading-relaxed bg-white border-0"
+                      className="w-full p-4 text-xs font-sans outline-none leading-relaxed bg-white border-0 text-slate-800 placeholder:text-slate-400"
                     />
                   </div>
 
                   {/* Organic Email-Capture Bridge Feature */}
-                  <div className="border border-slate-200 rounded-md p-3.5 bg-slate-50/50 flex items-center justify-between gap-3">
+                  <div className="border border-emerald-200/80 rounded-xl p-4 bg-gradient-to-r from-emerald-50/40 via-teal-50/20 to-white flex items-center justify-between gap-3 shadow-2xs">
                     <div className="min-w-0">
-                      <div className="text-xs font-delight font-semibold text-[#191716]">
-                        Organic Email-Capture Bridge
+                      <div className="text-xs font-delight font-bold text-emerald-950 flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>Organic Email-Capture Bridge</span>
                       </div>
-                      <p className="text-[11px] text-slate-500 truncate mt-0.5">
+                      <p className="text-[11px] text-emerald-800/80 truncate mt-0.5 font-medium">
                         "{EMAIL_CAPTURE_BRIDGE_SCRIPT}"
                       </p>
                     </div>
                     <button
                       type="button"
                       onClick={handleInsertBridgeScript}
-                      className="bg-white hover:bg-[#191716] text-[#191716] hover:text-white border border-slate-200 text-xs font-delight font-semibold px-3 py-1.5 rounded transition-colors cursor-pointer shrink-0"
+                      className="bg-white hover:bg-emerald-50 text-emerald-800 border border-emerald-300 text-xs font-delight font-bold px-3 py-1.5 rounded-lg transition-colors cursor-pointer shrink-0 shadow-2xs"
                     >
                       + Append Bridge
                     </button>
@@ -988,18 +1032,21 @@ const OutreachCenter = () => {
                       {!isCopilotOpen ? (
                         <div
                           onClick={() => setIsCopilotOpen(true)}
-                          className="group border border-slate-200 hover:border-[#191716] bg-slate-50/60 hover:bg-white rounded-md px-4 py-3 flex items-center justify-between gap-3 cursor-pointer transition-all"
+                          className="group border border-indigo-200/80 hover:border-indigo-400 bg-gradient-to-r from-indigo-50/50 via-purple-50/20 to-white hover:from-indigo-50/70 hover:to-white rounded-2xl px-4 py-3.5 flex items-center justify-between gap-3 cursor-pointer transition-all shadow-xs"
                         >
                           <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center text-white shadow-2xs shrink-0">
+                              <Sparkles className="w-4 h-4" />
+                            </div>
                             <div className="min-w-0">
                               <div className="flex items-center gap-2">
-                                <span className="text-xs font-delight font-bold text-[#191716]">
+                                <span className="text-xs font-delight font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">
                                   AI Email Copilot
                                 </span>
-                                <span className="text-[9px] font-delight font-semibold uppercase tracking-wider px-1.5 py-0.2 rounded bg-slate-200/80 text-[#191716]">
+                                <span className="text-[9px] font-delight font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700">
                                   Auto-Fill Engine
                                 </span>
-                                <span className="text-[9px] font-delight font-semibold uppercase tracking-wider px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800">
+                                <span className="text-[9px] font-delight font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
                                   {user?.ai_pitches_limit === -1 ? 'Unlimited' : `${Math.max(0, (user?.ai_pitches_limit ?? 5) - (user?.ai_pitches_used || 0))} Pitches Left`}
                                 </span>
                                 {aiSuccessMessage && (
@@ -1009,34 +1056,37 @@ const OutreachCenter = () => {
                                 )}
                               </div>
                               <p className="text-[11px] font-delight text-slate-500 truncate mt-0.5">
-                                Click to launch the autonomous copy synthesizer for {previewLead.businessName}
+                                Click to launch autonomous copy synthesis for <span className="font-semibold text-slate-700">{previewLead.businessName}</span>
                               </p>
                             </div>
                           </div>
 
-                          <span className="px-3 py-1.5 rounded bg-white group-hover:bg-[#191716] text-[#191716] group-hover:text-white border border-slate-200 text-xs font-delight font-semibold transition-colors shrink-0">
+                          <span className="px-3.5 py-1.5 rounded-xl bg-white group-hover:bg-indigo-600 text-indigo-600 group-hover:text-white border border-indigo-200 group-hover:border-indigo-600 text-xs font-delight font-bold transition-all shrink-0 shadow-2xs">
                             Open Studio &rarr;
                           </span>
                         </div>
                       ) : (
-                        /* DEDICATED AI EMAIL COPILOT CARD VIEW (Altogether Different Layout + Delight Font) */
-                        <div className="border-2 border-[#191716] rounded-lg bg-white shadow-lg overflow-hidden animate-in fade-in duration-150 font-delight">
+                        /* DEDICATED AI EMAIL COPILOT CARD VIEW (Bright Luminous Gradient + Delight Font) */
+                        <div className="border border-indigo-200/90 rounded-2xl bg-white shadow-md overflow-hidden animate-in fade-in duration-150 font-delight">
                           {/* Card View Top Header */}
-                          <div className="bg-[#191716] text-white px-4 py-3.5 flex items-center justify-between gap-3">
-                            <div className="flex items-center gap-2.5">
+                          <div className="bg-gradient-to-r from-indigo-600 via-indigo-700 to-purple-600 text-white px-5 py-4 flex items-center justify-between gap-3 shadow-2xs">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-lg bg-white/15 backdrop-blur-xs flex items-center justify-center text-white shrink-0">
+                                <Sparkles className="w-4 h-4" />
+                              </div>
                               <div>
                                 <div className="flex items-center gap-2">
                                   <h4 className="text-sm font-bold text-white font-delight tracking-tight">
                                     AI Email Copilot
                                   </h4>
-                                  <span className="text-[9px] font-delight uppercase tracking-wider px-2 py-0.5 rounded bg-white/15 text-white font-semibold">
+                                  <span className="text-[9px] font-delight uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/20 text-white font-semibold backdrop-blur-xs">
                                     Auto-Fill Engine
                                   </span>
-                                  <span className="text-[9px] font-delight uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-500/30">
+                                  <span className="text-[9px] font-delight uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-400/20 text-emerald-100 font-semibold border border-emerald-400/30">
                                     {user?.ai_pitches_limit === -1 ? 'Unlimited Pitches' : `${Math.max(0, (user?.ai_pitches_limit ?? 5) - (user?.ai_pitches_used || 0))} / ${user?.ai_pitches_limit ?? 5} Left`}
                                   </span>
                                 </div>
-                                <p className="text-[11px] text-slate-300 font-delight mt-0.5">
+                                <p className="text-[11px] text-indigo-100 font-delight mt-0.5">
                                   Synthesizing multi-block layout for <span className="text-white font-semibold">{previewLead.businessName}</span>
                                 </p>
                               </div>
@@ -1045,7 +1095,7 @@ const OutreachCenter = () => {
                             <button
                               type="button"
                               onClick={() => setIsCopilotOpen(false)}
-                              className="px-2.5 py-1 rounded bg-white/10 hover:bg-white/20 text-xs font-delight text-white transition-colors cursor-pointer"
+                              className="px-3 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 text-xs font-delight font-semibold text-white transition-colors cursor-pointer"
                             >
                               Close &times;
                             </button>
@@ -1059,8 +1109,8 @@ const OutreachCenter = () => {
                                 <span className="text-[10px] font-delight font-bold uppercase tracking-wider text-slate-400">
                                   01 / Select Voice &amp; Tone Profile
                                 </span>
-                                <span className="text-[10px] font-delight text-slate-400">
-                                  Active: <strong className="text-[#191716] capitalize">{aiTone}</strong>
+                                <span className="text-[10px] font-delight text-slate-500">
+                                  Active: <strong className="text-indigo-600 capitalize font-bold">{aiTone}</strong>
                                 </span>
                               </div>
                               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -1076,14 +1126,14 @@ const OutreachCenter = () => {
                                       key={toneItem.id}
                                       type="button"
                                       onClick={() => setAiTone(toneItem.id as any)}
-                                      className={`p-2.5 rounded-md border text-left transition-all cursor-pointer font-delight ${
+                                      className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer font-delight ${
                                         active
-                                          ? 'bg-[#191716] text-white border-[#191716]'
-                                          : 'bg-slate-50/70 hover:bg-slate-100 text-[#191716] border-slate-200'
+                                          ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                                          : 'bg-slate-50/70 hover:bg-indigo-50/40 text-slate-800 border-slate-200 hover:border-indigo-200'
                                       }`}
                                     >
                                       <div className="text-xs font-bold font-delight truncate">{toneItem.title}</div>
-                                      <div className={`text-[10px] font-delight mt-0.5 truncate ${active ? 'text-slate-300' : 'text-slate-500'}`}>
+                                      <div className={`text-[10px] font-delight mt-0.5 truncate ${active ? 'text-indigo-100' : 'text-slate-500'}`}>
                                         {toneItem.desc}
                                       </div>
                                     </button>
@@ -1112,11 +1162,11 @@ const OutreachCenter = () => {
                                       setAiPrompt(chip.prompt);
                                       handleAiGenerate(chip.prompt);
                                     }}
-                                    className="p-2.5 rounded-md border border-slate-200 hover:border-[#191716] bg-white hover:bg-slate-50 text-left transition-all cursor-pointer group font-delight flex flex-col justify-between"
+                                    className="p-2.5 rounded-xl border border-slate-200 hover:border-indigo-300 bg-white hover:bg-indigo-50/20 text-left transition-all cursor-pointer group font-delight flex flex-col justify-between shadow-2xs"
                                   >
                                     <div className="flex items-center justify-between w-full">
-                                      <span className="text-xs font-bold text-[#191716] font-delight">{chip.label}</span>
-                                      <span className="text-[10px] text-slate-400 group-hover:text-[#191716] font-delight">&rarr;</span>
+                                      <span className="text-xs font-bold text-slate-900 group-hover:text-indigo-600 transition-colors font-delight">{chip.label}</span>
+                                      <span className="text-[10px] text-slate-400 group-hover:text-indigo-600 font-delight">&rarr;</span>
                                     </div>
                                     <span className="text-[10px] text-slate-500 font-delight mt-0.5 truncate">{chip.sub}</span>
                                   </button>
@@ -1141,13 +1191,13 @@ const OutreachCenter = () => {
                                     }
                                   }}
                                   placeholder="Describe your offer or pitch angle in plain English..."
-                                  className="flex-1 bg-slate-50 focus:bg-white border border-slate-200 rounded-md px-3 py-2 text-xs text-[#191716] placeholder-slate-400 outline-none font-delight"
+                                  className="flex-1 bg-slate-50 focus:bg-white border border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 rounded-xl px-3.5 py-2 text-xs text-slate-900 placeholder-slate-400 outline-none font-delight transition-all"
                                 />
                                 <button
                                   type="button"
                                   onClick={() => handleAiGenerate()}
                                   disabled={isAiGenerating || !aiPrompt.trim()}
-                                  className="bg-[#191716] hover:bg-slate-800 disabled:opacity-50 text-white text-xs font-delight font-semibold px-4 py-2 rounded-md transition-all flex items-center justify-center gap-1.5 shrink-0 cursor-pointer"
+                                  className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 disabled:opacity-50 text-white text-xs font-delight font-bold px-4 py-2 rounded-xl transition-all flex items-center justify-center gap-1.5 shrink-0 cursor-pointer shadow-xs"
                                 >
                                   {isAiGenerating ? (
                                     <>
@@ -1167,7 +1217,7 @@ const OutreachCenter = () => {
                                 <div className="flex flex-wrap items-center gap-1.5 text-[10px] font-delight text-slate-400">
                                   <span>Target Blocks:</span>
                                   {['Subject', 'Preheader', 'Headline', 'Body Copy', 'Primary CTA'].map(b => (
-                                    <span key={b} className="px-1.5 py-0.2 bg-slate-100 text-slate-600 rounded font-delight">
+                                    <span key={b} className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md font-delight font-medium">
                                       {b}
                                     </span>
                                   ))}
@@ -1184,25 +1234,27 @@ const OutreachCenter = () => {
                       )}
 
                       {/* UNIFIED ARCHITECTURAL ENVELOPE SHEET (Subject, Preheader, Headline, Subheadline) */}
-                      <div className="bg-white border border-slate-200 rounded-md divide-y divide-slate-100 overflow-hidden">
+                      <div className="bg-white border border-slate-200/90 rounded-2xl divide-y divide-slate-100 overflow-hidden shadow-2xs">
                         {/* Subject Row */}
-                        <div className="flex flex-col sm:flex-row sm:items-center px-3.5 py-2.5 gap-1 sm:gap-3">
-                          <label className="w-28 shrink-0 text-xs font-delight font-semibold text-slate-400">
-                            Subject Line
+                        <div className="flex flex-col sm:flex-row sm:items-center px-4 py-3 gap-1 sm:gap-3 bg-white hover:bg-slate-50/50 transition-colors">
+                          <label className="w-28 shrink-0 text-xs font-delight font-bold text-slate-600 flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+                            <span>Subject Line</span>
                           </label>
                           <input 
                             type="text" 
                             value={templateData.subject}
                             onChange={(e) => setTemplateData({ ...templateData, subject: e.target.value })}
-                            className="flex-1 text-xs font-sans font-medium text-[#191716] bg-transparent border-0 outline-none focus:ring-0 p-0 placeholder:text-slate-300"
+                            className="flex-1 text-xs font-sans font-medium text-slate-900 bg-transparent border-0 outline-none focus:ring-0 p-0 placeholder:text-slate-300"
                             placeholder="e.g. Proposal for {{business_name}}"
                           />
                         </div>
 
                         {/* Preheader Row */}
-                        <div className="flex flex-col sm:flex-row sm:items-center px-3.5 py-2.5 gap-1 sm:gap-3">
-                          <label className="w-28 shrink-0 text-xs font-delight font-semibold text-slate-400">
-                            Preheader
+                        <div className="flex flex-col sm:flex-row sm:items-center px-4 py-3 gap-1 sm:gap-3 bg-white hover:bg-slate-50/50 transition-colors">
+                          <label className="w-28 shrink-0 text-xs font-delight font-bold text-slate-600 flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
+                            <span>Preheader</span>
                           </label>
                           <input 
                             type="text" 
@@ -1215,24 +1267,26 @@ const OutreachCenter = () => {
 
                         {/* Primary Headline Row */}
                         {selectedTemplateId !== 'text_only' && (
-                          <div className="flex flex-col sm:flex-row sm:items-center px-3.5 py-2.5 gap-1 sm:gap-3">
-                            <label className="w-28 shrink-0 text-xs font-delight font-semibold text-slate-400">
-                              Headline
+                          <div className="flex flex-col sm:flex-row sm:items-center px-4 py-3 gap-1 sm:gap-3 bg-white hover:bg-slate-50/50 transition-colors">
+                            <label className="w-28 shrink-0 text-xs font-delight font-bold text-slate-600 flex items-center gap-1.5">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                              <span>Headline</span>
                             </label>
                             <input 
                               type="text" 
                               value={templateData.headline}
                               onChange={(e) => setTemplateData({ ...templateData, headline: e.target.value })}
-                              className="flex-1 text-xs font-sans font-medium text-[#191716] bg-transparent border-0 outline-none focus:ring-0 p-0"
+                              className="flex-1 text-xs font-sans font-medium text-slate-900 bg-transparent border-0 outline-none focus:ring-0 p-0"
                             />
                           </div>
                         )}
 
                         {/* Subheadline Row */}
                         {templateData.subheadline !== undefined && (
-                          <div className="flex flex-col sm:flex-row sm:items-center px-3.5 py-2.5 gap-1 sm:gap-3">
-                            <label className="w-28 shrink-0 text-xs font-delight font-semibold text-slate-400">
-                              Subheadline
+                          <div className="flex flex-col sm:flex-row sm:items-center px-4 py-3 gap-1 sm:gap-3 bg-white hover:bg-slate-50/50 transition-colors">
+                            <label className="w-28 shrink-0 text-xs font-delight font-bold text-slate-600 flex items-center gap-1.5">
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                              <span>Subheadline</span>
                             </label>
                             <input 
                               type="text" 
@@ -1245,22 +1299,35 @@ const OutreachCenter = () => {
                       </div>
 
                       {/* PITCH BODY & MERGE VARIABLES SHEET */}
-                      <div className="bg-white border border-slate-200 rounded-md overflow-hidden">
-                        <div className="px-3.5 py-2 bg-slate-50/70 border-b border-slate-100 flex flex-wrap items-center justify-between gap-2">
-                          <span className="text-xs font-delight font-semibold text-[#191716]">
-                            Message Body
+                      <div className="bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-2xs">
+                        <div className="px-4 py-2.5 bg-slate-50/80 border-b border-slate-100 flex flex-wrap items-center justify-between gap-2">
+                          <span className="text-xs font-delight font-bold text-slate-800 flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-indigo-600"></span>
+                            <span>Message Body</span>
                           </span>
-                          <div className="flex flex-wrap gap-1 items-center">
-                            {mergeTags.map(tag => (
-                              <button 
-                                key={tag}
-                                type="button"
-                                onClick={() => insertTag(tag)}
-                                className="text-[10px] font-delight font-medium px-2 py-0.5 rounded bg-white hover:bg-[#191716] text-slate-600 hover:text-white border border-slate-200 transition-colors cursor-pointer"
-                              >
-                                {tag}
-                              </button>
-                            ))}
+                          <div className="flex flex-wrap gap-1.5 items-center">
+                            {mergeTags.map(tag => {
+                              const isBooking = tag.includes('booking');
+                              const isName = tag.includes('name');
+                              const isLoc = tag.includes('location');
+                              const colorClass = isBooking 
+                                ? 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100 hover:border-indigo-300'
+                                : isName
+                                ? 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100 hover:border-amber-300'
+                                : isLoc
+                                ? 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100 hover:border-emerald-300'
+                                : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200 hover:border-slate-300';
+                              return (
+                                <button 
+                                  key={tag}
+                                  type="button"
+                                  onClick={() => insertTag(tag)}
+                                  className={`text-[10px] font-delight font-semibold px-2 py-0.5 rounded-md border transition-all cursor-pointer shadow-2xs ${colorClass}`}
+                                >
+                                  + {tag}
+                                </button>
+                              );
+                            })}
                           </div>
                         </div>
 
@@ -1268,39 +1335,42 @@ const OutreachCenter = () => {
                           rows={7}
                           value={templateData.body}
                           onChange={(e) => setTemplateData({ ...templateData, body: e.target.value })}
-                          className="w-full p-3.5 text-xs font-sans text-slate-800 border-0 outline-none focus:ring-0 leading-relaxed bg-white resize-y"
+                          className="w-full p-4 text-xs font-sans text-slate-800 border-0 outline-none focus:ring-0 leading-relaxed bg-white resize-y placeholder:text-slate-400"
                           placeholder="Compose your structured message copy..."
                         />
                       </div>
 
                       {/* PRIMARY CALL TO ACTION SHEET */}
                       {templateData.ctaText !== undefined && (
-                        <div className="bg-white border border-slate-200 rounded-md divide-y divide-slate-100 overflow-hidden">
-                          <div className="px-3.5 py-2 bg-slate-50/70 flex items-center justify-between">
-                            <span className="text-xs font-delight font-semibold text-[#191716]">
-                              Call to Action
+                        <div className="bg-white border border-slate-200/90 rounded-2xl divide-y divide-slate-100 overflow-hidden shadow-2xs">
+                          <div className="px-4 py-2.5 bg-slate-50/80 flex items-center justify-between">
+                            <span className="text-xs font-delight font-bold text-slate-800 flex items-center gap-1.5">
+                              <span className="w-1.5 h-1.5 rounded-full bg-indigo-600"></span>
+                              <span>Call to Action</span>
                             </span>
-                            <span className="text-[10px] font-delight text-slate-400">Primary Button</span>
+                            <span className="text-[10px] font-delight font-semibold text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded-md border border-indigo-200/60">
+                              Primary Button
+                            </span>
                           </div>
                           <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-slate-100">
-                            <div className="flex items-center px-3.5 py-2.5 gap-2">
-                              <label className="w-20 shrink-0 text-xs font-delight font-semibold text-slate-400">Label</label>
+                            <div className="flex items-center px-4 py-3 gap-2">
+                              <label className="w-20 shrink-0 text-xs font-delight font-bold text-slate-500">Label</label>
                               <input 
                                 type="text" 
                                 value={templateData.ctaText}
                                 onChange={(e) => setTemplateData({ ...templateData, ctaText: e.target.value })}
                                 placeholder="Book an Appointment "
-                                className="flex-1 text-xs font-sans text-[#191716] bg-transparent border-0 outline-none p-0"
+                                className="flex-1 text-xs font-sans font-semibold text-slate-900 bg-transparent border-0 outline-none p-0"
                               />
                             </div>
-                            <div className="flex items-center px-3.5 py-2.5 gap-2">
-                              <label className="w-14 shrink-0 text-xs font-delight font-semibold text-slate-400">URL</label>
+                            <div className="flex items-center px-4 py-3 gap-2">
+                              <label className="w-14 shrink-0 text-xs font-delight font-bold text-slate-500">URL</label>
                               <input 
                                 type="text" 
                                 value={templateData.ctaUrl || ''}
                                 onChange={(e) => setTemplateData({ ...templateData, ctaUrl: e.target.value })}
                                 placeholder="http://localhost:8080 (Easy!Appointments)"
-                                className="flex-1 text-xs font-delight font-medium text-slate-700 bg-transparent border-0 outline-none p-0"
+                                className="flex-1 text-xs font-delight font-medium text-indigo-600 bg-transparent border-0 outline-none p-0"
                               />
                             </div>
                           </div>
@@ -1309,12 +1379,13 @@ const OutreachCenter = () => {
 
                       {/* Interactive Calendar Booking Card Editor */}
                       {(selectedTemplateId === 'interactive_calendar' || (selectedTemplateId === 'two_column' && templateData.timeSlots)) && (
-                        <div className="space-y-3.5 p-3.5 bg-slate-50 border border-slate-200 rounded-md">
-                          <div className="flex items-center justify-between border-b border-slate-200 pb-2">
-                            <h5 className="font-delight text-xs font-semibold text-slate-800 flex items-center gap-1.5">
+                        <div className="space-y-4 p-4 bg-gradient-to-br from-indigo-50/40 via-white to-slate-50/60 border border-indigo-200/80 rounded-2xl shadow-xs">
+                          <div className="flex items-center justify-between border-b border-indigo-100 pb-2.5">
+                            <h5 className="font-delight text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                              <Calendar className="w-3.5 h-3.5 text-indigo-600" />
                               <span>Interactive Booking Card Settings</span>
                             </h5>
-                            <span className="text-[10px] font-delight font-medium text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded flex items-center gap-1">
+                            <span className="text-[10px] font-delight font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200/80 px-2.5 py-0.5 rounded-full flex items-center gap-1.5">
                               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                               <span>Easy!Appointments</span>
                             </span>
@@ -1323,56 +1394,56 @@ const OutreachCenter = () => {
                           {/* Host Details */}
                           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                             <div>
-                              <label className="block text-[10px] font-delight font-semibold text-slate-600 mb-1">Host Name</label>
+                              <label className="block text-[10px] font-delight font-bold text-slate-600 mb-1">Host Name</label>
                               <input 
                                 type="text"
                                 placeholder="Host Name"
                                 value={templateData.hostName || ''}
                                 onChange={(e) => setTemplateData({ ...templateData, hostName: e.target.value })}
-                                className="w-full bg-white border border-slate-200 rounded-md p-2 text-xs font-delight font-medium outline-none focus:border-slate-400"
+                                className="w-full bg-white border border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 rounded-xl p-2.5 text-xs font-delight font-medium outline-none transition-all shadow-2xs"
                               />
                             </div>
                             <div>
-                              <label className="block text-[10px] font-delight font-semibold text-slate-600 mb-1">Host Title</label>
+                              <label className="block text-[10px] font-delight font-bold text-slate-600 mb-1">Host Title</label>
                               <input 
                                 type="text"
                                 placeholder="Growth Director"
                                 value={templateData.hostTitle || ''}
                                 onChange={(e) => setTemplateData({ ...templateData, hostTitle: e.target.value })}
-                                className="w-full bg-white border border-slate-200 rounded-md p-2 text-xs font-delight font-medium outline-none focus:border-slate-400"
+                                className="w-full bg-white border border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 rounded-xl p-2.5 text-xs font-delight font-medium outline-none transition-all shadow-2xs"
                               />
                             </div>
                             <div>
-                              <label className="block text-[10px] font-delight font-semibold text-slate-600 mb-1">Call Duration</label>
+                              <label className="block text-[10px] font-delight font-bold text-slate-600 mb-1">Call Duration</label>
                               <input 
                                 type="text"
                                 placeholder="15 mins"
                                 value={templateData.duration || ''}
                                 onChange={(e) => setTemplateData({ ...templateData, duration: e.target.value })}
-                                className="w-full bg-white border border-slate-200 rounded-md p-2 text-xs font-delight font-medium outline-none focus:border-slate-400"
+                                className="w-full bg-white border border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 rounded-xl p-2.5 text-xs font-delight font-medium outline-none transition-all shadow-2xs"
                               />
                             </div>
                           </div>
 
                           {/* Host Avatar URL */}
                           <div>
-                            <label className="block text-[10px] font-delight font-semibold text-slate-600 mb-1">Host Avatar Image URL</label>
+                            <label className="block text-[10px] font-delight font-bold text-slate-600 mb-1">Host Avatar Image URL</label>
                             <input 
                               type="text"
                               placeholder="https://images.unsplash.com/..."
                               value={templateData.hostAvatar || ''}
                               onChange={(e) => setTemplateData({ ...templateData, hostAvatar: e.target.value })}
-                              className="w-full bg-white border border-slate-200 rounded-md p-2 text-xs font-sans outline-none focus:border-slate-400"
+                              className="w-full bg-white border border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 rounded-xl p-2.5 text-xs font-sans outline-none transition-all shadow-2xs"
                             />
                           </div>
 
                           {/* Interactive Time Slots */}
                           <div>
-                            <label className="block text-[10px] font-delight font-semibold text-slate-700 mb-1">Interactive Time Slots (Clickable Chips)</label>
+                            <label className="block text-[10px] font-delight font-bold text-slate-700 mb-1.5">Interactive Time Slots (Clickable Chips)</label>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                               {(templateData.timeSlots || []).map((slot: any, idx: number) => (
-                                <div key={idx} className="p-2 bg-white border border-slate-200 rounded-md flex items-center gap-2">
-                                  <span className="text-[10px] font-bold text-slate-400 w-4">#{idx + 1}</span>
+                                <div key={idx} className="p-2.5 bg-white border border-indigo-100 hover:border-indigo-200 rounded-xl flex items-center gap-2 shadow-2xs transition-all">
+                                  <span className="text-[10px] font-bold text-indigo-500 w-5">#{idx + 1}</span>
                                   <input 
                                     type="text"
                                     value={slot.label}
@@ -1381,7 +1452,7 @@ const OutreachCenter = () => {
                                       nextSlots[idx] = { ...nextSlots[idx], label: e.target.value };
                                       setTemplateData({ ...templateData, timeSlots: nextSlots });
                                     }}
-                                    className="flex-1 text-xs font-delight border-0 outline-none p-0"
+                                    className="flex-1 text-xs font-delight font-medium text-slate-800 border-0 outline-none p-0 bg-transparent"
                                     placeholder="Slot Label"
                                   />
                                 </div>
@@ -1978,11 +2049,12 @@ const OutreachCenter = () => {
 
                       {/* Brand Accent Color */}
                       <div>
-                        <label className="block text-xs font-delight font-semibold text-slate-700 mb-1.5">Brand Accent Tone</label>
-                        <div className="flex gap-2">
+                        <label className="block text-xs font-delight font-bold text-slate-700 mb-2">Brand Accent Tone</label>
+                        <div className="flex flex-wrap gap-2">
                           {[
                             { name: 'Dark Indigo', val: '#191716' },
-                            { name: 'Indigo Pop', val: '#C85A32' },
+                            { name: 'Electric Indigo', val: '#4F46E5' },
+                            { name: 'Warm Indigo', val: '#C85A32' },
                             { name: 'Ice Blue', val: '#C7D2FE' },
                             { name: 'Pure White', val: '#FFFFFF' },
                             { name: 'Emerald', val: '#10B981' }
@@ -1991,13 +2063,13 @@ const OutreachCenter = () => {
                               key={col.val}
                               type="button"
                               onClick={() => setTemplateStyling({ ...templateStyling, accentColor: col.val })}
-                              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-delight font-medium border transition-all cursor-pointer ${
+                              className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-delight font-semibold border transition-all cursor-pointer ${
                                 templateStyling.accentColor === col.val 
-                                  ? 'border-slate-900 bg-slate-100 font-semibold shadow-xs' 
-                                  : 'border-slate-200 bg-white hover:border-slate-300'
+                                  ? 'border-indigo-600 bg-indigo-50 text-indigo-900 shadow-2xs' 
+                                  : 'border-slate-200 bg-white hover:border-indigo-300 text-slate-700'
                               }`}
                             >
-                              <span className="w-3 h-3 rounded-xs" style={{ backgroundColor: col.val }} />
+                              <span className="w-3.5 h-3.5 rounded-full border border-black/10 shadow-2xs" style={{ backgroundColor: col.val }} />
                               <span>{col.name}</span>
                             </button>
                           ))}
@@ -2005,13 +2077,13 @@ const OutreachCenter = () => {
                       </div>
 
                       {/* CAN-SPAM Deliverability Footer Guard */}
-                      <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-md flex items-center justify-between">
+                      <div className="p-4 bg-gradient-to-r from-emerald-50/50 via-teal-50/20 to-white border border-emerald-200/80 rounded-2xl flex items-center justify-between shadow-2xs">
                         <div>
-                          <div className="flex items-center gap-1.5 text-slate-900 font-delight font-medium text-xs mb-0.5">
+                          <div className="flex items-center gap-2 text-emerald-950 font-delight font-bold text-xs mb-0.5">
                             <ShieldCheck className="w-4 h-4 text-emerald-600" />
                             <span>Mandatory Unsubscribe Compliance Footer</span>
                           </div>
-                          <p className="text-[11px] text-slate-500">
+                          <p className="text-[11px] text-emerald-800/80 font-medium">
                             Enforces CAN-SPAM and GDPR legal opt-out links on every outbound email automatically.
                           </p>
                         </div>
@@ -2019,7 +2091,7 @@ const OutreachCenter = () => {
                           type="checkbox"
                           checked={templateStyling.showComplianceFooter}
                           onChange={(e) => setTemplateStyling({ ...templateStyling, showComplianceFooter: e.target.checked })}
-                          className="w-4 h-4 accent-slate-900 cursor-pointer"
+                          className="w-4 h-4 accent-emerald-600 cursor-pointer"
                         />
                       </div>
                     </div>
@@ -2029,11 +2101,11 @@ const OutreachCenter = () => {
             </div>
 
             {/* Bottom Actions */}
-            <div className="px-4 py-3 border-t border-slate-200 bg-slate-50/60 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="px-5 py-3.5 border-t border-slate-100 bg-white/90 backdrop-blur-xs flex flex-col sm:flex-row items-center justify-between gap-3 rounded-b-2xl">
               <div className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                <span className="text-[11px] font-delight text-slate-500">
-                  {activeChannel === 'whatsapp' ? 'WhatsApp wa.me API Ready' : 'Direct SMTP Socket Transport Ready'}
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span className="text-[11px] font-delight font-medium text-slate-600">
+                  {activeChannel === 'whatsapp' ? 'WhatsApp wa.me API Bridge Active' : 'Direct SMTP Socket Transport Ready'}
                 </span>
               </div>
               
@@ -2041,14 +2113,14 @@ const OutreachCenter = () => {
                 <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
                   <button 
                     onClick={handleCopyWhatsApp}
-                    className="bg-white border border-slate-200 hover:bg-slate-100 px-3 py-1.5 rounded text-xs font-delight font-medium text-slate-700 transition-colors flex items-center gap-1.5 cursor-pointer"
+                    className="bg-white border border-slate-200 hover:bg-slate-50 px-3.5 py-1.5 rounded-xl text-xs font-delight font-bold text-slate-700 shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer"
                   >
                     {copiedWhatsApp ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <ExternalLink className="w-3.5 h-3.5 text-slate-400" />}
                     <span>{copiedWhatsApp ? 'Copied' : 'Copy Script'}</span>
                   </button>
                   <button 
                     onClick={() => handleOpenWhatsAppWeb(previewLead)}
-                    className="bg-[#191716] hover:bg-slate-800 text-white px-3.5 py-1.5 rounded text-xs font-delight font-semibold transition-all flex items-center gap-1.5 cursor-pointer"
+                    className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white px-4 py-1.5 rounded-xl text-xs font-delight font-bold shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
                   >
                     <Send className="w-3.5 h-3.5" />
                     <span>WhatsApp Web</span>
@@ -2056,15 +2128,15 @@ const OutreachCenter = () => {
                 </div>
               ) : (
                 <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-                  <div className="hidden sm:flex items-center gap-1 px-2.5 py-1 rounded bg-slate-100 border border-slate-200 text-[11px] font-delight text-slate-600">
-                    <span className="font-bold text-[#191716]">{user?.emails_sent || 0}</span>
-                    <span>/</span>
-                    <span>{user?.emails_limit || 50} Emails</span>
+                  <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 border border-indigo-200/80 text-[11px] font-delight text-indigo-700">
+                    <span className="font-bold text-indigo-900">{user?.emails_sent || 0}</span>
+                    <span className="text-indigo-400">/</span>
+                    <span className="font-semibold">{user?.emails_limit || 50} Emails</span>
                   </div>
                   <button 
                     onClick={handleSendSingleTest}
                     disabled={isSendingSingle}
-                    className="bg-white border border-slate-200 hover:bg-slate-100 disabled:opacity-50 px-3 py-1.5 rounded text-xs font-delight font-medium text-slate-700 transition-colors flex items-center gap-1.5 cursor-pointer"
+                    className="bg-white border border-slate-200 hover:bg-slate-50 hover:border-slate-300 disabled:opacity-50 px-3.5 py-1.5 rounded-xl text-xs font-delight font-bold text-slate-700 shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer"
                     title={`Dispatches an individualized test email directly to ${previewLead.businessName}`}
                   >
                     {isSendingSingle ? (
@@ -2081,7 +2153,7 @@ const OutreachCenter = () => {
                   </button>
                   <button 
                     onClick={() => setIsDispatchModalOpen(true)}
-                    className="bg-[#191716] hover:bg-slate-800 text-white px-4 py-1.5 rounded text-xs font-delight font-semibold transition-all flex items-center gap-1.5 cursor-pointer"
+                    className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white px-5 py-1.5 rounded-xl text-xs font-delight font-bold shadow-sm shadow-indigo-200 transition-all flex items-center gap-1.5 cursor-pointer"
                   >
                     <Send className="w-3.5 h-3.5" />
                     <span>Launch Batch</span>
@@ -2097,47 +2169,54 @@ const OutreachCenter = () => {
           {/* ======================================================== */}
           <div 
             ref={previewCardRef}
-            className="w-full xl:flex-1 flex flex-col bg-slate-50 border border-slate-200 rounded-md min-h-[750px] xl:sticky xl:top-6 self-start z-10 overflow-hidden"
+            className="w-full xl:flex-1 flex flex-col bg-slate-50/70 border border-slate-200/90 rounded-2xl min-h-[750px] xl:sticky xl:top-6 self-start z-10 overflow-hidden shadow-xs"
           >
             
             {/* Viewport & Lead Controls */}
-            <div className="px-4 py-2.5 border-b border-slate-200 bg-white flex flex-wrap items-center justify-between gap-3 rounded-t-md relative z-30">
-              <div className="flex items-center gap-2.5">
-                <h3 className="font-delight text-xs font-semibold text-[#1E1B4B] flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            <div className="px-5 py-3 border-b border-slate-200/80 bg-white/95 backdrop-blur-md flex flex-wrap items-center justify-between gap-3 relative z-30">
+              <div className="flex items-center gap-3">
+                {/* Traffic-light chrome dots */}
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-rose-400/90 shadow-2xs"></span>
+                  <span className="w-2.5 h-2.5 rounded-full bg-amber-400/90 shadow-2xs"></span>
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-400/90 shadow-2xs"></span>
+                </div>
+                <div className="h-4 w-px bg-slate-200" />
+                <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200/80 text-emerald-800 text-[11px] font-delight font-bold">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                   <span>Live Render</span>
-                </h3>
+                </div>
 
                 {/* Viewport Switcher */}
-                <div className="flex bg-slate-100 p-0.5 rounded border border-slate-200 text-xs font-delight">
+                <div className="flex bg-slate-100/90 p-0.5 rounded-lg border border-slate-200 text-xs font-delight">
                   <button 
                     onClick={() => setPreviewViewport('desktop')}
-                    className={`px-2.5 py-0.5 rounded-xs font-medium flex items-center gap-1 transition-all cursor-pointer ${
-                      previewViewport === 'desktop' ? 'bg-white text-[#1E1B4B] font-semibold shadow-2xs' : 'text-slate-500 hover:text-[#1E1B4B]'
+                    className={`px-3 py-1 rounded-md font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
+                      previewViewport === 'desktop' ? 'bg-white text-indigo-950 font-bold shadow-2xs' : 'text-slate-500 hover:text-slate-800'
                     }`}
                   >
-                    <Monitor className="w-3 h-3" />
+                    <Monitor className="w-3.5 h-3.5" />
                     <span>Desktop</span>
                   </button>
                   <button 
                     onClick={() => setPreviewViewport('mobile')}
-                    className={`px-2.5 py-0.5 rounded-xs font-medium flex items-center gap-1 transition-all cursor-pointer ${
-                      previewViewport === 'mobile' ? 'bg-white text-[#1E1B4B] font-semibold shadow-2xs' : 'text-slate-500 hover:text-[#1E1B4B]'
+                    className={`px-3 py-1 rounded-md font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
+                      previewViewport === 'mobile' ? 'bg-white text-indigo-950 font-bold shadow-2xs' : 'text-slate-500 hover:text-slate-800'
                     }`}
                   >
-                    <Smartphone className="w-3 h-3" />
+                    <Smartphone className="w-3.5 h-3.5" />
                     <span>Mobile</span>
                   </button>
                 </div>
 
                 {/* A/B Variant Preview Indicator */}
                 {isAbTesting && (
-                  <div className="flex items-center bg-slate-100 p-0.5 rounded border border-slate-200 text-xs font-delight">
+                  <div className="flex items-center bg-slate-100/90 p-0.5 rounded-lg border border-slate-200 text-xs font-delight">
                     <button 
                       type="button"
                       onClick={() => setActiveVariant('A')}
-                      className={`px-2 py-0.5 rounded-xs font-medium transition-all cursor-pointer flex items-center gap-1 ${
-                        activeVariant === 'A' ? 'bg-[#1E1B4B] text-white' : 'text-slate-600 hover:text-[#1E1B4B]'
+                      className={`px-2.5 py-1 rounded-md font-medium transition-all cursor-pointer flex items-center gap-1 ${
+                        activeVariant === 'A' ? 'bg-indigo-600 text-white font-bold shadow-2xs' : 'text-slate-600 hover:text-indigo-600'
                       }`}
                     >
                       <span>Variant A</span>
@@ -2145,8 +2224,8 @@ const OutreachCenter = () => {
                     <button 
                       type="button"
                       onClick={() => setActiveVariant('B')}
-                      className={`px-2 py-0.5 rounded-xs font-medium transition-all cursor-pointer flex items-center gap-1 ${
-                        activeVariant === 'B' ? 'bg-[#1E1B4B] text-white' : 'text-slate-600 hover:text-[#1E1B4B]'
+                      className={`px-2.5 py-1 rounded-md font-medium transition-all cursor-pointer flex items-center gap-1 ${
+                        activeVariant === 'B' ? 'bg-indigo-600 text-white font-bold shadow-2xs' : 'text-slate-600 hover:text-indigo-600'
                       }`}
                     >
                       <span>Variant B</span>
@@ -2160,38 +2239,38 @@ const OutreachCenter = () => {
                 <button
                   type="button"
                   onClick={handleToggleLeadDropdown}
-                  className="flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100 px-2.5 py-1 rounded border border-slate-200 text-xs font-delight text-slate-700 transition-all cursor-pointer"
+                  className="flex items-center gap-2 bg-white hover:bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-delight text-slate-700 shadow-2xs transition-all cursor-pointer hover:border-indigo-300"
                   title="Click to select target lead for live hydration"
                 >
                   <span className="text-slate-400">Preview as:</span>
-                  <span className="font-semibold text-[#191716] max-w-[160px] truncate">{previewLead.businessName}</span>
+                  <span className="font-bold text-slate-900 max-w-[160px] truncate">{previewLead.businessName}</span>
                   <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${isLeadDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
 
                 {/* Dropdown Menu */}
                 {isLeadDropdownOpen && (
-                  <div className={`absolute ${dropdownAlign === 'left' ? 'left-0' : 'right-0'} mt-1.5 w-[280px] sm:w-80 max-w-[calc(100vw-32px)] bg-white border border-slate-200 rounded-md shadow-xl overflow-hidden z-50 animate-in fade-in duration-150 font-delight font-medium`}>
-                    <div className="p-2.5 border-b border-slate-200 bg-slate-50">
-                      <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Select Target Lead</span>
-                        <span className="text-[10px] bg-slate-200 text-slate-800 px-1.5 py-0.2 rounded-xs">
+                  <div className={`absolute ${dropdownAlign === 'left' ? 'left-0' : 'right-0'} mt-1.5 w-[280px] sm:w-80 max-w-[calc(100vw-32px)] bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden z-50 animate-in fade-in duration-150 font-delight font-medium`}>
+                    <div className="p-3 border-b border-slate-100 bg-slate-50/80">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Select Target Lead</span>
+                        <span className="text-[10px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-bold">
                           {availableLeads.length} Harvested
                         </span>
                       </div>
                       <div className="relative">
-                        <Search className="w-3.5 h-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-slate-400" />
+                        <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
                         <input
                           type="text"
                           value={leadSearchQuery}
                           onChange={(e) => setLeadSearchQuery(e.target.value)}
                           placeholder="Search your workspace leads..."
-                          className="w-full bg-white border border-slate-200 rounded-sm pl-7 pr-2.5 py-1 text-xs outline-none focus:border-slate-400 font-delight font-medium"
+                          className="w-full bg-white border border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 rounded-xl pl-8 pr-3 py-1.5 text-xs outline-none font-delight font-medium transition-all"
                           autoFocus
                         />
                       </div>
                     </div>
 
-                    <div className="max-h-64 overflow-y-auto custom-scrollbar p-1 divide-y divide-slate-100">
+                    <div className="max-h-64 overflow-y-auto custom-scrollbar p-1.5 divide-y divide-slate-50">
                       {filteredAvailableLeads.map((lead) => {
                         const isSelected = previewLead.businessName === lead.businessName;
                         return (
@@ -2202,33 +2281,33 @@ const OutreachCenter = () => {
                               setPreviewLead(lead);
                               setIsLeadDropdownOpen(false);
                             }}
-                            className={`w-full text-left p-2 rounded-sm transition-colors flex items-center justify-between group cursor-pointer ${
-                              isSelected ? 'bg-slate-100 text-slate-900 font-semibold' : 'hover:bg-slate-50 text-slate-700'
+                            className={`w-full text-left p-2.5 rounded-xl transition-colors flex items-center justify-between group cursor-pointer ${
+                              isSelected ? 'bg-indigo-50/80 text-indigo-950 font-bold' : 'hover:bg-slate-50 text-slate-700'
                             }`}
                           >
                             <div className="min-w-0 pr-2">
-                              <div className="text-xs font-medium text-slate-900 line-clamp-2 break-words">
+                              <div className="text-xs font-semibold text-slate-900 line-clamp-2 break-words">
                                 {lead.businessName}
                               </div>
-                              <div className="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5">
+                              <div className="text-[10px] text-slate-400 flex items-center gap-1.5 mt-0.5">
                                 <span>{lead.category || lead.fieldOfWork}</span>
                                 <span>•</span>
                                 <span>{lead.location}</span>
                               </div>
                             </div>
                             {isSelected && (
-                              <Check className="w-3.5 h-3.5 text-slate-900 shrink-0" />
+                              <Check className="w-4 h-4 text-indigo-600 shrink-0" />
                             )}
                           </button>
                         );
                       })}
 
                       {availableLeads.length === 0 ? (
-                        <div className="p-3.5 text-center space-y-1.5">
-                          <div className="text-xs font-semibold text-slate-700">
+                        <div className="p-4 text-center space-y-1.5">
+                          <div className="text-xs font-bold text-slate-800">
                             No harvested leads in workspace yet
                           </div>
-                          <p className="text-[11px] text-slate-400 font-normal leading-relaxed">
+                          <p className="text-[11px] text-slate-500 font-normal leading-relaxed">
                             Previewing with your workspace profile ({workspaceProfileLead.businessName}). Harvest prospects in Lead Finder to preview real leads here.
                           </p>
                         </div>
@@ -2244,29 +2323,39 @@ const OutreachCenter = () => {
             </div>
 
             {/* Viewport Canvas */}
-            <div className="flex-1 p-6 overflow-y-auto custom-scrollbar flex items-start justify-center rounded-b-md">
+            <div className="flex-1 p-6 overflow-y-auto custom-scrollbar flex items-start justify-center rounded-b-2xl">
               
               {/* ======================================================== */}
               {/* EMAIL CLIENT CONTAINER                                   */}
               {/* ======================================================== */}
               {activeChannel === 'email' && (
                 <div 
-                  className={`bg-white rounded-md shadow-xs border border-slate-200 overflow-hidden transition-all duration-150 ${
+                  className={`bg-white rounded-2xl shadow-md border border-slate-200/90 overflow-hidden transition-all duration-150 ${
                     previewViewport === 'mobile' ? 'w-[375px]' : 'w-full max-w-[620px]'
                   }`}
                   style={{ borderRadius: templateStyling.borderRadius }}
                 >
                   
                   {/* Email Chrome Header */}
-                  <div className="border-b border-slate-200 p-3.5 bg-slate-50 text-xs font-delight font-medium">
-                    <div className="text-[11px] text-slate-500 font-medium mb-0.5">
-                      From: {user?.name || 'Workspace Operator'} &lt;{user?.email || 'outreach@leadpulse.io'}&gt;
+                  <div className="border-b border-slate-100 p-4 bg-gradient-to-r from-slate-50/90 via-indigo-50/20 to-white text-xs font-delight">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center font-bold text-[10px] shadow-2xs">
+                          LP
+                        </div>
+                        <div className="text-[11px] text-slate-600 font-medium">
+                          <span className="font-bold text-slate-900">{user?.name || 'Workspace Operator'}</span> &lt;{user?.email || 'outreach@leadpulse.io'}&gt;
+                        </div>
+                      </div>
+                      <span className="text-[10px] font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200/70 px-2 py-0.5 rounded-full">
+                        Primary Inbox
+                      </span>
                     </div>
-                    <div className="text-[11px] text-slate-500 font-medium mb-1.5">
-                      To: {previewLead.email || `contact@${previewLead.businessName.toLowerCase().replace(/[^a-z0-9]/g, '') || 'biz'}.com`}
+                    <div className="text-[11px] text-slate-500 font-medium mb-2 pl-8">
+                      To: <span className="text-slate-800 font-semibold">{previewLead.email || `contact@${previewLead.businessName.toLowerCase().replace(/[^a-z0-9]/g, '') || 'biz'}.com`}</span>
                     </div>
                     <div 
-                      className="font-bold text-sm text-slate-900 tracking-tight font-sans"
+                      className="font-bold text-sm text-slate-900 tracking-tight font-sans pl-8"
                       dangerouslySetInnerHTML={{ __html: renderPreviewHtml(templateData.subject) }}
                     />
                   </div>
@@ -3044,23 +3133,26 @@ const OutreachCenter = () => {
 
               {/* WHATSAPP PHONE MOCKUP PREVIEW */}
               {activeChannel === 'whatsapp' && (
-                <div className="w-[340px] bg-white rounded-md shadow-md border border-slate-300 overflow-hidden flex flex-col font-sans">
-                  <div className="bg-[#075E54] text-white p-3 flex items-center gap-2.5 shrink-0">
-                    <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center font-bold text-xs">
+                <div className="w-[340px] bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden flex flex-col font-sans ring-4 ring-slate-100/80">
+                  <div className="bg-gradient-to-r from-emerald-600 to-teal-700 text-white p-3.5 flex items-center gap-3 shrink-0 shadow-xs">
+                    <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center font-bold text-xs backdrop-blur-xs">
                       LP
                     </div>
-                    <div>
-                      <div className="font-bold text-xs truncate max-w-[220px]">{previewLead.businessName}</div>
-                      <div className="text-[10px] text-emerald-200 font-delight font-medium">Official Business Account</div>
+                    <div className="min-w-0">
+                      <div className="font-bold text-xs truncate max-w-[220px] text-white">{previewLead.businessName}</div>
+                      <div className="text-[10px] text-emerald-100 font-delight font-medium flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse"></span>
+                        <span>Official Business Account</span>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex-1 bg-[#E5DDD5] p-3 overflow-y-auto flex flex-col">
+                  <div className="flex-1 bg-[#ECE5DD] p-3.5 overflow-y-auto flex flex-col min-h-[300px]">
                     <div 
-                      className="bg-[#DCF8C6] p-2.5 rounded-md rounded-tr-none self-end max-w-[88%] text-xs text-slate-900 shadow-xs whitespace-pre-wrap mb-1"
+                      className="bg-[#E7FFDB] border border-emerald-200/60 p-3 rounded-2xl rounded-tr-xs self-end max-w-[88%] text-xs text-slate-900 shadow-2xs whitespace-pre-wrap mb-1 leading-relaxed"
                       dangerouslySetInnerHTML={{ __html: renderPreviewHtml(whatsAppMessage) }}
                     />
-                    <div className="text-[9px] text-slate-500 self-end mr-1 flex items-center gap-1 font-delight font-normal">
-                      10:42 AM <CheckCircle2 className="w-3 h-3 text-emerald-700" />
+                    <div className="text-[9px] text-slate-500 self-end mr-1 flex items-center gap-1 font-delight font-medium">
+                      10:42 AM <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                     </div>
                   </div>
                 </div>
@@ -3068,19 +3160,20 @@ const OutreachCenter = () => {
 
               {/* SMS PHONE MOCKUP PREVIEW */}
               {activeChannel === 'sms' && (
-                <div className="w-[320px] bg-white rounded-md shadow-md border border-slate-300 overflow-hidden flex flex-col font-sans">
-                  <div className="bg-slate-100 p-2.5 flex flex-col items-center justify-center border-b border-slate-200 shrink-0 font-delight font-medium">
-                    <div className="w-7 h-7 rounded-full bg-slate-300 flex items-center justify-center text-slate-700 font-bold mb-0.5">
-                      <Phone className="w-3.5 h-3.5" />
+                <div className="w-[320px] bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden flex flex-col font-sans ring-4 ring-slate-100/80">
+                  <div className="bg-gradient-to-r from-slate-50 to-indigo-50/40 p-3.5 flex flex-col items-center justify-center border-b border-slate-200/80 shrink-0 font-delight font-medium">
+                    <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold mb-1 shadow-2xs">
+                      <Phone className="w-4 h-4" />
                     </div>
-                    <div className="text-xs font-semibold text-slate-900">{previewLead.phone}</div>
+                    <div className="text-xs font-bold text-slate-900">{previewLead.phone}</div>
+                    <div className="text-[10px] text-slate-400 font-delight">Direct Carrier Gateway</div>
                   </div>
-                  <div className="flex-1 bg-white p-3 overflow-y-auto flex flex-col">
+                  <div className="flex-1 bg-white p-3.5 overflow-y-auto flex flex-col min-h-[300px]">
                     <div 
-                      className="bg-slate-900 text-white p-2.5 rounded-md rounded-br-none self-end max-w-[88%] text-xs shadow-xs whitespace-pre-wrap mb-1 font-sans"
+                      className="bg-gradient-to-r from-indigo-600 to-indigo-700 text-white p-3 rounded-2xl rounded-br-xs self-end max-w-[88%] text-xs shadow-2xs whitespace-pre-wrap mb-1 font-sans leading-relaxed"
                       dangerouslySetInnerHTML={{ __html: renderPreviewHtml(templateData.body) }}
                     />
-                    <div className="text-[9px] text-slate-400 self-end mr-1 font-delight font-normal">Delivered</div>
+                    <div className="text-[9px] text-slate-400 self-end mr-1 font-delight font-medium">Delivered</div>
                   </div>
                 </div>
               )}
