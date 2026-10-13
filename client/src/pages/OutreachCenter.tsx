@@ -7,15 +7,16 @@ import {
   ChevronDown, Phone, Layout, Monitor, 
   Smartphone, Sparkles, Sliders, Edit3, ArrowRight,
   ShieldCheck, Tag, Search, Check, Loader2, ExternalLink, Key,
-  Plus, Trash2, Upload, Wand2, Calendar
+  Plus, Trash2, Upload, Wand2, Calendar,
+  Image, FileText, Paperclip, Download, X, File, Eye
 } from 'lucide-react';
 import TemplateGalleryModal from '../components/TemplateGalleryModal';
 import DispatchTrackerModal from '../components/DispatchTrackerModal';
 import EmailProviderModal from '../components/EmailProviderModal';
 import { EMAIL_TEMPLATES } from '../data/emailTemplates';
 import type { TemplateId } from '../data/emailTemplates';
-import { WHATSAPP_TEMPLATES, EMAIL_CAPTURE_BRIDGE_SCRIPT } from '../data/whatsappTemplates';
-import type { WhatsAppTemplate } from '../data/whatsappTemplates';
+import { WHATSAPP_TEMPLATES, EMAIL_CAPTURE_BRIDGE_SCRIPT, WHATSAPP_MEDIA_PRESETS } from '../data/whatsappTemplates';
+import type { WhatsAppTemplate, WhatsAppImageAttachment, WhatsAppPdfAttachment, WhatsAppMediaPreset } from '../data/whatsappTemplates';
 import { useStore } from '../store/useStore';
 import { alertDialog } from '../components/AppConfirmModal';
 import axios from 'axios';
@@ -135,6 +136,25 @@ const OutreachCenter = () => {
       setWhatsAppMessageA(updater);
     }
   };
+
+  // WhatsApp Rich Media & Document Attachments State (Picture + PDF)
+  const [whatsAppImage, setWhatsAppImage] = useState<WhatsAppImageAttachment>({
+    enabled: true,
+    url: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&auto=format&fit=crop&q=80',
+    caption: 'LeadPulse Growth Analytics & Live Performance Overview',
+    fileName: 'Executive_Analytics_Dashboard.jpg'
+  });
+
+  const [whatsAppPdf, setWhatsAppPdf] = useState<WhatsAppPdfAttachment>({
+    enabled: true,
+    url: 'https://leadpulse.io/assets/LeadPulse_Executive_Deck.pdf',
+    fileName: '{{business_name}}_Growth_Blueprint.pdf',
+    fileSize: '2.4 MB',
+    pageCount: '6 pages'
+  });
+
+  const [activeMediaPresetId, setActiveMediaPresetId] = useState<string>('executive_deck');
+  const [copiedMediaLinks, setCopiedMediaLinks] = useState(false);
 
   // Template Styling Layer Settings
   const [templateStyling, setTemplateStyling] = useState({
@@ -478,11 +498,100 @@ const OutreachCenter = () => {
   const handleSelectWhatsAppTemplate = (tpl: WhatsAppTemplate) => {
     setSelectedWhatsAppId(tpl.id);
     setWhatsAppMessage(tpl.defaultMessage);
+    if (tpl.suggestedImage) {
+      setWhatsAppImage(prev => ({
+        ...prev,
+        ...tpl.suggestedImage,
+        enabled: true
+      }));
+    }
+    if (tpl.suggestedPdf) {
+      setWhatsAppPdf(prev => ({
+        ...prev,
+        ...tpl.suggestedPdf,
+        enabled: true
+      }));
+    }
   };
 
   // Insert Email Capture Bridge Script
   const handleInsertBridgeScript = () => {
     setWhatsAppMessage(prev => prev + '\n\n' + EMAIL_CAPTURE_BRIDGE_SCRIPT);
+  };
+
+  // Apply Media Preset
+  const handleApplyMediaPreset = (preset: WhatsAppMediaPreset) => {
+    setActiveMediaPresetId(preset.id);
+    setWhatsAppImage({
+      enabled: true,
+      url: preset.image.url,
+      caption: preset.image.caption,
+      fileName: preset.image.fileName
+    });
+    setWhatsAppPdf({
+      enabled: true,
+      url: preset.pdf.url,
+      fileName: preset.pdf.fileName,
+      fileSize: preset.pdf.fileSize,
+      pageCount: preset.pdf.pageCount
+    });
+  };
+
+  // Handle Image File Upload
+  const handleImageFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (uploadEvent) => {
+        const result = uploadEvent.target?.result as string;
+        if (result) {
+          setWhatsAppImage({
+            enabled: true,
+            url: result,
+            fileName: file.name,
+            caption: whatsAppImage.caption || `Attached visual: ${file.name}`
+          });
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Handle PDF File Upload
+  const handlePdfFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+      const sizeStr = parseFloat(sizeMb) > 0.1 ? `${sizeMb} MB` : `${Math.round(file.size / 1024)} KB`;
+      const reader = new FileReader();
+      reader.onload = (uploadEvent) => {
+        const result = uploadEvent.target?.result as string;
+        setWhatsAppPdf({
+          enabled: true,
+          url: result || `https://leadpulse.io/assets/${encodeURIComponent(file.name)}`,
+          fileName: file.name,
+          fileSize: sizeStr,
+          pageCount: 'Doc'
+        });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Copy Media Links Only
+  const handleCopyMediaLinks = () => {
+    const lines: string[] = [];
+    if (whatsAppPdf.enabled && whatsAppPdf.url) {
+      lines.push(`PDF Document (${whatsAppPdf.fileName}): ${whatsAppPdf.url}`);
+    }
+    if (whatsAppImage.enabled && whatsAppImage.url) {
+      lines.push(`Image (${whatsAppImage.fileName || 'Visual'}): ${whatsAppImage.url}`);
+    }
+    if (lines.length > 0) {
+      navigator.clipboard.writeText(lines.join('\n'));
+      setCopiedMediaLinks(true);
+      setTimeout(() => setCopiedMediaLinks(false), 2400);
+    }
   };
 
   // Format Text for External Copy / Dispatch
@@ -496,6 +605,22 @@ const OutreachCenter = () => {
     msg = msg.replace(/{{phone}}/g, lead.phone);
     msg = msg.replace(/{{rating}}/g, lead.rating || '4.8');
     msg = msg.replace(/{{(booking_link|calendly_link|appointment_link)}}/g, `Book an Appointment : ${resolvedBookingUrl}`);
+
+    // Append Media Attachments neatly
+    const mediaItems: string[] = [];
+    if (whatsAppPdf.enabled && whatsAppPdf.url) {
+      const cleanPdfName = (whatsAppPdf.fileName || 'Overview.pdf').replace(/{{business_name}}/g, lead.businessName);
+      mediaItems.push(`📄 *Document Attached:* ${cleanPdfName} (${whatsAppPdf.fileSize || 'PDF'})\n🔗 Access Link: ${whatsAppPdf.url}`);
+    }
+    if (whatsAppImage.enabled && whatsAppImage.url) {
+      const captionStr = whatsAppImage.caption ? ` (${whatsAppImage.caption})` : '';
+      mediaItems.push(`🖼️ *Visual Preview:* ${whatsAppImage.fileName || 'Image'}${captionStr}\n🔗 Access Link: ${whatsAppImage.url}`);
+    }
+
+    if (mediaItems.length > 0) {
+      msg += `\n\n────────────────\n📎 *Attached Media & Deliverables:*\n\n` + mediaItems.join('\n\n');
+    }
+
     return msg;
   };
 
@@ -1034,6 +1159,342 @@ const OutreachCenter = () => {
                       onChange={(e) => setWhatsAppMessage(e.target.value)}
                       className="w-full p-4 text-xs font-sans outline-none leading-relaxed bg-white border-0 text-slate-800 placeholder:text-slate-400"
                     />
+                  </div>
+
+                  {/* Rich Media & Document Attachments (Picture + PDF Files) */}
+                  <div className="border border-slate-200/90 rounded-xl p-4 bg-gradient-to-b from-slate-50/40 via-white to-slate-50/20 shadow-2xs space-y-4">
+                    
+                    {/* Header Strip */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-3 border-b border-slate-100">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-md bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600">
+                            <Paperclip className="w-3.5 h-3.5" />
+                          </div>
+                          <label className="text-xs font-delight font-bold text-slate-900">
+                            Rich Media & Document Attachments
+                          </label>
+                          <span className="text-[10px] font-delight font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                            Picture + PDF
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 mt-1">
+                          Attach promotional pictures and PDF pitch decks or brochures to make your WhatsApp message look exceptionally neat and professional.
+                        </p>
+                      </div>
+
+                      {/* Quick Presets & Actions */}
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <button
+                          type="button"
+                          onClick={() => handleApplyMediaPreset(WHATSAPP_MEDIA_PRESETS[0])}
+                          className="text-[10px] font-delight font-bold px-2.5 py-1 rounded-md bg-slate-900 text-white hover:bg-slate-800 transition-colors cursor-pointer shadow-2xs flex items-center gap-1"
+                          title="Load Executive Presentation & Analytics Deck"
+                        >
+                          <Sparkles className="w-3 h-3 text-amber-400" />
+                          <span>Load Pro Media Pack</span>
+                        </button>
+
+                        {(whatsAppImage.enabled || whatsAppPdf.enabled) && (
+                          <button
+                            type="button"
+                            onClick={handleCopyMediaLinks}
+                            className="text-[10px] font-delight font-semibold px-2.5 py-1 rounded-md bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer flex items-center gap-1"
+                            title="Copy file links to clipboard"
+                          >
+                            {copiedMediaLinks ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3 text-slate-400" />}
+                            <span>{copiedMediaLinks ? 'Links Copied' : 'Copy Links'}</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Presets Quick-Select Chips */}
+                    <div className="flex items-center gap-2 overflow-x-auto pb-1 custom-scrollbar">
+                      <span className="text-[10px] font-delight font-bold text-slate-400 shrink-0 uppercase tracking-wider">
+                        Presets:
+                      </span>
+                      {WHATSAPP_MEDIA_PRESETS.map((preset) => {
+                        const isCurrent = activeMediaPresetId === preset.id && whatsAppImage.enabled && whatsAppPdf.enabled;
+                        return (
+                          <button
+                            key={preset.id}
+                            type="button"
+                            onClick={() => handleApplyMediaPreset(preset)}
+                            className={`px-2.5 py-1 rounded-lg text-[11px] font-delight font-semibold border transition-all cursor-pointer shrink-0 flex items-center gap-1.5 ${
+                              isCurrent
+                                ? 'bg-emerald-50 text-emerald-800 border-emerald-300 shadow-2xs'
+                                : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:text-slate-900'
+                            }`}
+                          >
+                            <span>{preset.title}</span>
+                            <span className="text-[9px] opacity-70 px-1 py-0.2 rounded bg-slate-100">
+                              {preset.badge}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Two Column Cards: Picture Asset (Left) + PDF Document (Right) */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                      
+                      {/* CARD 1: PICTURE / IMAGE ATTACHMENT */}
+                      <div className={`p-3.5 rounded-xl border transition-all ${
+                        whatsAppImage.enabled 
+                          ? 'bg-white border-emerald-300 shadow-xs ring-1 ring-emerald-200/50' 
+                          : 'bg-slate-50/70 border-slate-200 opacity-90'
+                      }`}>
+                        {/* Header & Toggle */}
+                        <div className="flex items-center justify-between pb-2.5 mb-2.5 border-b border-slate-100">
+                          <div className="flex items-center gap-2">
+                            <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${
+                              whatsAppImage.enabled ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-slate-200 text-slate-500'
+                            }`}>
+                              <Image className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <div className="text-xs font-delight font-bold text-slate-900">Picture Attachment</div>
+                              <div className="text-[10px] text-slate-400 font-medium">Image preview banner in chat</div>
+                            </div>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => setWhatsAppImage(prev => ({ ...prev, enabled: !prev.enabled }))}
+                            className={`px-2.5 py-1 rounded-full text-[10px] font-delight font-bold transition-all cursor-pointer ${
+                              whatsAppImage.enabled
+                                ? 'bg-emerald-600 text-white shadow-2xs'
+                                : 'bg-slate-200 text-slate-600 hover:bg-slate-300'
+                            }`}
+                          >
+                            {whatsAppImage.enabled ? 'Attached' : '+ Attach'}
+                          </button>
+                        </div>
+
+                        {/* When Image Enabled */}
+                        {whatsAppImage.enabled ? (
+                          <div className="space-y-2.5 text-xs">
+                            {/* Preview Thumbnail */}
+                            <div className="relative rounded-lg overflow-hidden border border-slate-200 bg-slate-900/5 flex items-center gap-3 p-2">
+                              <div className="w-14 h-14 rounded-md overflow-hidden bg-slate-200 shrink-0 border border-slate-300/80">
+                                <img 
+                                  src={whatsAppImage.url} 
+                                  alt="Preview" 
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    (e.target as any).src = 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&auto=format&fit=crop&q=80';
+                                  }}
+                                />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <div className="font-delight font-bold text-slate-800 text-[11px] truncate">
+                                  {whatsAppImage.fileName || 'Attached_Image.jpg'}
+                                </div>
+                                <div className="text-[10px] text-slate-500 truncate mt-0.5">
+                                  {whatsAppImage.caption || 'High-res image asset'}
+                                </div>
+                                <span className="inline-block text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded mt-1 border border-emerald-100">
+                                  Visual Ready
+                                </span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => setWhatsAppImage(prev => ({ ...prev, enabled: false }))}
+                                className="p-1 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                                title="Remove Picture"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+
+                            {/* Image Source Input */}
+                            <div>
+                              <label className="block text-[10px] font-delight font-semibold text-slate-600 mb-1">
+                                Image URL / Source
+                              </label>
+                              <div className="flex items-center gap-1.5">
+                                <input 
+                                  type="url"
+                                  value={whatsAppImage.url}
+                                  onChange={(e) => setWhatsAppImage({ ...whatsAppImage, url: e.target.value })}
+                                  placeholder="https://example.com/image.jpg"
+                                  className="flex-1 bg-white border border-slate-200 rounded-md px-2.5 py-1.5 text-xs font-mono outline-none focus:border-emerald-500"
+                                />
+                                <label className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-md text-[11px] font-delight font-semibold text-slate-700 cursor-pointer transition-colors flex items-center gap-1 shrink-0">
+                                  <Upload className="w-3 h-3" />
+                                  <span>Upload</span>
+                                  <input 
+                                    type="file" 
+                                    accept="image/*" 
+                                    onChange={handleImageFileUpload}
+                                    className="hidden" 
+                                  />
+                                </label>
+                              </div>
+                            </div>
+
+                            {/* Caption Input */}
+                            <div>
+                              <label className="block text-[10px] font-delight font-semibold text-slate-600 mb-1">
+                                Caption / Overlay Title
+                              </label>
+                              <input 
+                                type="text"
+                                value={whatsAppImage.caption || ''}
+                                onChange={(e) => setWhatsAppImage({ ...whatsAppImage, caption: e.target.value })}
+                                placeholder="e.g. Growth Analytics & Deliverability Metrics"
+                                className="w-full bg-white border border-slate-200 rounded-md px-2.5 py-1.5 text-xs font-delight outline-none focus:border-emerald-500"
+                              />
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="py-4 text-center text-[11px] text-slate-400 font-delight">
+                            Picture attachment disabled. Click "+ Attach" to include a visual graphic.
+                          </div>
+                        )}
+                      </div>
+
+                      {/* CARD 2: PDF DOCUMENT ATTACHMENT */}
+                      <div className={`p-3.5 rounded-xl border transition-all ${
+                        whatsAppPdf.enabled 
+                          ? 'bg-white border-rose-300 shadow-xs ring-1 ring-rose-200/50' 
+                          : 'bg-slate-50/70 border-slate-200 opacity-90'
+                      }`}>
+                        {/* Header & Toggle */}
+                        <div className="flex items-center justify-between pb-2.5 mb-2.5 border-b border-slate-100">
+                          <div className="flex items-center gap-2">
+                            <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${
+                              whatsAppPdf.enabled ? 'bg-rose-50 text-rose-600 border border-rose-200' : 'bg-slate-200 text-slate-500'
+                            }`}>
+                              <FileText className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <div className="text-xs font-delight font-bold text-slate-900">PDF Document</div>
+                              <div className="text-[10px] text-slate-400 font-medium">Native document card in chat</div>
+                            </div>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => setWhatsAppPdf(prev => ({ ...prev, enabled: !prev.enabled }))}
+                            className={`px-2.5 py-1 rounded-full text-[10px] font-delight font-bold transition-all cursor-pointer ${
+                              whatsAppPdf.enabled
+                                ? 'bg-rose-600 text-white shadow-2xs'
+                                : 'bg-slate-200 text-slate-600 hover:bg-slate-300'
+                            }`}
+                          >
+                            {whatsAppPdf.enabled ? 'Attached' : '+ Attach'}
+                          </button>
+                        </div>
+
+                        {/* When PDF Enabled */}
+                        {whatsAppPdf.enabled ? (
+                          <div className="space-y-2.5 text-xs">
+                            {/* Document Preview Badge */}
+                            <div className="relative rounded-lg border border-rose-200 bg-rose-50/40 p-2.5 flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-lg bg-rose-500 text-white flex flex-col items-center justify-center shrink-0 shadow-2xs">
+                                <FileText className="w-5 h-5" />
+                                <span className="text-[7px] font-black uppercase leading-none mt-0.5">PDF</span>
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <div className="font-delight font-bold text-slate-900 text-[11px] truncate">
+                                  {whatsAppPdf.fileName.replace(/{{business_name}}/g, previewLead.businessName) || 'Document.pdf'}
+                                </div>
+                                <div className="text-[10px] text-slate-500 font-medium mt-0.5 flex items-center gap-1.5">
+                                  <span>{whatsAppPdf.pageCount || '6 pages'}</span>
+                                  <span>•</span>
+                                  <span className="font-semibold text-slate-700">{whatsAppPdf.fileSize || '2.4 MB'}</span>
+                                  <span>•</span>
+                                  <span className="text-rose-700 font-bold">Document</span>
+                                </div>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => setWhatsAppPdf(prev => ({ ...prev, enabled: false }))}
+                                className="p-1 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                                title="Remove PDF"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+
+                            {/* Document File Name Input */}
+                            <div>
+                              <label className="block text-[10px] font-delight font-semibold text-slate-600 mb-1">
+                                File Name (Supports merge tags)
+                              </label>
+                              <input 
+                                type="text"
+                                value={whatsAppPdf.fileName}
+                                onChange={(e) => setWhatsAppPdf({ ...whatsAppPdf, fileName: e.target.value })}
+                                placeholder="e.g. {{business_name}}_Growth_Blueprint.pdf"
+                                className="w-full bg-white border border-slate-200 rounded-md px-2.5 py-1.5 text-xs font-mono outline-none focus:border-rose-500"
+                              />
+                            </div>
+
+                            {/* PDF URL & Upload Button */}
+                            <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
+                              <div className="sm:col-span-8">
+                                <label className="block text-[10px] font-delight font-semibold text-slate-600 mb-1">
+                                  Document Hosted URL
+                                </label>
+                                <input 
+                                  type="url"
+                                  value={whatsAppPdf.url}
+                                  onChange={(e) => setWhatsAppPdf({ ...whatsAppPdf, url: e.target.value })}
+                                  placeholder="https://leadpulse.io/deck.pdf"
+                                  className="w-full bg-white border border-slate-200 rounded-md px-2.5 py-1.5 text-xs font-mono outline-none focus:border-rose-500"
+                                />
+                              </div>
+
+                              <div className="sm:col-span-4 flex flex-col justify-end">
+                                <label className="w-full px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-md text-[11px] font-delight font-semibold text-slate-700 cursor-pointer transition-colors flex items-center justify-center gap-1">
+                                  <Upload className="w-3 h-3 text-slate-500" />
+                                  <span>Upload PDF</span>
+                                  <input 
+                                    type="file" 
+                                    accept=".pdf,application/pdf" 
+                                    onChange={handlePdfFileUpload}
+                                    className="hidden" 
+                                  />
+                                </label>
+                              </div>
+                            </div>
+
+                            {/* Size & Pages */}
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <label className="block text-[10px] font-delight font-semibold text-slate-600 mb-1">File Size</label>
+                                <input 
+                                  type="text"
+                                  value={whatsAppPdf.fileSize}
+                                  onChange={(e) => setWhatsAppPdf({ ...whatsAppPdf, fileSize: e.target.value })}
+                                  placeholder="e.g. 2.4 MB"
+                                  className="w-full bg-white border border-slate-200 rounded-md px-2 py-1 text-xs font-mono outline-none focus:border-rose-500"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[10px] font-delight font-semibold text-slate-600 mb-1">Page Count</label>
+                                <input 
+                                  type="text"
+                                  value={whatsAppPdf.pageCount || ''}
+                                  onChange={(e) => setWhatsAppPdf({ ...whatsAppPdf, pageCount: e.target.value })}
+                                  placeholder="e.g. 6 pages"
+                                  className="w-full bg-white border border-slate-200 rounded-md px-2 py-1 text-xs font-mono outline-none focus:border-rose-500"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="py-4 text-center text-[11px] text-slate-400 font-delight">
+                            PDF attachment disabled. Click "+ Attach" to include a presentation or brochure.
+                          </div>
+                        )}
+                      </div>
+
+                    </div>
+
                   </div>
 
                   {/* Organic Email-Capture Bridge Feature */}
@@ -2171,7 +2632,23 @@ const OutreachCenter = () => {
               </div>
               
               {activeChannel === 'whatsapp' ? (
-                <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                <div className="flex items-center gap-2 w-full sm:w-auto justify-end flex-wrap">
+                  {(whatsAppImage.enabled || whatsAppPdf.enabled) && (
+                    <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-[10px] font-delight font-bold">
+                      <Paperclip className="w-3 h-3 text-emerald-600" />
+                      <span>{whatsAppImage.enabled && whatsAppPdf.enabled ? 'Picture + PDF Ready' : whatsAppImage.enabled ? 'Picture Ready' : 'PDF Ready'}</span>
+                    </span>
+                  )}
+                  {(whatsAppImage.enabled || whatsAppPdf.enabled) && (
+                    <button 
+                      onClick={handleCopyMediaLinks}
+                      className="bg-white border border-slate-200 hover:bg-slate-50 px-3 py-1.5 rounded-xl text-xs font-delight font-bold text-slate-700 shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer"
+                      title="Copy asset file URLs to clipboard"
+                    >
+                      {copiedMediaLinks ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-slate-400" />}
+                      <span>{copiedMediaLinks ? 'Links Copied' : 'Copy Links'}</span>
+                    </button>
+                  )}
                   <button 
                     onClick={handleCopyWhatsApp}
                     className="bg-white border border-slate-200 hover:bg-slate-50 px-3.5 py-1.5 rounded-xl text-xs font-delight font-bold text-slate-700 shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer"
@@ -3206,26 +3683,140 @@ const OutreachCenter = () => {
               {/* WHATSAPP PHONE MOCKUP PREVIEW */}
               {activeChannel === 'whatsapp' && (
                 <div className="w-[340px] bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden flex flex-col font-sans ring-4 ring-slate-100/80">
-                  <div className="bg-gradient-to-r from-emerald-600 to-teal-700 text-white p-3.5 flex items-center gap-3 shrink-0 shadow-xs">
-                    <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center font-bold text-xs backdrop-blur-xs">
-                      LP
-                    </div>
-                    <div className="min-w-0">
-                      <div className="font-bold text-xs truncate max-w-[220px] text-white">{previewLead.businessName}</div>
-                      <div className="text-[10px] text-emerald-100 font-delight font-medium flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse"></span>
-                        <span>Official Business Account</span>
+                  {/* WhatsApp Top Chat Header */}
+                  <div className="bg-gradient-to-r from-emerald-600 to-teal-700 text-white p-3.5 flex items-center justify-between shrink-0 shadow-xs">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center font-bold text-xs backdrop-blur-xs text-white shrink-0">
+                        {previewLead.businessName?.charAt(0) || 'L'}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="font-bold text-xs truncate max-w-[170px] text-white">
+                          {previewLead.businessName}
+                        </div>
+                        <div className="text-[10px] text-emerald-100 font-delight font-medium flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse"></span>
+                          <span>Official Business Account</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <div className="flex-1 bg-[#ECE5DD] p-3.5 overflow-y-auto flex flex-col min-h-[300px]">
-                    <div 
-                      className="bg-[#E7FFDB] border border-emerald-200/60 p-3 rounded-2xl rounded-tr-xs self-end max-w-[88%] text-xs text-slate-900 shadow-2xs whitespace-pre-wrap mb-1 leading-relaxed"
-                      dangerouslySetInnerHTML={{ __html: renderPreviewHtml(whatsAppMessage) }}
-                    />
-                    <div className="text-[9px] text-slate-500 self-end mr-1 flex items-center gap-1 font-delight font-medium">
-                      10:42 AM <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                    <div className="flex items-center gap-2 text-white/80">
+                      <Phone className="w-3.5 h-3.5" />
                     </div>
+                  </div>
+
+                  {/* Chat Message Scroll Window */}
+                  <div className="flex-1 bg-[#ECE5DD] p-3 overflow-y-auto flex flex-col gap-2 min-h-[380px] max-h-[500px]">
+                    
+                    {/* Date Divider Pill */}
+                    <div className="self-center my-1 bg-white/80 backdrop-blur-xs px-2.5 py-0.5 rounded-full text-[9px] font-delight font-bold text-slate-500 shadow-2xs">
+                      Today
+                    </div>
+
+                    {/* Chat Bubble Group */}
+                    <div className="self-end max-w-[92%] flex flex-col gap-1.5">
+                      
+                      {/* 1. PDF Document Bubble Card (if enabled) */}
+                      {whatsAppPdf.enabled && (
+                        <div className="bg-[#E7FFDB] border border-emerald-200/70 rounded-2xl rounded-tr-xs p-2.5 shadow-2xs">
+                          <div className="bg-white rounded-xl p-2.5 border border-emerald-100 flex items-center gap-2.5 shadow-2xs">
+                            {/* Red PDF Icon Box */}
+                            <div className="w-9 h-10 rounded-lg bg-rose-500 flex flex-col items-center justify-center text-white shrink-0 shadow-2xs relative">
+                              <FileText className="w-4 h-4" />
+                              <span className="text-[7px] font-black uppercase tracking-tighter leading-none mt-0.5">PDF</span>
+                            </div>
+
+                            {/* File Metadata */}
+                            <div className="min-w-0 flex-1">
+                              <div className="text-[11px] font-bold text-slate-900 truncate leading-snug">
+                                {whatsAppPdf.fileName.replace(/{{business_name}}/g, previewLead.businessName) || 'Document_Attachment.pdf'}
+                              </div>
+                              <div className="text-[9px] text-slate-500 font-medium flex items-center gap-1 mt-0.5">
+                                <span>{whatsAppPdf.pageCount || '6 pages'}</span>
+                                <span>•</span>
+                                <span>{whatsAppPdf.fileSize || '2.4 MB'}</span>
+                                <span>•</span>
+                                <span className="text-rose-600 font-bold">PDF</span>
+                              </div>
+                            </div>
+
+                            {/* Circular Download Action */}
+                            <div className="w-6 h-6 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-600 shrink-0">
+                              <Download className="w-3 h-3" />
+                            </div>
+                          </div>
+
+                          <div className="text-[9px] text-slate-400 text-right mt-1 mr-1 flex items-center justify-end gap-1 font-delight">
+                            <span>10:41 AM</span>
+                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* 2. Picture Attachment + Accompanying Text Bubble */}
+                      {whatsAppImage.enabled ? (
+                        <div className="bg-[#E7FFDB] border border-emerald-200/70 rounded-2xl rounded-tr-xs overflow-hidden shadow-2xs">
+                          {/* Image Thumbnail Frame */}
+                          <div className="relative w-full max-h-48 bg-slate-900/10 overflow-hidden flex items-center justify-center">
+                            {whatsAppImage.url ? (
+                              <img 
+                                src={whatsAppImage.url} 
+                                alt="WhatsApp Attachment" 
+                                className="w-full h-auto max-h-48 object-cover"
+                                onError={(e) => {
+                                  (e.target as any).src = 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&auto=format&fit=crop&q=80';
+                                }}
+                              />
+                            ) : (
+                              <div className="p-6 flex flex-col items-center justify-center text-slate-400">
+                                <Image className="w-6 h-6 mb-1 opacity-60" />
+                                <span className="text-[9px]">No visual URL</span>
+                              </div>
+                            )}
+
+                            {whatsAppImage.caption && (
+                              <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent p-2 text-[9px] text-white font-medium truncate">
+                                {whatsAppImage.caption}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Text Message Content */}
+                          <div className="p-3">
+                            <div 
+                              className="text-xs text-slate-900 whitespace-pre-wrap leading-relaxed"
+                              dangerouslySetInnerHTML={{ __html: renderPreviewHtml(whatsAppMessage) }}
+                            />
+                            <div className="text-[9px] text-slate-500 flex items-center justify-end gap-1 mt-1 font-delight font-medium">
+                              <span>10:42 AM</span>
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        /* Text-Only Bubble */
+                        <div className="bg-[#E7FFDB] border border-emerald-200/60 p-3 rounded-2xl rounded-tr-xs shadow-2xs">
+                          <div 
+                            className="text-xs text-slate-900 whitespace-pre-wrap leading-relaxed"
+                            dangerouslySetInnerHTML={{ __html: renderPreviewHtml(whatsAppMessage) }}
+                          />
+                          <div className="text-[9px] text-slate-500 flex items-center justify-end gap-1 mt-1 font-delight font-medium">
+                            <span>10:42 AM</span>
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                          </div>
+                        </div>
+                      )}
+
+                    </div>
+
+                  </div>
+
+                  {/* Phone Mockup Footer Strip */}
+                  <div className="bg-slate-50 border-t border-slate-200 px-3 py-2 flex items-center justify-between text-[10px] text-slate-500">
+                    <span className="flex items-center gap-1 font-delight">
+                      <Paperclip className="w-3 h-3 text-slate-400" />
+                      <span>{whatsAppImage.enabled && whatsAppPdf.enabled ? '2 Media Files Attached' : whatsAppImage.enabled ? '1 Picture Attached' : whatsAppPdf.enabled ? '1 PDF Attached' : 'Standard Text Message'}</span>
+                    </span>
+                    <span className="text-emerald-700 font-bold font-delight">Verified Layout</span>
                   </div>
                 </div>
               )}

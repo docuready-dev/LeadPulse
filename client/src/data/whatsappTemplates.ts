@@ -1,3 +1,36 @@
+export interface WhatsAppImageAttachment {
+  enabled: boolean;
+  url: string;
+  caption?: string;
+  fileName?: string;
+}
+
+export interface WhatsAppPdfAttachment {
+  enabled: boolean;
+  url: string;
+  fileName: string;
+  fileSize: string;
+  pageCount?: string;
+}
+
+export interface WhatsAppMediaPreset {
+  id: string;
+  title: string;
+  badge: string;
+  description: string;
+  image: {
+    url: string;
+    caption: string;
+    fileName: string;
+  };
+  pdf: {
+    url: string;
+    fileName: string;
+    fileSize: string;
+    pageCount: string;
+  };
+}
+
 export interface WhatsAppTemplate {
   id: string;
   name: string;
@@ -7,6 +40,17 @@ export interface WhatsAppTemplate {
   badge: string;
   defaultMessage: string;
   followUpScript?: string;
+  suggestedImage?: {
+    url: string;
+    caption: string;
+    fileName: string;
+  };
+  suggestedPdf?: {
+    url: string;
+    fileName: string;
+    fileSize: string;
+    pageCount: string;
+  };
 }
 
 export const WHATSAPP_TEMPLATES: WhatsAppTemplate[] = [
@@ -134,3 +178,59 @@ We would love to feature {{business_name}} as a recommended local partner. Is th
 
 // Convenience-framing email capture bridge script
 export const EMAIL_CAPTURE_BRIDGE_SCRIPT = `Instead of cramming files into messy WhatsApp chat history, what is the best email address to drop this over to?`;
+
+// Curated Professional Media & Document Presets (Picture + PDF)
+export const WHATSAPP_MEDIA_PRESETS: WhatsAppMediaPreset[] = [
+  {
+    id: 'executive_deck',
+    title: 'Executive Pitch Deck & Credentials',
+    badge: 'Enterprise',
+    description: 'B2B company credentials, growth metrics infographic, and 6-page presentation deck.',
+    image: {
+      url: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&auto=format&fit=crop&q=80',
+      caption: 'LeadPulse Growth Analytics & Live Performance Overview',
+      fileName: 'Executive_Analytics_Dashboard.jpg'
+    },
+    pdf: {
+      url: 'https://leadpulse.io/assets/LeadPulse_Executive_Deck.pdf',
+      fileName: 'LeadPulse_Executive_Deck.pdf',
+      fileSize: '2.4 MB',
+      pageCount: '6 pages'
+    }
+  },
+  {
+    id: 'growth_blueprint',
+    title: 'Local Market Teardown & Case Study',
+    badge: 'High Conversion',
+    description: 'Geo-radius competition map, 14-day footfall case study, and personalized growth blueprint.',
+    image: {
+      url: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&auto=format&fit=crop&q=80',
+      caption: 'Local Search & Competitor Geo-Radius Mapping',
+      fileName: 'Competitor_Gap_Analysis.png'
+    },
+    pdf: {
+      url: 'https://leadpulse.io/assets/Local_Market_Growth_Blueprint.pdf',
+      fileName: '{{business_name}}_Growth_Blueprint.pdf',
+      fileSize: '1.8 MB',
+      pageCount: '4 pages'
+    }
+  },
+  {
+    id: 'service_catalog',
+    title: 'Service Catalog & ROI Rate Card',
+    badge: 'Pricing & Menu',
+    description: 'Full modular service portfolio, workflow diagram, and transparent ROI comparison.',
+    image: {
+      url: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=800&auto=format&fit=crop&q=80',
+      caption: 'Automated Client Acquisition Workflow Architecture',
+      fileName: 'Workflow_Architecture_Diagram.jpg'
+    },
+    pdf: {
+      url: 'https://leadpulse.io/assets/LeadPulse_Service_Catalog.pdf',
+      fileName: 'LeadPulse_Service_Catalog_2026.pdf',
+      fileSize: '3.1 MB',
+      pageCount: '8 pages'
+    }
+  }
+];
+
