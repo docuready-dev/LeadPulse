@@ -8,20 +8,32 @@ import {
   MessageCircle, Send,
   Check, Edit3, ShieldCheck, GripVertical,
   X, ExternalLink, Trash2, Star, Sparkles,
-  RotateCcw, Move, Maximize2
+  RotateCcw, Move, Maximize2,
+  FileSpreadsheet, Download, Table2, Filter, Layers,
+  ChevronDown, CheckCircle2, FolderPlus, Share2, HelpCircle, Menu
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
 import { EMAIL_CAPTURE_BRIDGE_SCRIPT } from '../data/whatsappTemplates';
+import { CrmFlowluDetailModal } from '../components/CrmFlowluDetailModal';
+import { 
+  exportCrmToXlsx, 
+  exportCrmToCsv, 
+  mapStageToQuickSheets, 
+  getStageColorTheme, 
+  getStatusPillTheme, 
+  getPriorityTheme, 
+  getEstimatedValue,
+  getProbabilityForStage 
+} from '../utils/crmExport';
 
 const KANBAN_STAGES = [
-  'New',
-  'WhatsApp Contacted',
-  'Replied / Awaiting Email',
-  'Email Verified & Captured',
-  'Proposal Sent',
-  'Closed Won'
+  'Lead',
+  'Qualified',
+  'Demo',
+  'Proposal',
+  'Closed'
 ];
 
 const DEFAULT_COL_WIDTH = 272;
@@ -31,6 +43,7 @@ const CrmPipeline = () => {
   const { user, integrations, notifyIntegration, syncLeadsToIntegration } = useStore();
   const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<'kanban' | 'table'>('kanban');
+  const [activeSheetTab, setActiveSheetTab] = useState<'Opportunities' | 'Contacts' | 'Organizations' | 'Interactions' | 'Dashboard' | 'Setup Data'>('Opportunities');
   const [leads, setLeads] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
@@ -162,6 +175,24 @@ const CrmPipeline = () => {
       }
     } catch (err) {
       console.error('Failed to update lead status:', err);
+      fetchLeads();
+    }
+  };
+
+  // Handle full lead payload updates from Flowlu Detail Modal
+  const handleUpdateLead = async (updatedLead: any) => {
+    if (!updatedLead?._id || !user?._id) return;
+    try {
+      setLeads(prev => prev.map(l => l._id === updatedLead._id ? updatedLead : l));
+      if (selectedLeadDetails?._id === updatedLead._id) {
+        setSelectedLeadDetails(updatedLead);
+      }
+      await axios.patch(`http://localhost:3001/api/leads/${updatedLead._id}`, updatedLead, {
+        headers: { userid: user?._id }
+      });
+      showToast(`Saved updates for "${updatedLead.businessName}"`);
+    } catch (err) {
+      console.error('Failed to update lead:', err);
       fetchLeads();
     }
   };
@@ -467,17 +498,24 @@ const CrmPipeline = () => {
           )}
 
           {/* Top Stage Progression Bar */}
-          <div className="grid grid-cols-2 sm:grid-cols-6 gap-2 shrink-0">
-            {KANBAN_STAGES.map((stage, idx) => {
-              const count = leads.filter(l => (l.status || 'New') === stage).length;
-              const pips = ['bg-blue-500', 'bg-violet-500', 'bg-cyan-500', 'bg-amber-500', 'bg-purple-500', 'bg-emerald-500'];
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 shrink-0">
+            {KANBAN_STAGES.map((stage) => {
+              const count = leads.filter(l => mapStageToQuickSheets(l.status) === stage).length;
+              const theme = getStageColorTheme(stage);
+              const stageValue = leads
+                .filter(l => mapStageToQuickSheets(l.status) === stage)
+                .reduce((sum, l) => sum + getEstimatedValue(l), 0);
+
               return (
                 <div key={stage} className="bg-white border border-slate-200/90 rounded-lg p-2.5 shadow-[0_1px_2px_rgba(0,0,0,0.01)] hover:border-slate-300 transition-colors">
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-[10px] text-slate-500 font-delight font-bold uppercase tracking-wider truncate">{stage}</span>
-                    <span className={`w-1.5 h-1.5 rounded-full ${pips[idx % pips.length]}`}></span>
+                    <span className={`w-2 h-2 rounded-full ${theme.bg}`}></span>
                   </div>
-                  <div className="text-base font-delight font-bold text-slate-900">{count}</div>
+                  <div className="flex items-baseline justify-between">
+                    <div className="text-base font-delight font-bold text-slate-900">{count}</div>
+                    <div className="text-[10px] text-slate-400 font-mono">₹{stageValue.toLocaleString('en-IN')}</div>
+                  </div>
                 </div>
               );
             })}
@@ -529,6 +567,31 @@ const CrmPipeline = () => {
                   Delete ({selectedLeads.length})
                 </button>
               )}
+
+              {/* QuickSheetsCo Export Actions */}
+              <button
+                onClick={() => {
+                  exportCrmToXlsx(filteredLeads, user);
+                  showToast(`Exported ${filteredLeads.length} leads to QuickSheetsCo XLSX (4 Sheets)`);
+                }}
+                className="bg-[#107C41] hover:bg-[#0E6C38] text-white px-3 py-1.5 rounded-md text-xs font-semibold transition-all shadow-2xs flex items-center gap-1.5 cursor-pointer"
+                title="Download 4-sheet formatted CRM workbook (.xlsx)"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5" />
+                <span>Export XLSX</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  exportCrmToCsv(filteredLeads, user);
+                  showToast(`Exported ${filteredLeads.length} leads to QuickSheetsCo CSV`);
+                }}
+                className="bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 px-2.5 py-1.5 rounded-md text-xs font-semibold transition-all shadow-2xs flex items-center gap-1.5 cursor-pointer"
+                title="Download QuickSheetsCo formatted CSV"
+              >
+                <Download className="w-3.5 h-3.5 text-slate-500" />
+                <span>Export CSV</span>
+              </button>
 
               {activeCrmApp && (
                 <button
@@ -597,7 +660,7 @@ const CrmPipeline = () => {
           {viewMode === 'kanban' && (
             <div className="flex-1 flex items-start gap-3.5 min-h-0 h-full overflow-x-auto overflow-y-auto pb-4 pr-2 custom-scrollbar select-none">
               {columnOrder.map((stage) => {
-                const stageLeads = filteredLeads.filter(l => (l.status || 'New') === stage);
+                const stageLeads = filteredLeads.filter(l => mapStageToQuickSheets(l.status) === stage);
                 const isOver = dragOverStage === stage && !draggedColStage;
                 const isColOver = dragOverColStage === stage && draggedColStage && draggedColStage !== stage;
                 const isColDragged = draggedColStage === stage;
@@ -641,7 +704,7 @@ const CrmPipeline = () => {
                     >
                       <div className="flex items-center gap-1.5 min-w-0">
                         <GripVertical className="w-3.5 h-3.5 text-slate-400 group-hover/board:text-[#C85A32] shrink-0 transition-colors" />
-                        <span className="w-1.5 h-1.5 rounded-xs bg-slate-900 shrink-0"></span>
+                        <span className={`w-2 h-2 rounded-full shrink-0 ${getStageColorTheme(stage).bg}`}></span>
                         <h3 className="font-bold text-xs text-slate-900 truncate tracking-tight" title={stage}>{stage}</h3>
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
@@ -674,6 +737,7 @@ const CrmPipeline = () => {
                         stageLeads.map((lead) => {
                           const isPhoneOnly = !lead.email || lead.email.includes('no_email') || lead.emailStatus === 'Phone Only / No Email Found';
                           const isBeingDragged = draggedLeadId === lead._id;
+                          const dealVal = getEstimatedValue(lead);
                           
                           return (
                             <div 
@@ -702,14 +766,13 @@ const CrmPipeline = () => {
                                 </div>
                               </div>
 
-                              {/* Middle Row: Category + Rating */}
+                              {/* Middle Row: Category + Value */}
                               <div className="flex items-center justify-between gap-1 text-[10px]">
                                 <span className="font-delight font-medium px-1.5 py-0.5 bg-slate-100 rounded-sm text-slate-600 truncate max-w-[100px] border border-slate-200">
                                   {lead.category || 'Local'}
                                 </span>
-                                <span className="text-amber-500 font-delight font-bold shrink-0 flex items-center gap-0.5">
-                                  <Star className="w-2.5 h-2.5 fill-current" />
-                                  <span>{lead.rating || '4.8'}</span>
+                                <span className="text-slate-900 font-mono font-bold shrink-0">
+                                  ₹{dealVal.toLocaleString('en-IN')}
                                 </span>
                               </div>
 
@@ -776,98 +839,582 @@ const CrmPipeline = () => {
             </div>
           )}
 
-          {/* TABLE VIEW */}
+          {/* TABLE VIEW (QUICKSHEETSCO. GOOGLE SHEETS SPREADSHEET ENGINE - IMAGE 2) */}
           {viewMode === 'table' && (
-            <div className="flex-1 bg-white border border-slate-200 rounded-md shadow-xs overflow-hidden flex flex-col">
+            <div className="flex-1 bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden flex flex-col min-h-0">
+              
+              {/* Top Google Sheets Document Header */}
+              <div className="bg-[#F8F9FA] border-b border-slate-200 px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded bg-[#0F9D58] flex items-center justify-center text-white shadow-2xs shrink-0">
+                    <FileSpreadsheet className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-bold text-xs sm:text-sm text-slate-900 tracking-tight">
+                        CRM - Customer Relationship Management | QuickSheetsCo.
+                      </h3>
+                      <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 font-mono">
+                        .XLSX & .CSV
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3 text-[11px] text-slate-500 pt-0.5">
+                      <span className="hover:text-slate-900 cursor-pointer transition-colors">File</span>
+                      <span className="hover:text-slate-900 cursor-pointer transition-colors">Edit</span>
+                      <span className="hover:text-slate-900 cursor-pointer transition-colors">View</span>
+                      <span className="hover:text-slate-900 cursor-pointer transition-colors">Insert</span>
+                      <span className="hover:text-slate-900 cursor-pointer transition-colors">Format</span>
+                      <span className="hover:text-slate-900 cursor-pointer transition-colors">Data</span>
+                      <span className="hover:text-slate-900 cursor-pointer transition-colors">Tools</span>
+                      <span className="hover:text-slate-900 cursor-pointer transition-colors">Extensions</span>
+                      <span className="hover:text-slate-900 cursor-pointer transition-colors">Help</span>
+                      <span className="text-slate-300">•</span>
+                      <span className="text-slate-500 flex items-center gap-1 text-[10px]">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                        Firestore Synced
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      exportCrmToXlsx(filteredLeads, user);
+                      showToast(`Exported ${filteredLeads.length} leads to QuickSheetsCo XLSX (4 Sheets)`);
+                    }}
+                    className="bg-[#107C41] hover:bg-[#0E6C38] text-white px-3 py-1.5 rounded-md text-xs font-semibold flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+                    title="Download 4-sheet formatted XLSX"
+                  >
+                    <FileSpreadsheet className="w-3.5 h-3.5" />
+                    <span>Export .xlsx</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      exportCrmToCsv(filteredLeads, user);
+                      showToast(`Exported ${filteredLeads.length} leads to QuickSheetsCo CSV`);
+                    }}
+                    className="bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 px-3 py-1.5 rounded-md text-xs font-semibold flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+                    title="Download formatted CSV"
+                  >
+                    <Download className="w-3.5 h-3.5 text-slate-500" />
+                    <span>Export .csv</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Google Sheets Formula Bar */}
+              <div className="bg-white border-b border-slate-200 px-3 py-1.5 flex items-center gap-2 text-xs shrink-0 font-mono">
+                <div className="px-2 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-700 text-[11px] font-bold">
+                  {activeSheetTab === 'Opportunities' ? 'B2' : 'A1'}
+                </div>
+                <div className="font-bold text-slate-400 italic text-[11px]">fx</div>
+                <div className="flex-1 bg-slate-50 border border-slate-200 rounded px-2.5 py-0.5 text-slate-800 text-[11px] truncate">
+                  {activeSheetTab === 'Opportunities' 
+                    ? `=COUNTA(Opportunities!B2:B) & " Active Deals • Total Pipeline: ₹" & TEXT(SUM(Opportunities!I2:I), "₹##,##,##0")`
+                    : activeSheetTab === 'Contacts'
+                      ? `=COUNTA(Contacts!A2:A) & " Verified Contacts Across Workspace"`
+                      : activeSheetTab === 'Organizations'
+                        ? `=COUNTA(Organizations!A2:A) & " Accounts In Portfolio"`
+                        : activeSheetTab === 'Interactions'
+                          ? `=COUNTA(Interactions!A2:A) & " Logged Touchpoints & Communications"`
+                          : activeSheetTab === 'Dashboard'
+                            ? `=FORECAST(Pipeline_Revenue) & " 100% Real-Time Forecast"`
+                            : `=VLOOKUP(Stage, SetupData!A2:C6, 2, FALSE)`
+                  }
+                </div>
+              </div>
+
+              {/* Main Sheet Grid Container */}
               <div className="flex-1 overflow-auto custom-scrollbar">
-                <table className="w-full text-left border-collapse text-xs">
-                  <thead className="sticky top-0 bg-slate-50 border-b border-slate-200 z-10">
-                    <tr className="text-slate-500 font-delight font-semibold uppercase text-[10px] tracking-wider">
-                      <th className="py-3 px-4 w-10 cursor-pointer" onClick={toggleAll}>
-                        <input 
-                          type="checkbox" 
-                          checked={selectedLeads.length === filteredLeads.length && filteredLeads.length > 0} 
-                          readOnly 
-                          className="w-3.5 h-3.5 rounded-sm text-accent cursor-pointer" 
-                        />
-                      </th>
-                      <th className="py-3 px-3">Business Profile</th>
-                      <th className="py-3 px-3">Direct Phone / WhatsApp</th>
-                      <th className="py-3 px-3">Location</th>
-                      <th className="py-3 px-3">Pipeline Stage</th>
-                      <th className="py-3 px-4 text-right">Instant Outreach</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {filteredLeads.map((lead, i) => {
-                      return (
-                        <tr key={lead._id || i} className={`hover:bg-slate-50/80 transition-colors ${selectedLeads.includes(lead._id) ? 'bg-accent/5' : ''}`}>
-                          <td className="py-3 px-4 cursor-pointer" onClick={() => toggleLead(lead._id)}>
-                            <input 
-                              type="checkbox" 
-                              checked={selectedLeads.includes(lead._id)} 
-                              readOnly 
-                              className="w-3.5 h-3.5 rounded-sm text-accent cursor-pointer" 
-                            />
-                          </td>
-                          <td className="py-3 px-3 cursor-pointer" onClick={() => setSelectedLeadDetails(lead)}>
-                            <div className="font-bold text-slate-900 text-xs hover:text-accent transition-colors tracking-tight max-w-[280px] sm:max-w-[380px] break-words whitespace-normal leading-snug">{lead.businessName}</div>
-                            <div className="text-slate-400 text-[10px] font-delight font-normal flex items-center gap-1 mt-0.5">
-                              <Globe className="w-3 h-3" /> 
-                              <span className="truncate max-w-[180px]">{lead.website}</span>
-                            </div>
-                          </td>
-                          <td className="py-3 px-3">
-                            <div className="font-delight font-medium text-slate-800 text-xs flex items-center gap-1.5">
-                              <Phone className="w-3 h-3 text-emerald-600" />
-                              <span>{lead.phone || 'Phone on request'}</span>
-                            </div>
-                          </td>
-                          <td className="py-3 px-3 font-medium text-slate-600 text-xs">
-                            {lead.location}
-                          </td>
-                          <td className="py-3 px-3">
-                            <select 
-                              value={lead.status || 'New'}
-                              onChange={(e) => handleUpdateStatus(lead._id, e.target.value)}
-                              className={`px-2 py-1 rounded-sm text-[11px] font-delight font-medium border border-slate-200 outline-none cursor-pointer ${getStatusColor(lead.status)}`}
-                            >
-                              {KANBAN_STAGES.map(st => (
-                                <option key={st} value={st}>{st}</option>
-                              ))}
-                            </select>
-                          </td>
-                          <td className="py-3 px-4 text-right">
-                            <div className="flex items-center justify-end gap-1.5">
-                              <button 
-                                onClick={() => setEditingLead({ ...lead })}
-                                className="bg-white hover:bg-slate-100 text-slate-700 p-1.5 rounded-md text-xs font-bold transition-colors cursor-pointer border border-slate-200"
-                                title="Edit Contact & Business Details"
+
+                {/* TAB 1: OPPORTUNITIES SHEET (IMAGE 2 EXACT REPLICA) */}
+                {activeSheetTab === 'Opportunities' && (
+                  <table className="w-full text-left border-collapse text-xs">
+                    <thead className="sticky top-0 bg-[#1C3549] text-white z-10 shadow-xs">
+                      <tr className="text-[10px] uppercase font-bold tracking-wider">
+                        <th className="py-2.5 px-3 text-center border-r border-[#2C485F] w-10 text-slate-400 font-mono">#</th>
+                        <th className="py-2.5 px-3 border-r border-[#2C485F] w-10 text-center cursor-pointer" onClick={toggleAll}>
+                          <input 
+                            type="checkbox" 
+                            checked={selectedLeads.length === filteredLeads.length && filteredLeads.length > 0} 
+                            readOnly 
+                            className="w-3.5 h-3.5 rounded-sm accent-emerald-500 cursor-pointer" 
+                          />
+                        </th>
+                        <th className="py-2.5 px-3 border-r border-[#2C485F] w-24">Priority</th>
+                        <th className="py-2.5 px-4 border-r border-[#2C485F] min-w-[220px]">Name</th>
+                        <th className="py-2.5 px-3 border-r border-[#2C485F] w-36">Deal Owner</th>
+                        <th className="py-2.5 px-4 border-r border-[#2C485F] min-w-[180px]">Organization</th>
+                        <th className="py-2.5 px-3 border-r border-[#2C485F] w-24">Status</th>
+                        <th className="py-2.5 px-3 border-r border-[#2C485F] w-32">Stage</th>
+                        <th className="py-2.5 px-3 border-r border-[#2C485F] w-28">Loss Reason</th>
+                        <th className="py-2.5 px-3 border-r border-[#2C485F] w-32">Source</th>
+                        <th className="py-2.5 px-3 border-r border-[#2C485F] w-28 text-right">Value</th>
+                        <th className="py-2.5 px-3 border-r border-[#2C485F] w-24 text-center">Probability</th>
+                        <th className="py-2.5 px-3 w-28 text-center">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200">
+                      {filteredLeads.map((lead, i) => {
+                        const stage = mapStageToQuickSheets(lead.status);
+                        const stageTheme = getStageColorTheme(stage);
+                        const prob = getProbabilityForStage(lead.status);
+                        const val = getEstimatedValue(lead);
+                        const priority = lead.priority || (val >= 80000 ? 'High' : val >= 50000 ? 'Medium' : 'Low');
+                        const isSelected = selectedLeads.includes(lead._id);
+                        const ownerName = lead.dealOwner || user?.name || 'Lisa Jones';
+                        const isLost = lead.status === 'Lost' || (lead.dealStatus === 'Lost');
+
+                        return (
+                          <tr 
+                            key={lead._id || i} 
+                            className={`hover:bg-slate-50/90 transition-colors ${isSelected ? 'bg-emerald-50/40' : i % 2 === 0 ? 'bg-white' : 'bg-[#FAFAFA]'}`}
+                          >
+                            {/* Row Index */}
+                            <td className="py-2.5 px-3 text-center border-r border-slate-200 text-slate-400 font-mono text-[11px] bg-[#F8F9FA]">
+                              {i + 1}
+                            </td>
+
+                            {/* Checkbox */}
+                            <td className="py-2.5 px-3 text-center border-r border-slate-200 cursor-pointer" onClick={() => toggleLead(lead._id)}>
+                              <input 
+                                type="checkbox" 
+                                checked={isSelected} 
+                                readOnly 
+                                className="w-3.5 h-3.5 rounded-sm accent-emerald-600 cursor-pointer" 
+                              />
+                            </td>
+
+                            {/* Priority */}
+                            <td className="py-2.5 px-3 border-r border-slate-200">
+                              <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                                priority === 'High' 
+                                  ? 'bg-rose-100 text-rose-800 border border-rose-200' 
+                                  : priority === 'Low'
+                                    ? 'bg-slate-100 text-slate-700 border border-slate-200'
+                                    : 'bg-amber-100 text-amber-800 border border-amber-200'
+                              }`}>
+                                {priority}
+                              </span>
+                            </td>
+
+                            {/* Name (Click to open Flowlu CRM Detail Workspace) */}
+                            <td className="py-2.5 px-4 border-r border-slate-200 cursor-pointer" onClick={() => setSelectedLeadDetails(lead)}>
+                              <div className="font-bold text-slate-900 text-xs hover:text-emerald-700 transition-colors tracking-tight leading-snug">
+                                {lead.dealName || `${lead.businessName} - Growth Project`}
+                              </div>
+                              <div className="text-[10px] text-slate-400 font-delight flex items-center gap-1 mt-0.5">
+                                <span>{lead.category || 'Direct Account'}</span>
+                                {lead.location && <span>• {lead.location}</span>}
+                              </div>
+                            </td>
+
+                            {/* Deal Owner */}
+                            <td className="py-2.5 px-3 border-r border-slate-200">
+                              <div className="flex items-center gap-1.5">
+                                <div className="w-5 h-5 rounded-full bg-slate-800 text-white flex items-center justify-center text-[9px] font-bold shrink-0">
+                                  {ownerName.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
+                                </div>
+                                <span className="font-medium text-slate-700 text-xs truncate max-w-[100px]">{ownerName}</span>
+                              </div>
+                            </td>
+
+                            {/* Organization */}
+                            <td className="py-2.5 px-4 border-r border-slate-200">
+                              <div className="font-semibold text-slate-800 text-xs truncate max-w-[170px]" title={lead.businessName}>
+                                {lead.businessName}
+                              </div>
+                              {lead.website ? (
+                                <a 
+                                  href={lead.website} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer" 
+                                  className="text-[10px] text-emerald-600 hover:underline flex items-center gap-1 mt-0.5 truncate max-w-[160px]"
+                                >
+                                  <Globe className="w-2.5 h-2.5 shrink-0" />
+                                  <span className="truncate">{lead.website.replace(/^https?:\/\//, '')}</span>
+                                </a>
+                              ) : (
+                                <span className="text-[10px] text-slate-400">Direct Local</span>
+                              )}
+                            </td>
+
+                            {/* Status */}
+                            <td className="py-2.5 px-3 border-r border-slate-200">
+                              <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold ${
+                                isLost 
+                                  ? 'bg-rose-100 text-rose-800 border border-rose-200' 
+                                  : stage === 'Closed'
+                                    ? 'bg-slate-200 text-slate-800 border border-slate-300'
+                                    : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                              }`}>
+                                {isLost ? 'Lost' : stage === 'Closed' ? 'Closed' : 'Open'}
+                              </span>
+                            </td>
+
+                            {/* Stage (Interactive Dropdown with QuickSheetsCo Stage Colors) */}
+                            <td className="py-2.5 px-3 border-r border-slate-200">
+                              <select
+                                value={stage}
+                                onChange={(e) => handleUpdateStatus(lead._id, e.target.value)}
+                                className={`px-2.5 py-1 rounded text-[11px] font-bold text-white shadow-2xs outline-none cursor-pointer transition-all ${stageTheme.bg}`}
                               >
-                                <Edit3 className="w-3.5 h-3.5" />
-                              </button>
-                              <button 
-                                onClick={() => handleLaunchWhatsApp(lead)}
-                                className="bg-slate-900 hover:bg-slate-800 text-white p-1.5 rounded-md text-xs font-bold transition-colors cursor-pointer border border-slate-900"
-                                title="Send WhatsApp Hook"
-                              >
-                                <MessageCircle className="w-3.5 h-3.5" />
-                              </button>
-                              <button 
-                                onClick={() => navigate('/outreach')}
-                                className="bg-accent hover:bg-accent-dark text-white p-1.5 rounded-md text-xs font-bold transition-colors cursor-pointer border border-accent"
-                                title="Send Email Template"
-                              >
-                                <Send className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
+                                {KANBAN_STAGES.map(st => (
+                                  <option key={st} value={st} className="bg-white text-slate-900 font-medium">
+                                    {st}
+                                  </option>
+                                ))}
+                              </select>
+                            </td>
+
+                            {/* Loss Reason */}
+                            <td className="py-2.5 px-3 border-r border-slate-200 text-slate-500 text-[11px]">
+                              {isLost ? (lead.lossReason || 'Competitor Pricing') : '-'}
+                            </td>
+
+                            {/* Source */}
+                            <td className="py-2.5 px-3 border-r border-slate-200 text-slate-700 text-xs truncate max-w-[120px]">
+                              {lead.source || (lead.category ? `${lead.category} Scraper` : 'Google Maps')}
+                            </td>
+
+                            {/* Value */}
+                            <td className="py-2.5 px-3 border-r border-slate-200 text-right font-mono font-bold text-slate-900 text-xs">
+                              ₹{val.toLocaleString('en-IN')}
+                            </td>
+
+                            {/* Probability */}
+                            <td className="py-2.5 px-3 border-r border-slate-200 text-center">
+                              <div className="flex items-center justify-center gap-1.5">
+                                <div className="w-12 bg-slate-200 h-1.5 rounded-full overflow-hidden">
+                                  <div 
+                                    className="bg-emerald-500 h-full rounded-full transition-all" 
+                                    style={{ width: `${prob}%` }}
+                                  />
+                                </div>
+                                <span className="text-[10px] font-mono font-bold text-slate-700">{prob}%</span>
+                              </div>
+                            </td>
+
+                            {/* Actions */}
+                            <td className="py-2.5 px-3 text-center">
+                              <div className="flex items-center justify-center gap-1">
+                                <button 
+                                  onClick={() => setSelectedLeadDetails(lead)}
+                                  className="p-1 rounded hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer"
+                                  title="Open Flowlu CRM Workspace"
+                                >
+                                  <Maximize2 className="w-3.5 h-3.5" />
+                                </button>
+                                <button 
+                                  onClick={() => handleLaunchWhatsApp(lead)}
+                                  className="p-1 rounded hover:bg-emerald-100 text-emerald-700 transition-colors cursor-pointer"
+                                  title="Launch WhatsApp Hook"
+                                >
+                                  <MessageCircle className="w-3.5 h-3.5" />
+                                </button>
+                                <button 
+                                  onClick={() => setEditingLead({ ...lead })}
+                                  className="p-1 rounded hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer"
+                                  title="Edit Contact & Business"
+                                >
+                                  <Edit3 className="w-3.5 h-3.5" />
+                                </button>
+                                <button 
+                                  onClick={() => navigate('/outreach')}
+                                  className="p-1 rounded hover:bg-blue-100 text-blue-700 transition-colors cursor-pointer"
+                                  title="Open Outreach Studio"
+                                >
+                                  <Send className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </td>
+
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                )}
+
+                {/* TAB 2: CONTACTS SHEET */}
+                {activeSheetTab === 'Contacts' && (
+                  <table className="w-full text-left border-collapse text-xs">
+                    <thead className="sticky top-0 bg-[#1C3549] text-white z-10 shadow-xs">
+                      <tr className="text-[10px] uppercase font-bold tracking-wider">
+                        <th className="py-2.5 px-3 text-center border-r border-[#2C485F] w-10 text-slate-400 font-mono">#</th>
+                        <th className="py-2.5 px-4 border-r border-[#2C485F] min-w-[200px]">Contact Name</th>
+                        <th className="py-2.5 px-4 border-r border-[#2C485F] min-w-[200px]">Organization</th>
+                        <th className="py-2.5 px-4 border-r border-[#2C485F] min-w-[200px]">Email</th>
+                        <th className="py-2.5 px-3 border-r border-[#2C485F] w-36">Phone / WhatsApp</th>
+                        <th className="py-2.5 px-3 border-r border-[#2C485F] w-32">Industry</th>
+                        <th className="py-2.5 px-3 border-r border-[#2C485F] w-36">Location</th>
+                        <th className="py-2.5 px-3 border-r border-[#2C485F] w-28">Stage</th>
+                        <th className="py-2.5 px-3 w-24 text-center">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200">
+                      {filteredLeads.map((lead, i) => (
+                        <tr key={lead._id || i} className="hover:bg-slate-50 transition-colors">
+                          <td className="py-2.5 px-3 text-center border-r border-slate-200 text-slate-400 font-mono text-[11px] bg-[#F8F9FA]">{i + 1}</td>
+                          <td className="py-2.5 px-4 border-r border-slate-200 font-bold text-slate-900 cursor-pointer" onClick={() => setSelectedLeadDetails(lead)}>
+                            {lead.firstName || (lead.businessName ? lead.businessName.split(' ')[0] + ' (Lead Contact)' : 'Primary Contact')}
+                          </td>
+                          <td className="py-2.5 px-4 border-r border-slate-200 text-slate-800 font-medium">{lead.businessName}</td>
+                          <td className="py-2.5 px-4 border-r border-slate-200 text-slate-600 font-mono text-[11px]">{lead.email || 'N/A'}</td>
+                          <td className="py-2.5 px-3 border-r border-slate-200 text-slate-800 font-medium">{lead.phone || 'N/A'}</td>
+                          <td className="py-2.5 px-3 border-r border-slate-200 text-slate-600">{lead.category || 'Professional Services'}</td>
+                          <td className="py-2.5 px-3 border-r border-slate-200 text-slate-600">{lead.location || 'Local'}</td>
+                          <td className="py-2.5 px-3 border-r border-slate-200">
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold text-white ${getStageColorTheme(mapStageToQuickSheets(lead.status)).bg}`}>
+                              {mapStageToQuickSheets(lead.status)}
+                            </span>
+                          </td>
+                          <td className="py-2.5 px-3 text-center">
+                            <button onClick={() => setSelectedLeadDetails(lead)} className="p-1 hover:bg-slate-200 rounded text-slate-700 cursor-pointer">
+                              <Maximize2 className="w-3.5 h-3.5" />
+                            </button>
                           </td>
                         </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+
+                {/* TAB 3: ORGANIZATIONS SHEET */}
+                {activeSheetTab === 'Organizations' && (
+                  <table className="w-full text-left border-collapse text-xs">
+                    <thead className="sticky top-0 bg-[#1C3549] text-white z-10 shadow-xs">
+                      <tr className="text-[10px] uppercase font-bold tracking-wider">
+                        <th className="py-2.5 px-3 text-center border-r border-[#2C485F] w-10 text-slate-400 font-mono">#</th>
+                        <th className="py-2.5 px-4 border-r border-[#2C485F] min-w-[220px]">Organization</th>
+                        <th className="py-2.5 px-3 border-r border-[#2C485F] w-36">Industry</th>
+                        <th className="py-2.5 px-3 border-r border-[#2C485F] w-40">Location</th>
+                        <th className="py-2.5 px-3 border-r border-[#2C485F] w-24">Rating</th>
+                        <th className="py-2.5 px-4 border-r border-[#2C485F] min-w-[200px]">Website</th>
+                        <th className="py-2.5 px-3 border-r border-[#2C485F] w-36">Phone</th>
+                        <th className="py-2.5 px-3 border-r border-[#2C485F] w-28">Status</th>
+                        <th className="py-2.5 px-3 w-24 text-center">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200">
+                      {filteredLeads.map((lead, i) => (
+                        <tr key={lead._id || i} className="hover:bg-slate-50 transition-colors">
+                          <td className="py-2.5 px-3 text-center border-r border-slate-200 text-slate-400 font-mono text-[11px] bg-[#F8F9FA]">{i + 1}</td>
+                          <td className="py-2.5 px-4 border-r border-slate-200 font-bold text-slate-900 cursor-pointer" onClick={() => setSelectedLeadDetails(lead)}>
+                            {lead.businessName}
+                          </td>
+                          <td className="py-2.5 px-3 border-r border-slate-200 text-slate-600">{lead.category || 'Commercial Services'}</td>
+                          <td className="py-2.5 px-3 border-r border-slate-200 text-slate-600">{lead.location || 'Local'}</td>
+                          <td className="py-2.5 px-3 border-r border-slate-200 text-amber-600 font-bold">★ {lead.rating || '4.8'}</td>
+                          <td className="py-2.5 px-4 border-r border-slate-200 text-emerald-600 truncate max-w-[190px]">{lead.website || 'N/A'}</td>
+                          <td className="py-2.5 px-3 border-r border-slate-200 text-slate-700">{lead.phone || 'N/A'}</td>
+                          <td className="py-2.5 px-3 border-r border-slate-200">
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                              Active
+                            </span>
+                          </td>
+                          <td className="py-2.5 px-3 text-center">
+                            <button onClick={() => setSelectedLeadDetails(lead)} className="p-1 hover:bg-slate-200 rounded text-slate-700 cursor-pointer">
+                              <Maximize2 className="w-3.5 h-3.5" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+
+                {/* TAB 4: INTERACTIONS SHEET */}
+                {activeSheetTab === 'Interactions' && (
+                  <table className="w-full text-left border-collapse text-xs">
+                    <thead className="sticky top-0 bg-[#1C3549] text-white z-10 shadow-xs">
+                      <tr className="text-[10px] uppercase font-bold tracking-wider">
+                        <th className="py-2.5 px-3 text-center border-r border-[#2C485F] w-10 text-slate-400 font-mono">#</th>
+                        <th className="py-2.5 px-3 border-r border-[#2C485F] w-28">Date</th>
+                        <th className="py-2.5 px-4 border-r border-[#2C485F] min-w-[200px]">Organization</th>
+                        <th className="py-2.5 px-3 border-r border-[#2C485F] w-32">Type</th>
+                        <th className="py-2.5 px-4 border-r border-[#2C485F] min-w-[260px]">Title / Notes</th>
+                        <th className="py-2.5 px-3 border-r border-[#2C485F] w-32">Logged By</th>
+                        <th className="py-2.5 px-3 w-28">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200">
+                      {filteredLeads.slice(0, 15).map((lead, i) => (
+                        <tr key={lead._id || i} className="hover:bg-slate-50 transition-colors">
+                          <td className="py-2.5 px-3 text-center border-r border-slate-200 text-slate-400 font-mono text-[11px] bg-[#F8F9FA]">{i + 1}</td>
+                          <td className="py-2.5 px-3 border-r border-slate-200 text-slate-600 font-mono text-[11px]">Today</td>
+                          <td className="py-2.5 px-4 border-r border-slate-200 font-bold text-slate-900">{lead.businessName}</td>
+                          <td className="py-2.5 px-3 border-r border-slate-200 text-slate-700 font-medium">
+                            {lead.phone ? 'WhatsApp Outreach' : 'Email Dispatch'}
+                          </td>
+                          <td className="py-2.5 px-4 border-r border-slate-200 text-slate-600">
+                            Initial outreach hook dispatched for {lead.businessName}
+                          </td>
+                          <td className="py-2.5 px-3 border-r border-slate-200 text-slate-700 font-medium">{user?.name || 'Operator'}</td>
+                          <td className="py-2.5 px-3">
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-200">
+                              Completed
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+
+                {/* TAB 5: DASHBOARD SHEET */}
+                {activeSheetTab === 'Dashboard' && (
+                  <div className="p-6 space-y-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                      <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-2xs">
+                        <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Pipeline Value</div>
+                        <div className="text-2xl font-bold font-mono text-slate-900 mt-1">
+                          ₹{leads.reduce((s, l) => s + getEstimatedValue(l), 0).toLocaleString('en-IN')}
+                        </div>
+                        <div className="text-[10px] text-emerald-600 font-medium mt-1">Weighted by probability</div>
+                      </div>
+
+                      <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-2xs">
+                        <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Active Deals</div>
+                        <div className="text-2xl font-bold font-delight text-slate-900 mt-1">{leads.length}</div>
+                        <div className="text-[10px] text-slate-500 font-medium mt-1">In 5 pipeline stages</div>
+                      </div>
+
+                      <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-2xs">
+                        <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Average Deal Size</div>
+                        <div className="text-2xl font-bold font-mono text-slate-900 mt-1">
+                          ₹{leads.length > 0 ? Math.round(leads.reduce((s, l) => s + getEstimatedValue(l), 0) / leads.length).toLocaleString('en-IN') : 0}
+                        </div>
+                        <div className="text-[10px] text-blue-600 font-medium mt-1">Per targeted organization</div>
+                      </div>
+
+                      <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-2xs">
+                        <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Closed Won Ratio</div>
+                        <div className="text-2xl font-bold font-delight text-emerald-700 mt-1">
+                          {leads.length > 0 ? Math.round((leads.filter(l => mapStageToQuickSheets(l.status) === 'Closed').length / leads.length) * 100) : 0}%
+                        </div>
+                        <div className="text-[10px] text-emerald-600 font-medium mt-1">Historical win velocity</div>
+                      </div>
+                    </div>
+
+                    <div className="bg-white p-5 rounded-lg border border-slate-200 shadow-2xs space-y-4">
+                      <h4 className="font-bold text-xs uppercase tracking-wider text-slate-700">QuickSheetsCo Stage Progression</h4>
+                      <div className="space-y-3">
+                        {KANBAN_STAGES.map((st) => {
+                          const count = leads.filter(l => mapStageToQuickSheets(l.status) === st).length;
+                          const pct = leads.length > 0 ? Math.round((count / leads.length) * 100) : 0;
+                          const theme = getStageColorTheme(st);
+                          return (
+                            <div key={st} className="space-y-1">
+                              <div className="flex items-center justify-between text-xs font-medium">
+                                <span className="flex items-center gap-1.5 font-bold text-slate-800">
+                                  <span className={`w-2 h-2 rounded-full ${theme.bg}`}></span>
+                                  <span>{st}</span>
+                                </span>
+                                <span className="font-mono text-slate-600">{count} deals ({pct}%)</span>
+                              </div>
+                              <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                                <div className={`h-full rounded-full transition-all ${theme.bg}`} style={{ width: `${pct}%` }}></div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* TAB 6: SETUP DATA SHEET */}
+                {activeSheetTab === 'Setup Data' && (
+                  <div className="p-6 space-y-6">
+                    <h4 className="font-bold text-sm text-slate-900 tracking-tight">QuickSheetsCo CRM Pipeline Schema Reference</h4>
+                    <table className="w-full text-left border-collapse text-xs border border-slate-200">
+                      <thead className="bg-[#1C3549] text-white">
+                        <tr className="text-[10px] uppercase font-bold tracking-wider">
+                          <th className="py-2.5 px-4 border-r border-[#2C485F]">Pipeline Stage</th>
+                          <th className="py-2.5 px-4 border-r border-[#2C485F]">Win Probability</th>
+                          <th className="py-2.5 px-4 border-r border-[#2C485F]">Color Hex</th>
+                          <th className="py-2.5 px-4">Workflow Trigger</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200 bg-white">
+                        <tr>
+                          <td className="py-2.5 px-4 font-bold text-rose-600">Lead</td>
+                          <td className="py-2.5 px-4 font-mono">20%</td>
+                          <td className="py-2.5 px-4 font-mono">#EF4444 (Red)</td>
+                          <td className="py-2.5 px-4 text-slate-600">Initial business discovered from web harvest or directory crawl</td>
+                        </tr>
+                        <tr>
+                          <td className="py-2.5 px-4 font-bold text-orange-600">Qualified</td>
+                          <td className="py-2.5 px-4 font-mono">40%</td>
+                          <td className="py-2.5 px-4 font-mono">#FB923C (Orange)</td>
+                          <td className="py-2.5 px-4 text-slate-600">Decision maker contact identified or reply received</td>
+                        </tr>
+                        <tr>
+                          <td className="py-2.5 px-4 font-bold text-amber-600">Demo</td>
+                          <td className="py-2.5 px-4 font-mono">60%</td>
+                          <td className="py-2.5 px-4 font-mono">#F59E0B (Amber)</td>
+                          <td className="py-2.5 px-4 text-slate-600">Interactive product walkthrough or strategy call booked</td>
+                        </tr>
+                        <tr>
+                          <td className="py-2.5 px-4 font-bold text-teal-600">Proposal</td>
+                          <td className="py-2.5 px-4 font-mono">80%</td>
+                          <td className="py-2.5 px-4 font-mono">#14B8A6 (Teal)</td>
+                          <td className="py-2.5 px-4 text-slate-600">Commercial pricing, scope of work, and contract submitted</td>
+                        </tr>
+                        <tr>
+                          <td className="py-2.5 px-4 font-bold text-indigo-600">Closed</td>
+                          <td className="py-2.5 px-4 font-mono">100%</td>
+                          <td className="py-2.5 px-4 font-mono">#6366F1 (Purple)</td>
+                          <td className="py-2.5 px-4 text-slate-600">Deal finalized and converted to paying active revenue account</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
               </div>
+
+              {/* Bottom Google Sheets Tab Navigation Bar */}
+              <div className="bg-[#F8F9FA] border-t border-slate-200 px-3 py-1 flex items-center justify-between shrink-0 select-none">
+                <div className="flex items-center gap-1">
+                  <button className="p-1 hover:bg-slate-200 rounded text-slate-600 transition-colors" title="Add Sheet">
+                    <Plus className="w-3.5 h-3.5" />
+                  </button>
+                  <button className="p-1 hover:bg-slate-200 rounded text-slate-600 transition-colors" title="All Sheets">
+                    <Menu className="w-3.5 h-3.5" />
+                  </button>
+                  <div className="h-4 w-px bg-slate-300 mx-1"></div>
+                  
+                  {/* Interactive Sheet Tabs */}
+                  {(['Dashboard', 'Organizations', 'Contacts', 'Opportunities', 'Interactions', 'Setup Data'] as const).map(tab => (
+                    <button
+                      key={tab}
+                      onClick={() => setActiveSheetTab(tab)}
+                      className={`px-3 py-1 text-xs font-medium rounded-t transition-all flex items-center gap-1.5 cursor-pointer ${
+                        activeSheetTab === tab
+                          ? 'bg-white text-slate-900 border-t-2 border-emerald-600 shadow-xs font-semibold'
+                          : 'text-slate-600 hover:bg-slate-200/80 hover:text-slate-900'
+                      }`}
+                    >
+                      <span>{tab}</span>
+                      {activeSheetTab === tab && (
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex items-center gap-3 text-[11px] text-slate-500 font-mono hidden md:flex">
+                  <span>Displaying 100%</span>
+                  <span>•</span>
+                  <span>{filteredLeads.length} Records</span>
+                  <span>•</span>
+                  <span className="text-emerald-700 font-medium">QuickSheetsCo. Engine</span>
+                </div>
+              </div>
+
             </div>
           )}
 
@@ -875,270 +1422,20 @@ const CrmPipeline = () => {
       </div>
 
       {/* ======================================================== */}
+      {/* FLOWLU ENTERPRISE CRM DETAIL WORKSPACE (IMAGE 1)         */}
       {/* ======================================================== */}
-      {/* CLICK-TO-VIEW COMPREHENSIVE LEAD DETAILS MODAL           */}
-      {/* ======================================================== */}
-      {selectedLeadDetails && (
-        <div 
-          onClick={() => setSelectedLeadDetails(null)}
-          className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50 p-4 animate-in fade-in duration-150 cursor-pointer"
-        >
-          <div 
-            onClick={(e) => e.stopPropagation()}
-            className="bg-white rounded-md border border-slate-200 w-full max-w-xl shadow-xl overflow-hidden flex flex-col cursor-default animate-in zoom-in-95 duration-150 max-h-[90vh]"
-          >
-            {/* Modal Header */}
-            <div className="p-5 border-b border-slate-200 bg-slate-50 flex items-start justify-between relative">
-              <div className="space-y-1.5 max-w-[85%]">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="px-2 py-0.5 rounded-sm bg-slate-900 text-white font-delight text-[10px] font-medium uppercase tracking-wider">
-                    {selectedLeadDetails.category || 'Local Business'}
-                  </span>
-                  <span className="text-amber-500 font-delight font-bold text-xs flex items-center gap-1">
-                    <Star className="w-3.5 h-3.5 fill-current" />
-                    <span>{selectedLeadDetails.rating || '4.8'}</span>
-                  </span>
-                </div>
-                <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight break-words whitespace-normal leading-snug max-w-md sm:max-w-lg">
-                  {selectedLeadDetails.businessName}
-                </h2>
-                <div className="text-xs text-slate-500 font-delight font-normal flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                  <span>{selectedLeadDetails.location}</span>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-1.5 shrink-0">
-                <button
-                  onClick={() => setEditingLead({ ...selectedLeadDetails })}
-                  className="px-2.5 py-1 rounded-md bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs font-delight font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
-                  title="Edit Contact & Business Details"
-                >
-                  <Edit3 className="w-3.5 h-3.5" />
-                  <span>Edit</span>
-                </button>
-                <button 
-                  onClick={() => setSelectedLeadDetails(null)}
-                  className="w-7 h-7 rounded-md bg-white hover:bg-slate-100 text-slate-500 border border-slate-200 flex items-center justify-center transition-colors cursor-pointer"
-                  title="Close (Esc)"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-
-            {/* Modal Body */}
-            <div className="p-5 overflow-y-auto custom-scrollbar space-y-5">
-              
-              {/* 1. Stage Switcher Strip */}
-              <div className="space-y-2">
-                <label className="text-[11px] font-delight font-medium text-slate-500 uppercase tracking-wider">
-                  Current Pipeline Stage:
-                </label>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
-                  {KANBAN_STAGES.map((st) => {
-                    const isActive = (selectedLeadDetails.status || 'New') === st;
-                    return (
-                      <button
-                        key={st}
-                        onClick={async () => {
-                          await handleUpdateStatus(selectedLeadDetails._id, st);
-                          setSelectedLeadDetails({ ...selectedLeadDetails, status: st });
-                        }}
-                        className={`px-2.5 py-1.5 rounded-md text-xs font-delight font-medium transition-all text-left flex items-center justify-between cursor-pointer border ${
-                          isActive 
-                            ? 'bg-slate-900 text-white border-slate-900 font-medium' 
-                            : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border-slate-200'
-                        }`}
-                      >
-                        <span className="truncate">{st}</span>
-                        {isActive && <Check className="w-3.5 h-3.5 shrink-0" />}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* 2. Contact Intelligence Matrix */}
-              <div className="space-y-3 p-4 bg-slate-50 rounded-md border border-slate-200">
-                <h4 className="text-[11px] font-delight font-bold text-slate-700 uppercase tracking-wider">
-                  Contact Intelligence & Verification
-                </h4>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                  {/* Phone Block */}
-                  <div className="bg-white p-3 rounded-md border border-slate-200 space-y-1">
-                    <span className="text-[10px] text-slate-400 font-delight font-semibold uppercase">Contact Phone</span>
-                    <div className="font-delight text-slate-900 font-medium flex items-center gap-1.5">
-                      <Phone className="w-3.5 h-3.5 text-slate-500" />
-                      <span>{selectedLeadDetails.phone}</span>
-                    </div>
-                  </div>
-
-                  {/* Rating / Scope Block */}
-                  <div className="bg-white p-3 rounded-md border border-slate-200 space-y-1">
-                    <span className="text-[10px] text-slate-400 font-delight font-semibold uppercase">Harvest Scope</span>
-                    <div className="font-delight font-medium text-slate-800 text-xs">
-                      {selectedLeadDetails.scope === 'deep' ? 'Deep Multi-Tier Crawl' : 'Quick Scan'}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Email Verification / Upgrade Box */}
-                <div className="bg-white p-3.5 rounded-md border border-slate-200 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-slate-400 font-delight font-semibold uppercase">Verified Email Address</span>
-                    {selectedLeadDetails.emailStatus === 'Verified Email' ? (
-                      <span className="text-[10px] font-delight font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 px-1.5 py-0.5 rounded-sm flex items-center gap-1">
-                        <ShieldCheck className="w-3 h-3 text-emerald-600" /> Verified
-                      </span>
-                    ) : (
-                      <span className="text-[10px] font-delight font-medium bg-amber-50 text-amber-800 border border-amber-200 px-1.5 py-0.5 rounded-sm">
-                        Phone Only
-                      </span>
-                    )}
-                  </div>
-
-                  {capturingLeadId === selectedLeadDetails._id ? (
-                    <div className="space-y-2 pt-1">
-                      <input 
-                        type="email"
-                        value={capturedEmailInput}
-                        onChange={(e) => setCapturedEmailInput(e.target.value)}
-                        placeholder="e.g. contact@business.com"
-                        className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-md text-xs font-delight font-medium outline-none focus:border-slate-400"
-                        autoFocus
-                      />
-                      <div className="flex justify-end gap-2">
-                        <button
-                          onClick={() => setCapturingLeadId(null)}
-                          className="px-3 py-1.5 rounded-md text-xs font-delight font-medium text-slate-600 hover:bg-slate-100 border border-slate-200 cursor-pointer"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          onClick={async () => {
-                            await handleSaveCapturedEmail(selectedLeadDetails._id);
-                            setSelectedLeadDetails({
-                              ...selectedLeadDetails,
-                              email: capturedEmailInput,
-                              emailStatus: 'Verified Email',
-                              status: 'Email Verified & Captured'
-                            });
-                          }}
-                          disabled={isUpdating}
-                          className="px-3 py-1.5 rounded-md text-xs font-delight font-medium bg-slate-900 text-white hover:bg-slate-800 flex items-center gap-1 cursor-pointer"
-                        >
-                          <Check className="w-3.5 h-3.5" />
-                          <span>Save & Upgrade</span>
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-between pt-1">
-                      <span className="font-delight font-medium text-xs text-slate-800">
-                        {selectedLeadDetails.email || 'No email on file'}
-                      </span>
-                      <button
-                        onClick={() => {
-                          setCapturingLeadId(selectedLeadDetails._id);
-                          setCapturedEmailInput(selectedLeadDetails.email || '');
-                        }}
-                        className="text-xs font-delight font-medium text-accent hover:underline flex items-center gap-1 cursor-pointer"
-                      >
-                        <Edit3 className="w-3 h-3" />
-                        <span>{selectedLeadDetails.email ? 'Edit Email' : '+ Add Email'}</span>
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                {/* Website Link */}
-                {selectedLeadDetails.website && (
-                  <div className="flex items-center justify-between text-xs pt-1">
-                    <span className="text-slate-500 font-delight font-normal text-[11px]">Web Presence:</span>
-                    <a 
-                      href={selectedLeadDetails.website} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-slate-800 font-delight font-medium text-xs hover:text-accent hover:underline flex items-center gap-1 truncate max-w-[260px]"
-                    >
-                      <Globe className="w-3.5 h-3.5 shrink-0" />
-                      <span className="truncate">{selectedLeadDetails.website}</span>
-                      <ExternalLink className="w-3 h-3 shrink-0" />
-                    </a>
-                  </div>
-                )}
-              </div>
-
-              {/* 3. Primary Outreach Action Bar */}
-              <div className="space-y-2">
-                <label className="text-[11px] font-delight font-medium text-slate-500 uppercase tracking-wider">
-                  Outreach Dispatch Actions:
-                </label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  <button
-                    onClick={() => {
-                      handleLaunchWhatsApp(selectedLeadDetails);
-                      setSelectedLeadDetails({ ...selectedLeadDetails, status: 'WhatsApp Contacted' });
-                    }}
-                    className="py-2.5 px-4 rounded-md bg-slate-900 hover:bg-slate-800 text-white font-medium text-xs flex items-center justify-center gap-2 border border-slate-900 transition-colors cursor-pointer"
-                  >
-                    <MessageCircle className="w-4 h-4" />
-                    <span>Launch WhatsApp Hook</span>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setSelectedLeadDetails(null);
-                      navigate('/outreach');
-                    }}
-                    className="py-2.5 px-4 rounded-md bg-accent hover:bg-accent-dark text-white font-medium text-xs flex items-center justify-center gap-2 border border-accent transition-colors cursor-pointer"
-                  >
-                    <Send className="w-4 h-4" />
-                    <span>Open Email Studio</span>
-                  </button>
-                </div>
-              </div>
-
-            </div>
-
-            {/* Modal Footer */}
-            <div className="p-4 bg-slate-50 border-t border-slate-200 flex justify-between items-center">
-              <button
-                onClick={async () => {
-                  const confirmed = await confirmDialog({
-                    title: 'Delete Lead from Pipeline?',
-                    message: `Are you sure you want to permanently delete "${selectedLeadDetails.businessName}" from your CRM Pipeline?`,
-                    confirmText: 'Delete Lead',
-                    cancelText: 'Cancel',
-                    variant: 'danger'
-                  });
-                  if (confirmed) {
-                    await axios.delete(`http://localhost:3001/api/leads/${selectedLeadDetails._id}`, {
-                      headers: { userid: user?._id }
-                    }).catch(() => {});
-                    setSelectedLeadDetails(null);
-                    fetchLeads();
-                  }
-                }}
-                className="text-rose-600 hover:text-rose-700 text-xs font-delight font-medium flex items-center gap-1.5 p-1.5 rounded-md hover:bg-rose-50 transition-colors cursor-pointer"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                <span>Delete Lead</span>
-              </button>
-
-              <button
-                onClick={() => setSelectedLeadDetails(null)}
-                className="bg-slate-900 hover:bg-slate-800 text-white px-4 py-1.5 rounded-md text-xs font-delight font-medium transition-colors cursor-pointer border border-slate-900"
-              >
-                Done
-              </button>
-            </div>
-
-          </div>
-        </div>
-      )}
+      <CrmFlowluDetailModal
+        isOpen={Boolean(selectedLeadDetails)}
+        onClose={() => setSelectedLeadDetails(null)}
+        lead={selectedLeadDetails}
+        onUpdateLead={handleUpdateLead}
+        onLaunchWhatsApp={handleLaunchWhatsApp}
+        onOpenOutreachStudio={() => {
+          setSelectedLeadDetails(null);
+          navigate('/outreach');
+        }}
+        currentUser={user}
+      />
 
       {/* ================= MODAL: EDIT LEAD / CONTACT DETAILS ================= */}
       {editingLead && (
