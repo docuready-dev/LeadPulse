@@ -1,5 +1,5 @@
 import { 
-  BarChart3, Database, Play, Sparkles, Users, Zap, ShieldCheck, Layers, X, Check, Search, Send, Waypoints, TrendingDown
+  BarChart3, Database, Sparkles, Users, Zap, ShieldCheck, X, Check
 } from 'lucide-react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { useRef, useState } from 'react';
@@ -35,7 +35,6 @@ const benchmarkProfiles = {
         id: '01',
         title: 'B2B Lead Discovery & Spatial Extraction',
         replaces: 'Apollo / Lusha / ZoomInfo',
-        icon: Search,
         scenario: 'Extracting 500–600 verified commercial prospects across targeted city zones every month.',
         marketPrice: '₹4,100 / mo',
         marketSub: '$49/mo static database credits',
@@ -51,7 +50,6 @@ const benchmarkProfiles = {
         id: '02',
         title: 'AI Cold Email Studio, A/B Testing & Multi-Channel',
         replaces: 'Instantly / Lemlist',
-        icon: Send,
         scenario: 'Synthesizing personalized outreach copy per lead, 50/50 A/B split tests, and inbox + WhatsApp dispatch.',
         marketPrice: '₹3,100 / mo',
         marketSub: '$37/mo for email sender only (0 leads)',
@@ -67,7 +65,6 @@ const benchmarkProfiles = {
         id: '03',
         title: 'Kanban CRM, Automated Journeys & Team Pool',
         replaces: 'HubSpot / Pipedrive',
-        icon: Waypoints,
         scenario: 'Managing deal stages, automated follow-up sequences, Google Sheets mirroring, and webhook telemetry.',
         marketPrice: '₹2,000 / mo',
         marketSub: '$24/mo base CRM subscription',
@@ -98,7 +95,6 @@ const benchmarkProfiles = {
         id: '01',
         title: 'B2B Lead Discovery & Spatial Extraction',
         replaces: 'Apollo / Lusha / ZoomInfo',
-        icon: Search,
         scenario: 'A digital agency extracting 600–1,500 verified local & B2B prospects across targeted metropolitan zones monthly.',
         marketPrice: '₹8,500 / mo',
         marketSub: '$99/mo multi-user scraping & export credits',
@@ -114,7 +110,6 @@ const benchmarkProfiles = {
         id: '02',
         title: 'AI Cold Email Studio, A/B Testing & Multi-Channel',
         replaces: 'Instantly / Lemlist',
-        icon: Send,
         scenario: 'Running multi-client AI outreach campaigns with 50/50 A/B split testing across Gmail, Resend, SMTP & WhatsApp.',
         marketPrice: '₹6,000 / mo',
         marketSub: '$72/mo agency sender tier (zero leads)',
@@ -130,7 +125,6 @@ const benchmarkProfiles = {
         id: '03',
         title: 'Kanban CRM, Automated Journeys & Multi-Seat Teams',
         replaces: 'HubSpot / Pipedrive',
-        icon: Waypoints,
         scenario: 'Managing a 5-person revenue squad with automated follow-up workflows, Google Sheets sync, and shared lead pools.',
         marketPrice: '₹10,000 / mo',
         marketSub: '₹2,000 × 5 seats per-user billing tax',
@@ -161,7 +155,6 @@ const benchmarkProfiles = {
         id: '01',
         title: 'B2B Lead Discovery & Spatial Extraction',
         replaces: 'Apollo / Lusha / ZoomInfo',
-        icon: Search,
         scenario: 'High-velocity commercial squad harvesting 1,500+ verified prospects monthly with Deep 60-lead pagination.',
         marketPrice: '₹12,500 / mo',
         marketSub: '$149/mo commercial data license',
@@ -177,7 +170,6 @@ const benchmarkProfiles = {
         id: '02',
         title: 'AI Cold Email Studio, A/B Testing & Multi-Channel',
         replaces: 'Instantly / Lemlist',
-        icon: Send,
         scenario: 'Full-scale A/B split testing, custom HTML & attachment dispatch, and direct WhatsApp bridge across 10 reps.',
         marketPrice: '₹7,900 / mo',
         marketSub: '$97/mo pro outreach automation tier',
@@ -193,7 +185,6 @@ const benchmarkProfiles = {
         id: '03',
         title: 'Kanban CRM, Automated Journeys & Multi-Seat Teams',
         replaces: 'HubSpot / Pipedrive',
-        icon: Waypoints,
         scenario: '10 sales reps collaborating on a shared token pool with live Google Sheets mirroring, Slack/Discord alerts & webhooks.',
         marketPrice: '₹24,500 / mo',
         marketSub: '₹2,450 × 10 seats CRM + workflow add-ons',
@@ -313,7 +304,6 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
               variants={itemVars}
               className="mb-6 inline-flex items-center gap-2 px-3 py-1 rounded-[5px] border border-[#E5E0D5] bg-[#F5F2EB] text-[11px] font-delight font-bold text-[#57524B] tracking-wide"
             >
-              <Sparkles className="w-3.5 h-3.5 text-[#C85A32]" />
               <span>LEADPULSE 3.0 // ARCHITECTURE RELEASE</span>
               <span className="w-1 h-1 rounded-full bg-[#D6CFC2] mx-0.5"></span>
               <a href="#product" className="text-[#C85A32] hover:underline flex items-center gap-1">
@@ -347,9 +337,9 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
               </button>
               <a
                 href="#product"
-                className="w-full sm:w-auto h-11 px-5 bg-[#F5F2EB] border border-[#D6CFC2] text-[#191716] rounded-[6px] font-delight font-semibold text-[13px] hover:bg-[#EFECE4] transition-colors flex items-center justify-center gap-2"
+                className="w-full sm:w-auto h-11 px-5 bg-[#F5F2EB] border border-[#D6CFC2] text-[#191716] rounded-[6px] font-delight font-semibold text-[13px] hover:bg-[#EFECE4] transition-colors flex items-center justify-center gap-1"
               >
-                <Play className="w-3.5 h-3.5 fill-[#191716]" /> Inspect Platform
+                Inspect Platform &rarr;
               </a>
             </motion.div>
 
@@ -453,11 +443,10 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
       <section id="product" className="py-22 px-6 md:px-12 max-w-7xl mx-auto w-full relative z-10 scroll-mt-20 border-t border-[#E5E0D5]">
         <div className="text-left mb-12 max-w-2xl">
           <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-[5px] border border-[#E5E0D5] bg-[#F5F2EB] text-[11px] font-delight font-bold text-[#57524B] mb-3.5">
-            <Layers className="w-3.5 h-3.5 text-[#C85A32]" />
             <span>UNIFIED ARCHITECTURE // THREE ENGINES</span>
           </div>
           <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight text-[#191716] mb-3.5">
-            Three core pillars. One integrated workspace.
+            Three core engines. One integrated workspace.
           </h2>
           <p className="text-sm md:text-[15px] text-[#57524B] font-normal leading-relaxed">
             Eliminate fragmented tools. LeadPulse connects precision prospect harvesting, generative AI email &amp; WhatsApp delivery, and visual CRM pipeline automation into an interconnected ledger.
@@ -467,11 +456,11 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
         {/* Unified 3-Column 1px Divided Architectural Ledger */}
         <div className="bg-white border border-[#E5E0D5] rounded-lg grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-[#E5E0D5] overflow-hidden shadow-2xs">
           
-          {/* Pillar 1 */}
+          {/* Engine 1 */}
           <div className="p-8 hover:bg-[#FAF8F5]/70 transition-colors flex flex-col justify-between space-y-6">
             <div className="space-y-3">
               <span className="text-[10.5px] font-delight font-bold uppercase tracking-wider text-[#C85A32] block">
-                Pillar 01 // Discovery
+                Discovery
               </span>
               <h3 className="text-lg font-extrabold tracking-tight text-[#191716]">
                 Lead Finder &amp; Geo-Database
@@ -491,11 +480,11 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
             </div>
           </div>
 
-          {/* Pillar 2 */}
+          {/* Engine 2 */}
           <div className="p-8 hover:bg-[#FAF8F5]/70 transition-colors flex flex-col justify-between space-y-6">
             <div className="space-y-3">
               <span className="text-[10.5px] font-delight font-bold uppercase tracking-wider text-[#C85A32] block">
-                Pillar 02 // Dispatch
+                Dispatch
               </span>
               <h3 className="text-lg font-extrabold tracking-tight text-[#191716]">
                 Outreach Studio &amp; AI Copilot
@@ -515,11 +504,11 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
             </div>
           </div>
 
-          {/* Pillar 3 */}
+          {/* Engine 3 */}
           <div className="p-8 hover:bg-[#FAF8F5]/70 transition-colors flex flex-col justify-between space-y-6">
             <div className="space-y-3">
               <span className="text-[10.5px] font-delight font-bold uppercase tracking-wider text-[#C85A32] block">
-                Pillar 03 // Pipeline
+                Pipeline
               </span>
               <h3 className="text-lg font-extrabold tracking-tight text-[#191716]">
                 Kanban Pipeline &amp; Journeys
@@ -546,7 +535,6 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
       <section id="features" ref={targetRef} className="py-16 px-6 md:px-12 max-w-7xl mx-auto w-full relative z-10 scroll-mt-20">
         <motion.div style={{ opacity, y }} className="text-left mb-12 max-w-2xl">
           <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-[5px] border border-[#E5E0D5] bg-[#F5F2EB] text-[11px] font-delight font-bold text-[#57524B] mb-3.5">
-            <Sparkles className="w-3.5 h-3.5 text-[#C85A32]" />
             <span>PRODUCTION TELEMETRY // BENTO SPECIFICATIONS</span>
           </div>
           <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight text-[#191716] mb-3.5">
@@ -824,7 +812,6 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <div className="inline-flex items-center gap-1.5 text-[10px] font-delight font-bold uppercase tracking-widest text-[#C85A32] mb-1">
-                      <TrendingDown className="w-3.5 h-3.5" />
                       <span>REAL-WORLD COST BENCHMARKING // LIVE STACK AUDIT</span>
                     </div>
                     <h3 className="text-lg sm:text-xl font-extrabold text-[#191716] tracking-tight">
@@ -907,31 +894,20 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
                 </div>
               </div>
 
-              {/* 3 Stack Layer Breakdown Cards */}
+              {/* 3 Stack Breakdown Cards */}
               <div className="divide-y divide-[#E5E0D5]">
                 {activeBenchmark.instances.map((item) => {
-                  const Icon = item.icon;
                   return (
                     <div key={item.id} className="p-5 sm:p-6 hover:bg-[#FAF8F5]/70 transition-colors space-y-3.5">
-                      {/* Top Row: Layer Title + Replaced Tools + Savings Pill */}
+                      {/* Top Row: Title + Replaced Tools + Savings Pill */}
                       <div className="flex flex-wrap items-start justify-between gap-2">
-                        <div className="flex items-start gap-3">
-                          <div className="w-8 h-8 rounded-[6px] bg-[#F5F2EB] border border-[#D6CFC2] text-[#C85A32] flex items-center justify-center shrink-0 mt-0.5">
-                            <Icon className="w-4 h-4" />
-                          </div>
-                          <div>
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span className="text-[10px] font-delight font-extrabold uppercase tracking-wider px-1.5 py-0.5 rounded-[3px] bg-[#191716] text-white">
-                                Layer {item.id}
-                              </span>
-                              <h4 className="text-sm font-extrabold text-[#191716] tracking-tight">
-                                {item.title}
-                              </h4>
-                            </div>
-                            <p className="text-xs text-[#57524B] mt-1 leading-relaxed">
-                              {item.scenario}
-                            </p>
-                          </div>
+                        <div className="space-y-1">
+                          <h4 className="text-sm font-extrabold text-[#191716] tracking-tight">
+                            {item.title}
+                          </h4>
+                          <p className="text-xs text-[#57524B] leading-relaxed">
+                            {item.scenario}
+                          </p>
                         </div>
                         <span className="text-[10.5px] font-delight font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-[4px] shrink-0">
                           {item.savingsTag}
@@ -939,7 +915,7 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
                       </div>
 
                       {/* Side-by-Side Comparison Grid */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-delight pl-0 sm:pl-11">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-delight">
                         {/* Legacy Market Card */}
                         <div className="p-3.5 rounded-lg bg-[#FAF8F5] border border-[#E5E0D5] flex flex-col justify-between space-y-2">
                           <div>
@@ -1020,7 +996,6 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
           <div className="max-w-2xl">
             <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-[5px] border border-[#E5E0D5] bg-[#F5F2EB] text-[11px] font-delight font-bold text-[#57524B] mb-3.5">
-              <Sparkles className="w-3.5 h-3.5 text-[#C85A32]" />
               <span>TRANSPARENT PRICING // DETAILED COST BIFURCATION</span>
             </div>
             <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight text-[#191716] mb-3">
@@ -1048,7 +1023,7 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
             <div>
               <div className="flex items-center justify-between mb-3">
                 <span className="text-[11px] font-delight font-bold uppercase tracking-wider text-[#78716A]">
-                  01 // Free Explorer
+                  Free Explorer
                 </span>
                 <span className="text-[10px] font-delight font-bold px-2 py-0.5 rounded-[4px] bg-[#F5F2EB] text-[#191716] border border-[#E5E0D5]">
                   Instant Check-In
@@ -1111,7 +1086,7 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
             <div>
               <div className="flex items-center justify-between mb-3 pt-1">
                 <span className="text-[11px] font-delight font-bold uppercase tracking-wider text-[#C85A32]">
-                  02 // LeadPulse Basic
+                  LeadPulse Basic
                 </span>
                 <span className="text-[10px] font-delight font-bold px-2 py-0.5 rounded-[4px] bg-[#C85A32]/10 text-[#C85A32] border border-[#C85A32]/25">
                   ₹1.16 / Lead Effective
@@ -1175,7 +1150,7 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
             <div>
               <div className="flex items-center justify-between mb-3">
                 <span className="text-[11px] font-delight font-bold uppercase tracking-wider text-[#E07A5F]">
-                  03 // LeadPulse Pro
+                  LeadPulse Pro
                 </span>
                 <span className="text-[10px] font-delight font-bold px-2 py-0.5 rounded-[4px] bg-white/10 text-[#FAF8F5] border border-white/15">
                   Unlimited Scale
