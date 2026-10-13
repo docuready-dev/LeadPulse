@@ -192,33 +192,97 @@ class InMemScraperQueue {
         });
 
         // Wait for results container or business cards
-        await page.waitForSelector('.hfpxzc', { timeout: 7000 }).catch(() => {});
+        await page.waitForSelector('.hfpxzc', { timeout: 8000 }).catch(() => {});
 
-        // Scroll the feed container to load up to maxItems
-        await page.evaluate(() => {
-          const feed = document.querySelector('div[role="feed"]') || document.querySelector('.m6QErb');
-          if (feed) {
-            feed.scrollTop = feed.scrollHeight;
-          }
-        }).catch(() => {});
-
-        await new Promise(r => setTimeout(r, 1200));
-
-        // Extract items
-        extractedItems = await page.evaluate((limit: number) => {
-          const results = document.querySelectorAll('.hfpxzc');
-          const items: { title: string; url: string | null }[] = [];
-          
-          for (let i = 0; i < results.length && i < limit; i++) {
-            const el = results[i];
-            const label = el.getAttribute('aria-label');
-            if (label && label.trim().length > 0) {
-              items.push({
-                title: label.trim(),
-                url: (el as HTMLAnchorElement).href || null
-              });
+        // Scroll the feed container multiple times to load real business listings
+        for (let s = 0; s < 3; s++) {
+          await page.evaluate(() => {
+            const feed = document.querySelector('div[role="feed"]') || document.querySelector('.m6QErb');
+            if (feed) {
+              feed.scrollTop = feed.scrollHeight;
             }
+          }).catch(() => {});
+          await new Promise(r => setTimeout(r, 1000));
+        }
+
+        // Extract authentic items directly from Google Maps cards
+        extractedItems = await page.evaluate((limit: number) => {
+          const cards = document.querySelectorAll('.Nv2PK');
+          const items: Array<{
+            title: string;
+            website: string;
+            phone: string;
+            rating: number;
+            category: string;
+          }> = [];
+
+          for (let i = 0; i < cards.length && items.length < limit; i++) {
+            const card = cards[i];
+            const titleEl = card.querySelector('.qBF1Pd') || card.querySelector('.hfpxzc');
+            const title = (titleEl?.textContent || titleEl?.getAttribute('aria-label') || '').trim();
+            if (!title) continue;
+
+            // Authentic Website Extraction
+            // Only add websites that are available; leave out the rest (never add Google Maps/search URLs)
+            let website = '';
+            const websiteAnchor = card.querySelector('a[data-value="Website"], a[aria-label*="website" i], a.lcr4fd') as HTMLAnchorElement | null;
+            if (websiteAnchor && websiteAnchor.href) {
+              const h = websiteAnchor.href.trim();
+              if (h.startsWith('http') && !h.includes('google.com') && !h.includes('goo.gl')) {
+                website = h;
+              }
+            }
+            if (!website) {
+              const allAnchors = Array.from(card.querySelectorAll('a')) as HTMLAnchorElement[];
+              for (const a of allAnchors) {
+                const h = a.href || '';
+                if (h.startsWith('http') && !h.includes('google.com') && !h.includes('goo.gl') && !h.includes('gstatic.com') && !h.includes('justdial.com')) {
+                  website = h;
+                  break;
+                }
+              }
+            }
+
+            // Authentic Phone Extraction from card text lines
+            const fullText = (card as HTMLElement).innerText || '';
+            let phone = '';
+            const phoneRegex = /(?:(?:\+91|0)[-\s]?)?[6-9]\d{4}[-\s]?\d{5}|(?:\+?\d{1,3}[-\s]?)?\(?\d{2,4}\)?[-\s]?\d{3,4}[-\s]?\d{3,4}/g;
+            const phoneMatches = fullText.match(phoneRegex);
+            if (phoneMatches && phoneMatches.length > 0) {
+              const validPhone = phoneMatches.find(p => p.replace(/\D/g, '').length >= 10);
+              if (validPhone) phone = validPhone.trim();
+            }
+
+            // Authentic Rating Extraction
+            let rating = 0;
+            const ratingEl = card.querySelector('.MW4etd');
+            if (ratingEl && ratingEl.textContent) {
+              const parsed = parseFloat(ratingEl.textContent.trim());
+              if (!isNaN(parsed) && parsed > 0) rating = parsed;
+            }
+
+            // Authentic Category Extraction
+            const textLines = Array.from(card.querySelectorAll('.W4Efsd')).map(el => el.textContent?.trim() || '').filter(Boolean);
+            let category = '';
+            for (const line of textLines) {
+              if (line.includes('·')) {
+                const parts = line.split('·');
+                if (parts[0] && !parts[0].includes('(') && !parts[0].match(/open|closed/i)) {
+                  category = parts[0].trim();
+                  break;
+                }
+              }
+            }
+
+            items.push({
+              title,
+              website, // Only real website, empty string if none available
+              phone,   // Only real phone, empty string if none available
+              rating,  // Only real rating, 0 if none available
+              category // Only real category if available
+            });
           }
+
           return items;
         }, maxItems).catch(() => []);
 
@@ -234,10 +298,10 @@ class InMemScraperQueue {
 
       this.updateStatus(job.id, {
         progress: 70,
-        stageMessage: `Concurrently crawling /contact & /about pages for verified emails...`
+        stageMessage: `Concurrently crawling authentic websites for verified emails...`
       });
 
-      // Prepare raw lead models
+      // Prepare authentic lead models
       let finalLeads: Array<{
         businessName: string;
         category: string;
@@ -255,38 +319,35 @@ class InMemScraperQueue {
       }> = [];
 
       if (extractedItems.length > 0) {
-        console.log(`[Scraper] Puppeteer found ${extractedItems.length} real businesses on Google Maps.`);
+        console.log(`[Scraper] Found ${extractedItems.length} authentic businesses on Google Maps.`);
         
-        // Fast concurrent HTTP crawl on extracted sites
+        // Fast concurrent HTTP crawl on authentic external sites ONLY
         const processedItems = await Promise.all(
-          extractedItems.map(async (item) => {
-            const firstWord = item.title.replace(/[^a-zA-Z\s]/g, '').trim().split(' ')[0] || 'Partner';
-            const cleanSlug = item.title.toLowerCase().replace(/[^a-z0-9]/g, '').substring(0, 16) || 'biz';
-            const phoneFormatted = `+91 ${Math.floor(7000000000 + Math.random() * 2999999999)}`;
-            const ratingValue = Number((4.3 + Math.random() * 0.6).toFixed(1));
-
-            // Real async crawl if website URL is present; otherwise leave blank (no spoof emails)
+          extractedItems.map(async (item: any) => {
             let resolvedEmail = '';
             let emailStatus = 'No Email Listed';
 
-            if (item.url && item.url.startsWith('http') && !item.url.includes('google.com/maps')) {
-              const crawlRes = await crawlWebsiteForEmails(item.url);
-              if (crawlRes.email) {
-                resolvedEmail = crawlRes.email;
-                emailStatus = 'Verified Email';
-              }
+            // Real async crawl ONLY if an authentic external website is present
+            if (item.website && item.website.startsWith('http') && !item.website.includes('google.com')) {
+              try {
+                const crawlRes = await crawlWebsiteForEmails(item.website);
+                if (crawlRes.email) {
+                  resolvedEmail = crawlRes.email;
+                  emailStatus = 'Verified Email';
+                }
+              } catch {}
             }
 
             return {
               businessName: item.title,
-              category: job.keyword,
-              fieldOfWork: job.keyword,
-              firstName: firstWord,
-              phone: phoneFormatted,
-              email: resolvedEmail,
+              category: item.category || job.keyword,
+              fieldOfWork: item.category || job.keyword,
+              firstName: '', // Never fabricate names
+              phone: item.phone, // Real phone only; empty string if none
+              email: resolvedEmail, // Real crawled email only; empty string if none
               emailStatus,
-              website: item.url || `https://www.google.com/search?q=${encodeURIComponent(item.title + ' ' + job.location)}`,
-              rating: Math.min(5.0, ratingValue),
+              website: item.website, // Real website only; empty string if none
+              rating: item.rating, // Real rating only; 0 if none
               location: job.location,
               scope: job.scope || 'quick',
               status: 'New',
@@ -298,7 +359,7 @@ class InMemScraperQueue {
         finalLeads = processedItems;
       }
 
-      // Query existing leads for deduplication before supplementing so we always fulfill target unique contacts
+      // Query existing leads for deduplication before saving
       const existingSnap = await db.collection('leads')
         .where('userId', '==', job.userId)
         .limit(300)
@@ -309,25 +370,13 @@ class InMemScraperQueue {
         existingSnap.docs.map((d: any) => String(d.data().businessName || '').toLowerCase().trim())
       );
 
-      // Filter out any already-saved leads from Puppeteer results
+      // Filter out any already-saved leads from results
       finalLeads = finalLeads.filter(l => !existingNames.has(l.businessName.toLowerCase().trim()));
-
-      // If Google Maps returned fewer than target limit, supplement with verified local directory leads
-      if (finalLeads.length < maxItems) {
-        const needed = maxItems - finalLeads.length;
-        console.log(`[Scraper] Supplementing with ${needed} verified local directory leads for "${job.keyword}" in "${job.location}".`);
-        const currentBatchNames = new Set<string>([
-          ...Array.from(existingNames),
-          ...finalLeads.map(l => l.businessName.toLowerCase().trim())
-        ]);
-        const fallback = generateRealisticLocalLeads(job.keyword, job.location, needed, job.scope || 'quick', currentBatchNames);
-        finalLeads = [...finalLeads, ...fallback];
-      }
 
       this.updateStatus(job.id, {
         progress: 88,
         leadsFound: finalLeads.length,
-        stageMessage: `Deduplicating & committing ${finalLeads.length} leads to Firestore database...`
+        stageMessage: `Deduplicating & committing ${finalLeads.length} authentic leads to database...`
       });
 
       // Write batch to Firestore
@@ -362,7 +411,7 @@ class InMemScraperQueue {
 
       if (addedCount > 0) {
         await batch.commit();
-        console.log(`[Scraper] Successfully saved ${addedCount} deduplicated leads in Firestore for user ${job.userId}.`);
+        console.log(`[Scraper] Successfully saved ${addedCount} authentic deduplicated leads in Firestore for user ${job.userId}.`);
       }
 
       // Enforce 1 Token = 1 Contact: if fewer contacts were added than reserved (maxItems), refund unused tokens
@@ -390,7 +439,9 @@ class InMemScraperQueue {
         leadsFound: addedCount,
         tokensUsed: addedCount,
         creditsRemaining: latestCredits,
-        stageMessage: `Harvest Complete: ${addedCount} contacts extracted (${addedCount} tokens used) & synchronized into your pipeline!`
+        stageMessage: addedCount > 0
+          ? `Harvest Complete: ${addedCount} authentic contacts extracted (${addedCount} tokens used) & synchronized into your pipeline!`
+          : 'Harvest Complete: 0 new unique contacts found for this query. All reserved tokens have been refunded.'
       });
 
     } catch (err: any) {
@@ -416,74 +467,6 @@ class InMemScraperQueue {
       });
     }
   }
-}
-
-/**
- * Generates verified, hyper-realistic local directory business leads
- * tailored to the requested keyword and locality.
- */
-function generateRealisticLocalLeads(keyword: string, location: string, count: number, scope: string, existingNames: Set<string> = new Set()) {
-  const isDeep = scope === 'deep';
-
-  // Templates for business suffixes based on category
-  const prefixes = ['Apex', 'Prime', 'Royal', 'Zenith', 'Elite', 'Metro', 'Summit', 'Global', 'Shree', 'Star', 'Lotus', 'Sunrise', 'Vanguard', 'Crest', 'Silver', 'Crown', 'Pacific', 'Horizon', 'Nexus', 'Astra'];
-  const midSuffixes = ['Care', 'Hub', 'Centre', 'Studio', 'Solutions', 'Associates', 'Clinic', 'Group', 'Enterprises', 'Ventures', 'Partners', 'Collective', 'Advisory', 'Systems'];
-
-  const leads = [];
-  const locationShort = location.split(',')[0].trim();
-  let attempt = 0;
-
-  while (leads.length < count && attempt < count * 5) {
-    const i = attempt;
-    attempt++;
-    const prefix = prefixes[i % prefixes.length];
-    const mid = midSuffixes[(i + Math.floor(i / prefixes.length)) % midSuffixes.length];
-    
-    let businessName = '';
-    if (keyword.toLowerCase().includes('dentist')) {
-      businessName = `${prefix} Dental & Implant ${mid} (${locationShort})`;
-    } else if (keyword.toLowerCase().includes('cafe') || keyword.toLowerCase().includes('bakery')) {
-      businessName = `The ${prefix} Artisanal Roastery & Cafe (${locationShort})`;
-    } else if (keyword.toLowerCase().includes('plumber') || keyword.toLowerCase().includes('electrician')) {
-      businessName = `${prefix} QuickFix ${mid} & Home Maintenance`;
-    } else if (keyword.toLowerCase().includes('gym') || keyword.toLowerCase().includes('fitness')) {
-      businessName = `${prefix} IronFitness ${mid} & Wellness Club`;
-    } else if (keyword.toLowerCase().includes('real estate')) {
-      businessName = `${prefix} Properties & Commercial ${mid}`;
-    } else if (keyword.toLowerCase().includes('digital marketing')) {
-      businessName = `${prefix} Media & Growth ${mid}`;
-    } else {
-      businessName = `${prefix} ${keyword} ${mid} of ${locationShort}`;
-    }
-
-    if (existingNames.has(businessName.toLowerCase().trim())) {
-      businessName = `${businessName} #${attempt}`;
-    }
-    existingNames.add(businessName.toLowerCase().trim());
-
-    const cleanSlug = businessName.toLowerCase().replace(/[^a-z0-9]/g, '').substring(0, 16);
-    const firstName = prefix;
-    const phoneFormatted = `+91 ${Math.floor(7000000000 + Math.random() * 2999999999)}`;
-    const rating = Number((4.3 + (i % 7) * 0.1).toFixed(1));
-
-    leads.push({
-      businessName,
-      category: keyword,
-      fieldOfWork: keyword,
-      firstName,
-      phone: phoneFormatted,
-      email: '', // Never generate spoof emails - user can add later in contacts
-      emailStatus: 'No Email Listed',
-      website: `https://www.${cleanSlug}.com`,
-      rating: Math.min(5.0, rating),
-      location,
-      scope,
-      status: 'New',
-      tags: [keyword, location, isDeep ? 'Deep Multi-Page' : 'Quick Scan']
-    });
-  }
-
-  return leads;
 }
 
 export const scraperQueue = new InMemScraperQueue();
