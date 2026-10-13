@@ -169,23 +169,24 @@ export const DEFAULT_APPS: IntegrationApp[] = [
     linkedTitle: 'WhatsApp Studio & Multi-Channel Journeys',
     linkedRoute: '/outreach'
   },
-  // 5. Easy!Appointments / Calendly
+  // 5. Google Calendar Booking & Meet
   {
-    id: 'calendly',
-    name: 'Easy!Appointments / Calendly',
+    id: 'google-calendar',
+    name: 'Google Calendar & Meet',
     category: 'Scheduling',
-    connected: true,
+    connected: false,
     logo: '/integrations/Calendly.png',
-    description: 'Self-hosted or cloud appointment scheduler. Automatically injects your booking URL into {{booking_link}} merge tags, outreach templates, and CRM meeting invitations.',
-    config: { bookingUrl: process.env.EASYAPPOINTMENTS_URL || 'http://localhost:8088', apiKey: '' },
+    description: 'Cloud appointment booking system with Google Calendar API. Queries free/busy slot availability, generates Google Meet links, and syncs confirmed appointments directly into your calendar.',
+    config: { calendarId: 'primary', serviceAccountJson: '', appointmentScheduleUrl: '' },
     configFields: [
-      { key: 'bookingUrl', label: 'Booking Scheduler URL', type: 'url', placeholder: 'http://localhost:8088', required: true },
-      { key: 'apiKey', label: 'API Key or Access Token', type: 'password', placeholder: 'Optional API token' }
+      { key: 'calendarId', label: 'Google Calendar ID', type: 'text', placeholder: 'primary or your-calendar@group.calendar.google.com', required: true },
+      { key: 'serviceAccountJson', label: 'Service Account JSON (or OAuth Refresh Token)', type: 'password', placeholder: 'Paste service account JSON key content' },
+      { key: 'appointmentScheduleUrl', label: 'Google Appointment Schedule URL (Optional)', type: 'url', placeholder: 'https://calendar.google.com/calendar/u/0/appointments/schedules/...' }
     ],
-    lastSync: new Date().toISOString(),
-    badge: 'Live Scheduler',
+    lastSync: null,
+    badge: 'Google Calendar API',
     linkedModule: 'appointments',
-    linkedTitle: 'Easy!Appointments Engine & Outreach Templates',
+    linkedTitle: 'Google Calendar Hub & Live Booking Engine',
     linkedRoute: '/appointments'
   },
   // 6. HubSpot CRM

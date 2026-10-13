@@ -159,7 +159,7 @@ With LeadPulse, {{business_name}} gains direct access to an autonomous local pip
     name: '3. Interactive Calendar Booking Card',
     tagline: 'Live 1-Click Meeting & Time Slot Scheduling',
     bestFor: 'Executive discovery calls, product demos, consult bookings, agency sales intros',
-    purpose: 'Embeds an interactive booking widget with clickable time-slot chips, host avatar, live status, and direct sync to Easy!Appointments or custom booking URLs.',
+    purpose: 'Embeds an interactive booking widget with clickable time-slot chips, host avatar, live status, and direct sync to Google Calendar or custom booking URLs.',
     category: 'direct',
     defaultData: {
       subject: '15-Min Strategy Session for {{business_name}} | Quick Intro',

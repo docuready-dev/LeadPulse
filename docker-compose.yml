@@ -1,56 +1,5 @@
 services:
   # ---------------------------------------------------------------------------
-  # Easy!Appointments - PHP/MySQL Online Appointment Scheduler Backend
-  # ---------------------------------------------------------------------------
-  easyappointments:
-    image: alextselegidis/easyappointments:latest
-    container_name: leadpulse-easyappointments
-    restart: unless-stopped
-    ports:
-      - "${EASYAPPOINTMENTS_PORT:-8088}:80"
-    environment:
-      BASE_URL: "${EASYAPPOINTMENTS_BASE_URL:-http://localhost:8088}"
-      DB_HOST: mysql
-      DB_NAME: "${MYSQL_DATABASE:-easyappointments}"
-      DB_USERNAME: "${MYSQL_USER:-user}"
-      DB_PASSWORD: "${MYSQL_PASSWORD:-password}"
-      LANGUAGE: english
-      DEBUG_MODE: "false"
-    volumes:
-      - ./easyappointments/config.php:/var/www/html/config.php
-      - ./easyappointments/storage:/var/www/html/storage
-    depends_on:
-      mysql:
-        condition: service_healthy
-    networks:
-      - leadpulse-network
-
-  # ---------------------------------------------------------------------------
-  # MySQL Database for Easy!Appointments
-  # ---------------------------------------------------------------------------
-  mysql:
-    image: mysql:8.0
-    container_name: leadpulse-mysql
-    restart: unless-stopped
-    ports:
-      - "${MYSQL_PORT:-3306}:3306"
-    environment:
-      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD:-secret}"
-      MYSQL_DATABASE: "${MYSQL_DATABASE:-easyappointments}"
-      MYSQL_USER: "${MYSQL_USER:-user}"
-      MYSQL_PASSWORD: "${MYSQL_PASSWORD:-password}"
-    volumes:
-      - leadpulse-mysql-data:/var/lib/mysql
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "user", "-ppassword"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-      start_period: 10s
-    networks:
-      - leadpulse-network
-
-  # ---------------------------------------------------------------------------
   # LeadPulse Node.js / Express Backend
   # ---------------------------------------------------------------------------
   server:
@@ -64,9 +13,7 @@ services:
     environment:
       PORT: 3001
       NODE_ENV: development
-      EASYAPPOINTMENTS_URL: "http://easyappointments"
-    depends_on:
-      - easyappointments
+      GOOGLE_CALENDAR_ID: "${GOOGLE_CALENDAR_ID:-}"
     networks:
       - leadpulse-network
 
@@ -83,7 +30,6 @@ services:
       - "5173:5173"
     environment:
       VITE_API_URL: "http://localhost:3001"
-      VITE_EASYAPPOINTMENTS_URL: "http://localhost:8088"
     depends_on:
       - server
     networks:
@@ -92,7 +38,3 @@ services:
 networks:
   leadpulse-network:
     driver: bridge
-
-volumes:
-  leadpulse-mysql-data:
-    driver: local

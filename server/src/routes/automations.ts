@@ -1,4 +1,4 @@
-import express from 'express';
+﻿import express from 'express';
 import { db } from '../index';
 
 const router = express.Router();
@@ -48,7 +48,7 @@ const DEFAULT_STARTER_JOURNEYS = [
         title: 'Step 2: WhatsApp Courtesy Ping',
         description: 'Direct follow-up if mobile phone number is verified.',
         config: {
-          whatsappMessage: 'Hey {{name}}, sent an email earlier this week regarding {{company}} — wanted to ensure you received it!'
+          whatsappMessage: 'Hey {{name}}, sent an email earlier this week regarding {{company}} - wanted to ensure you received it!'
         }
       },
       {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
 import { 
@@ -146,7 +146,7 @@ const TEMPLATE_PRESETS = [
         title: 'WhatsApp Check-in',
         description: 'Direct ping to champion.',
         config: {
-          whatsappMessage: 'Hi {{name}}, quick check-in on the proposal — happy to jump on a 5-min call to clarify anything.'
+          whatsappMessage: 'Hi {{name}}, quick check-in on the proposal - happy to jump on a 5-min call to clarify anything.'
         }
       }
     ]

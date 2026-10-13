@@ -17,6 +17,11 @@ const getTierAiLimit = (plan?: string) => {
   return p === 'pro' ? -1 : p === 'basic' ? 250 : 5;
 };
 
+const getDailySendingCeiling = (plan?: string) => {
+  const p = (plan || 'free').toLowerCase();
+  return p === 'pro' || p === 'enterprise' ? 250 : p === 'basic' ? 100 : 50;
+};
+
 // Middleware to check auth
 const requireAuth = async (req: any, res: any, next: any) => {
   const userId = req.headers.userid;
@@ -129,12 +134,30 @@ router.post('/dispatch-batch', requireAuth, async (req: any, res: any) => {
       return res.status(400).json({ error: 'No target leads selected for dispatch.' });
     }
 
-    // Check Email Dispatch Quota
+    // Check Email Dispatch Quota (Monthly & Strict Daily Ceiling)
     const emailLimit = req.user.emails_limit || getTierEmailLimit(userPlan);
     const currentSent = req.user.emails_sent || 0;
     if (currentSent + targetLeads.length > emailLimit) {
       return res.status(403).json({ 
         error: `Monthly email dispatch limit reached (${currentSent}/${emailLimit} sent). Upgrade your tier to dispatch this batch of ${targetLeads.length} emails.` 
+      });
+    }
+
+    if (req.user?.campaign_status === 'paused_high_bounce') {
+      return res.status(403).json({
+        error: 'Outreach campaign is currently paused due to high bounce rate (>10%). Verify that your recipient addresses are active to protect sender domain reputation, then reset in Settings.'
+      });
+    }
+
+    // Strict Daily Sending Ceiling enforcement (prevents IP blacklisting & spam abuse)
+    const todayUtc = new Date().toISOString().split('T')[0];
+    const lastResetDate = req.user?.daily_reset_date || '';
+    const sentToday = lastResetDate === todayUtc ? (req.user?.emails_sent_today || 0) : 0;
+    const dailyCeiling = getDailySendingCeiling(userPlan);
+
+    if (sentToday + targetLeads.length > dailyCeiling) {
+      return res.status(429).json({
+        error: `Daily outreach ceiling reached (${sentToday}/${dailyCeiling} sent today on ${userPlan.toUpperCase()} tier). Strict daily limits prevent spam blacklisting and preserve your email domain reputation. Limit resets daily at midnight UTC.`
       });
     }
 
@@ -148,13 +171,24 @@ router.post('/dispatch-batch', requireAuth, async (req: any, res: any) => {
       const activeData = (isAbTesting && templateDataB && (i % 2 === 1)) ? templateDataB : templateData;
       const variantTag = isAbTesting ? ((i % 2 === 0) ? 'Variant A' : 'Variant B') : undefined;
 
+      const recipientEmail = (lead.email || `contact@${lead.businessName.toLowerCase().replace(/[^a-z0-9]/g, '')}.com`).trim();
+
+      // Anti-Spam Check: Verify recipient has not unsubscribed
+      try {
+        const unsubDoc = await db.collection('unsubscribes').doc(recipientEmail.toLowerCase()).get();
+        if (unsubDoc.exists) {
+          console.log(`[Dispatch Engine] Skipping unsubscribed recipient: ${recipientEmail}`);
+          continue;
+        }
+      } catch (unsubErr) {
+        // Continue if unsubscribe lookup fails
+      }
+
       // Compile individualized HTML with merge tags & compliance footer
       const compiled = compileEmailHtml(
         { templateId, templateData: activeData, templateStyling },
         lead
       );
-
-      const recipientEmail = lead.email || `contact@${lead.businessName.toLowerCase().replace(/[^a-z0-9]/g, '')}.com`;
 
       // Dispatch via configured SMTP mail transport
       const result = await sendDirectEmail({
@@ -186,15 +220,39 @@ router.post('/dispatch-batch', requireAuth, async (req: any, res: any) => {
         variant: variantTag
       });
 
-      // Update lead status in Firestore to 'Contacted'
-      if (lead._id && !lead._id.startsWith('default-') && !lead._id.startsWith('lead-')) {
+      // Genuine Interaction Logging: ONLY record interaction if successfully delivered
+      if (result.success && lead._id && !lead._id.startsWith('default-') && !lead._id.startsWith('lead-')) {
         try {
-          await db.collection('leads').doc(lead._id).update({
+          const leadRef = db.collection('leads').doc(lead._id);
+          const leadDoc = await leadRef.get();
+          const currentActivities = (leadDoc.exists && Array.isArray(leadDoc.data()?.activities))
+            ? leadDoc.data()?.activities
+            : [];
+
+          currentActivities.push({
+            id: `act-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+            type: 'Email',
+            channel: 'email',
+            title: `Delivered: ${compiled.subject}`,
+            text: `Dispatched via ${result.providerUsed}. Response: ${result.response || '250 OK'}`,
+            date: new Date().toISOString(),
+            deliveredAt: new Date().toISOString(),
+            method: result.providerUsed,
+            recipient: recipientEmail,
+            subject: compiled.subject,
+            messageId: result.messageId,
+            previewUrl: resolvedPreview,
+            status: 'Delivered',
+            author: fromName || req.user.name || 'LeadPulse Operator'
+          });
+
+          await leadRef.update({
             status: 'Contacted',
-            lastContactedAt: new Date().toISOString()
+            lastContactedAt: new Date().toISOString(),
+            activities: currentActivities
           });
         } catch (updateErr) {
-          console.warn(`[Dispatch Engine] Failed to update lead ${lead._id} status:`, updateErr);
+          console.warn(`[Dispatch Engine] Failed to record verified interaction on lead ${lead._id}:`, updateErr);
         }
       }
 
@@ -202,14 +260,31 @@ router.post('/dispatch-batch', requireAuth, async (req: any, res: any) => {
       await new Promise(r => setTimeout(r, 200));
     }
 
-    // Update user emails_sent in Firestore
+    // Update user emails_sent and emails_sent_today in Firestore
     if (deliveredCount > 0) {
       try {
         await db.collection('users').doc(userId).update({
-          emails_sent: currentSent + deliveredCount
+          emails_sent: currentSent + deliveredCount,
+          emails_sent_today: sentToday + deliveredCount,
+          daily_reset_date: todayUtc
         });
       } catch (uErr) {
         console.warn('[Dispatch Engine] Could not update user emails_sent:', uErr);
+      }
+    }
+
+    // Built-in Bounce and Complaint Tracking: Auto-pause campaign if fail rate exceeds 10%
+    const totalAttempted = targetLeads.length;
+    let highBounceTriggered = false;
+    if (totalAttempted >= 5 && (failedCount / totalAttempted) > 0.10) {
+      highBounceTriggered = true;
+      try {
+        await db.collection('users').doc(userId).update({
+          campaign_status: 'paused_high_bounce'
+        });
+        console.warn(`[Dispatch Engine] High bounce rate detected (${failedCount}/${totalAttempted} failed). Campaign paused for user ${userId}.`);
+      } catch (pErr) {
+        console.warn('[Dispatch Engine] Could not update campaign_status to paused_high_bounce:', pErr);
       }
     }
 
@@ -322,11 +397,53 @@ router.post('/dispatch-single', requireAuth, async (req: any, res: any) => {
 
     if (result.success) {
       try {
+        const todayUtc = new Date().toISOString().split('T')[0];
+        const lastResetDate = req.user?.daily_reset_date || '';
+        const sentToday = lastResetDate === todayUtc ? (req.user?.emails_sent_today || 0) : 0;
+
         await db.collection('users').doc(req.user._id).update({
-          emails_sent: currentSent + 1
+          emails_sent: currentSent + 1,
+          emails_sent_today: sentToday + 1,
+          daily_reset_date: todayUtc
         });
       } catch (uErr) {
         console.warn('[Dispatch Engine] Could not update user emails_sent on single send:', uErr);
+      }
+
+      // Record verified interaction activity in target lead doc
+      if (targetLead?._id && !targetLead._id.startsWith('default-') && !targetLead._id.startsWith('lead-')) {
+        try {
+          const leadRef = db.collection('leads').doc(targetLead._id);
+          const leadDoc = await leadRef.get();
+          const currentActivities = (leadDoc.exists && Array.isArray(leadDoc.data()?.activities))
+            ? leadDoc.data()?.activities
+            : [];
+
+          currentActivities.push({
+            id: `act-${Date.now()}`,
+            type: 'Email',
+            channel: 'email',
+            title: `Delivered: ${compiled.subject}`,
+            text: `Dispatched via ${result.providerUsed}. Response: ${result.response || '250 OK'}`,
+            date: new Date().toISOString(),
+            deliveredAt: new Date().toISOString(),
+            method: result.providerUsed,
+            recipient,
+            subject: compiled.subject,
+            messageId: result.messageId,
+            previewUrl: result.previewUrl || null,
+            status: 'Delivered',
+            author: fromName || req.user.name || 'LeadPulse Operator'
+          });
+
+          await leadRef.update({
+            status: 'Contacted',
+            lastContactedAt: new Date().toISOString(),
+            activities: currentActivities
+          });
+        } catch (actErr) {
+          console.warn('[Dispatch Engine] Could not record activity on single send:', actErr);
+        }
       }
     }
 
@@ -696,6 +813,54 @@ Would you be open to a quick, friendly chat this week to see if we'd be a good f
     aiPitchesUsed: aiUsed + 1,
     aiPitchesLimit: aiLimit
   });
+});
+
+// ============================================================================
+// 4. CAN-SPAM & GDPR MANDATORY UNSUBSCRIBE CONTROLLER
+// ============================================================================
+router.get('/unsubscribe', async (req: express.Request, res: express.Response) => {
+  const email = ((req.query.email as string) || '').toLowerCase().trim();
+  const userId = req.query.userId as string;
+
+  if (email) {
+    try {
+      await db.collection('unsubscribes').doc(email).set({
+        email,
+        userId: userId || 'public',
+        unsubscribedAt: new Date().toISOString()
+      });
+      console.log(`[Unsubscribe Engine] Successfully unsubscribed: ${email}`);
+    } catch (unsubSaveErr) {
+      console.warn('[Unsubscribe Engine] Failed to store unsubscribe record:', unsubSaveErr);
+    }
+  }
+
+  res.send(`
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Unsubscribed | LeadPulse</title>
+      <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background-color: #F8FAFC; color: #0F172A; }
+        .card { max-width: 440px; padding: 36px; background: #FFFFFF; border-radius: 16px; border: 1px solid #E2E8F0; text-align: center; box-shadow: 0 4px 16px rgba(0,0,0,0.06); }
+        .badge { display: inline-block; padding: 4px 12px; background: #ECFDF5; color: #047857; font-weight: 700; font-size: 11px; border-radius: 9999px; margin-bottom: 16px; border: 1px solid #A7F3D0; }
+        h2 { margin: 0 0 10px 0; font-size: 20px; font-weight: 800; color: #0F172A; }
+        p { color: #64748B; font-size: 13px; line-height: 1.6; margin: 0 0 20px 0; }
+        .email-pill { font-family: monospace; background: #F1F5F9; padding: 4px 8px; border-radius: 6px; font-weight: 700; color: #1E293B; font-size: 12px; }
+      </style>
+    </head>
+    <body>
+      <div class="card">
+        <div class="badge">Unsubscribed Successfully</div>
+        <h2>You Have Been Opted Out</h2>
+        <p>The address <span class="email-pill">${email || 'your email'}</span> has been permanently unsubscribed from all future LeadPulse outreach campaigns.</p>
+        <p style="font-size: 11px; color: #94A3B8; margin: 0;">LeadPulse CAN-SPAM &amp; GDPR Opt-Out Compliance Registry</p>
+      </div>
+    </body>
+    </html>
+  `);
 });
 
 export default router;

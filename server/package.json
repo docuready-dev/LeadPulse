@@ -19,6 +19,8 @@
     "dotenv": "^18.0.5",
     "express": "^5.2.1",
     "firebase-admin": "^14.5.0",
+    "google-auth-library": "^9.15.0",
+    "@googleapis/calendar": "^9.0.2",
     "jsonwebtoken": "^9.0.3",
     "nodemailer": "^10.0.15",
     "puppeteer": "^25.12.0"

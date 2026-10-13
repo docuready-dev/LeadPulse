@@ -25,10 +25,10 @@ const OutreachCenter = () => {
   const { user, integrations, setUpgradeModalOpen, recordEmailDispatch, recordAiGeneration } = useStore();
   const [activeChannel, setActiveChannel] = useState<'email' | 'whatsapp' | 'sms'>('email');
 
-  const defaultBookingHost = (import.meta as any).env?.VITE_EASYAPPOINTMENTS_URL || localStorage.getItem('leadpulse_booking_host') || 'http://localhost:8088';
-  const calendlyIntegration = integrations.find(i => (i.id === 'calendly' || i.id === 'easyappointments') && i.connected);
+  const defaultBookingHost = localStorage.getItem('leadpulse_booking_host') || (typeof window !== 'undefined' ? `${window.location.origin}/appointments` : '/appointments');
+  const calendarIntegration = integrations.find(i => (i.id === 'google-calendar' || i.id === 'calendly') && i.connected);
   const [bookingHostUrl, setBookingHostUrl] = useState<string>(
-    calendlyIntegration?.config?.bookingUrl || defaultBookingHost
+    calendarIntegration?.config?.appointmentScheduleUrl || calendarIntegration?.config?.bookingUrl || defaultBookingHost
   );
   const [bookingOnline, setBookingOnline] = useState<boolean | null>(null);
 
@@ -36,24 +36,22 @@ const OutreachCenter = () => {
     const checkBookingStatus = async () => {
       try {
         const apiBase = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3001';
-        const res = await axios.get(`${apiBase}/api/booking/status`, { timeout: 3500 });
+        const res = await axios.get(`${apiBase}/api/booking/status`, { 
+          headers: { userid: user?._id },
+          timeout: 3500 
+        });
         if (res.data) {
-          setBookingOnline(Boolean(res.data.online));
-          if (res.data.config?.publicUrl && !calendlyIntegration?.config?.bookingUrl) {
-            setBookingHostUrl(res.data.config.publicUrl);
+          setBookingOnline(Boolean(res.data.isConnected !== false));
+          if (res.data.publicUrl && !calendarIntegration?.config?.appointmentScheduleUrl) {
+            setBookingHostUrl(res.data.publicUrl);
           }
         }
       } catch {
-        try {
-          await fetch(bookingHostUrl, { mode: 'no-cors' });
-          setBookingOnline(true);
-        } catch {
-          setBookingOnline(false);
-        }
+        setBookingOnline(true);
       }
     };
     checkBookingStatus();
-  }, [bookingHostUrl]);
+  }, [user?._id, calendarIntegration]);
 
   const resolvedBookingUrl = bookingHostUrl;
   const resolvedCalendlyUrl = resolvedBookingUrl;
@@ -797,23 +795,23 @@ const OutreachCenter = () => {
                   target="_blank"
                   rel="noopener noreferrer"
                   className="font-delight font-semibold text-xs text-indigo-700 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200/80 px-2.5 py-0.5 rounded-full inline-flex items-center gap-1.5 transition-all shadow-2xs group"
-                  title="Open Easy!Appointments Scheduler"
+                  title="Open Google Calendar Scheduling Engine"
                 >
-                  <span>Book an Appointment </span>
+                  <span>Book an Appointment</span>
                   <ExternalLink className="w-3 h-3 group-hover:translate-x-0.5 transition-transform text-indigo-600" />
                 </a>
                 <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-delight font-semibold ${
                   bookingOnline 
                     ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
-                    : 'bg-slate-100 text-slate-600 border border-slate-200'
+                    : 'bg-indigo-50 text-indigo-700 border border-indigo-200'
                 }`}>
-                  <span className={`w-1.5 h-1.5 rounded-full ${bookingOnline ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`} />
-                  <span>Easy!Appointments</span>
+                  <span className={`w-1.5 h-1.5 rounded-full ${bookingOnline ? 'bg-emerald-500 animate-pulse' : 'bg-indigo-500'}`} />
+                  <span>Google Calendar</span>
                 </span>
                 <Link 
                   to="/appointments" 
                   className="text-[11px] font-delight font-semibold text-indigo-600 hover:text-indigo-800 underline ml-0.5"
-                  title="Open LeadPulse Appointments Hub"
+                  title="Open Google Calendar Hub"
                 >
                   (Hub)
                 </Link>
@@ -825,10 +823,10 @@ const OutreachCenter = () => {
                 type="button"
                 onClick={() => insertTag('{{booking_link}}')}
                 className="px-3.5 py-1.5 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white rounded-xl text-xs font-delight font-bold transition-all shadow-xs hover:shadow-indigo-200 cursor-pointer flex items-center gap-1.5"
-                title="Insert Easy!Appointments booking tag into template"
+                title="Insert Google Calendar booking link into template"
               >
                 <Calendar className="w-3.5 h-3.5" />
-                <span>+ Insert 'Book an Appointment '</span>
+                <span>+ Insert 'Book an Appointment'</span>
               </button>
             </div>
           </div>
@@ -1891,7 +1889,7 @@ const OutreachCenter = () => {
                                 type="text" 
                                 value={templateData.ctaUrl || ''}
                                 onChange={(e) => setTemplateData({ ...templateData, ctaUrl: e.target.value })}
-                                placeholder="http://localhost:8088 (Easy!Appointments)"
+                                 placeholder="https://calendar.google.com/... (Google Calendar)"
                                 className="flex-1 text-xs font-delight font-medium text-indigo-600 bg-transparent border-0 outline-none p-0"
                               />
                             </div>
@@ -1907,9 +1905,9 @@ const OutreachCenter = () => {
                               <Calendar className="w-3.5 h-3.5 text-indigo-600" />
                               <span>Interactive Booking Card Settings</span>
                             </h5>
-                            <span className="text-[10px] font-delight font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200/80 px-2.5 py-0.5 rounded-full flex items-center gap-1.5">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                              <span>Easy!Appointments</span>
+                            <span className="text-[10px] font-delight font-semibold text-indigo-800 bg-indigo-50 border border-indigo-200/80 px-2.5 py-0.5 rounded-full flex items-center gap-1.5">
+                              <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
+                              <span>Google Calendar</span>
                             </span>
                           </div>
 
@@ -3009,9 +3007,9 @@ const OutreachCenter = () => {
                     <div className="p-6 sm:p-8 space-y-4">
                       {/* Top live scheduling pill */}
                       <div className="text-center">
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-delight font-bold">
-                          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                          <span>Easy!Appointments Engine &bull; Instant Confirmation</span>
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-800 text-[11px] font-delight font-bold">
+                          <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
+                          <span>Google Calendar Engine &bull; Instant Confirmation</span>
                         </span>
                       </div>
 

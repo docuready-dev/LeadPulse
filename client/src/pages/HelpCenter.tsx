@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+﻿import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
@@ -112,32 +112,32 @@ Dispatch AI Cold Email Sequence                                                1
         keyTakeaways: [
           'Configure your sender identity in Settings before launching bulk email sequences.',
           'Connect Slack, Microsoft Teams, or Google Sheets in the Integrations hub for real-time deal telemetry.',
-          'Use small targeted batches (10–15 contacts) to test message resonance before scaling.'
+          'Use small targeted batches (10-15 contacts) to test message resonance before scaling.'
         ],
         steps: [
           {
-            title: 'Step 1: Configure Sender Identity (Minutes 0–3)',
+            title: 'Step 1: Configure Sender Identity (Minutes 0-3)',
             detail:
               'Open Settings -> Outreach & SMTP to verify your sender display name, reply-to address, and default signature variables.'
           },
           {
-            title: 'Step 2: Harvest Your First 10 Niche Leads (Minutes 3–8)',
+            title: 'Step 2: Harvest Your First 10 Niche Leads (Minutes 3-8)',
             detail:
               'In Lead Finder, set your target business category, city, and desired batch size. Each returned business contact consumes 1 token from your pool.'
           },
           {
-            title: 'Step 3: Organize Your Kanban Pipeline (Minutes 8–12)',
+            title: 'Step 3: Organize Your Kanban Pipeline (Minutes 8-12)',
             detail:
               'Open CRM Pipeline. Drag stage headers to match your sales process, resize high-volume stage columns with your mouse, and inspect lead cards.'
           },
           {
-            title: 'Step 4: Dispatch Multi-Channel Outreach (Minutes 12–15)',
+            title: 'Step 4: Dispatch Multi-Channel Outreach (Minutes 12-15)',
             detail:
               'Launch Outreach Studio to send personalized cold emails or trigger WhatsApp Web deep-links with dynamic {{businessName}} and {{location}} merge tags.'
           }
         ],
         proTip:
-          'You can check off each step above directly in this article reader—your progress is interactive!'
+          'You can check off each step above directly in this article reader-your progress is interactive!'
       }
     ]
   },
@@ -250,7 +250,7 @@ const newCredits = Math.max(0, availableCredits - tokensUsed);`
           {
             title: 'Check Global Calling Windows Before Dialing',
             detail:
-              'Look at the World Clock widget to see live local times across India (IST), UK (GMT), and US East (EST). Green "OPEN" badges indicate active 9 AM – 6 PM business hours.'
+              'Look at the World Clock widget to see live local times across India (IST), UK (GMT), and US East (EST). Green "OPEN" badges indicate active 9 AM - 6 PM business hours.'
           },
           {
             title: 'Run a 25-Minute Outreach Sprint',
@@ -298,7 +298,7 @@ const newCredits = Math.max(0, availableCredits - tokensUsed);`
           }
         ],
         proTip:
-          'Try the "Outbound SDR Cockpit" layout during live calling hours—it places the Sprint Clock, Scratchpad, and Direct Actions side-by-side on the top row!'
+          'Try the "Outbound SDR Cockpit" layout during live calling hours-it places the Sprint Clock, Scratchpad, and Direct Actions side-by-side on the top row!'
       }
     ]
   },
@@ -362,7 +362,7 @@ const newCredits = Math.max(0, availableCredits - tokensUsed);`
         summary:
           'LeadPulse features an interactive, developer-grade Kanban board where every stage column can be resized horizontally, vertically, or diagonally using your mouse, and reordered by dragging the column header.',
         keyTakeaways: [
-          'Mouse-Resizable Width & Height: Drag the right edge, bottom edge, or bottom-right corner handle of any Kanban column to resize it between 210px–640px wide and 260px–920px tall.',
+          'Mouse-Resizable Width & Height: Drag the right edge, bottom edge, or bottom-right corner handle of any Kanban column to resize it between 210px-640px wide and 260px-920px tall.',
           'Live Dimension Readout: A live `W × H` pixel badge appears in the column header while resizing.',
           'Drag-to-Reposition Columns: Grab any stage header (`GripVertical`) and drag it left or right to reorder your pipeline stages.',
           'Persistent Layout + 1-Click Reset: Board dimensions and stage order save automatically to your browser, with a "Reset Boards" button in the toolbar.'
@@ -443,7 +443,7 @@ const newCredits = Math.max(0, availableCredits - tokensUsed);`
         route: '/outreach',
         routeLabel: 'Open Outreach Studio',
         summary:
-          'Outreach Studio lets you craft dynamic, variable-injected campaigns across Email and WhatsApp with live recipient previewing—always grounded in your real harvested CRM leads.',
+          'Outreach Studio lets you craft dynamic, variable-injected campaigns across Email and WhatsApp with live recipient previewing-always grounded in your real harvested CRM leads.',
         keyTakeaways: [
           'Dynamic merge variables: `{{businessName}}`, `{{category}}`, `{{location}}`, `{{rating}}`, and `{{website}}`.',
           'Live Recipient Preview: Preview exact rendered copy for each real prospect in your CRM before sending.',

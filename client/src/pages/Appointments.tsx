@@ -3,9 +3,10 @@ import { useStore } from '../store/useStore';
 import axios from 'axios';
 import { 
   Calendar, Clock, CheckCircle2, Copy, Check, 
-  ExternalLink, Send, MessageCircle, Sparkles,
-  Terminal, Database, Server, Settings, Users,
-  FolderKanban, ArrowRight
+  Send, MessageCircle, Sparkles,
+  Server, Settings, Users,
+  FolderKanban, ArrowRight, Video,
+  Key, ShieldCheck
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
@@ -15,13 +16,15 @@ import BookingWidget from '../components/BookingWidget';
 const Appointments = () => {
   const { user } = useStore();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'scheduler' | 'admin' | 'pipeline' | 'infrastructure'>('scheduler');
+  const [activeTab, setActiveTab] = useState<'scheduler' | 'appointments' | 'pipeline' | 'setup'>('scheduler');
   const [leads, setLeads] = useState<any[]>([]);
+  const [appointmentsList, setAppointmentsList] = useState<any[]>([]);
   const [copiedLink, setCopiedLink] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  const [calendarStatus, setCalendarStatus] = useState<any>(null);
 
-  const bookingHost = (import.meta as any).env?.VITE_EASYAPPOINTMENTS_URL || 'http://localhost:8088';
   const apiBase = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3001';
+  const publicBookingUrl = typeof window !== 'undefined' ? `${window.location.origin}/appointments` : '/appointments';
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -39,24 +42,50 @@ const Appointments = () => {
         setLeads([]);
       }
     };
-    if (user) fetchLeads();
-  }, [user]);
+
+    const fetchCalendarStatus = async () => {
+      try {
+        const res = await axios.get(`${apiBase}/api/booking/status`, {
+          headers: { userid: user?._id }
+        });
+        setCalendarStatus(res.data);
+      } catch {
+        setCalendarStatus({ isConnected: false });
+      }
+    };
+
+    const fetchAppointments = async () => {
+      try {
+        const res = await axios.get(`${apiBase}/api/booking/appointments`, {
+          headers: { userid: user?._id }
+        });
+        setAppointmentsList(res.data || []);
+      } catch {
+        setAppointmentsList([]);
+      }
+    };
+
+    if (user) {
+      fetchLeads();
+      fetchCalendarStatus();
+      fetchAppointments();
+    }
+  }, [user?._id]);
 
   const handleCopyLink = () => {
-    navigator.clipboard.writeText(bookingHost);
+    navigator.clipboard.writeText(publicBookingUrl);
     setCopiedLink(true);
-    showToast('Copied public Easy!Appointments booking link to clipboard');
+    showToast('Copied Google Calendar booking link to clipboard');
     setTimeout(() => setCopiedLink(false), 2400);
   };
 
   const handleSendWhatsAppInvite = (lead: any) => {
     const cleanPhone = (lead.phone || '').replace(/[^0-9]/g, '');
-    const message = `Hi ${lead.firstName || lead.businessName}! Let's lock in a brief walkthrough for ${lead.businessName}. You can pick any slot that suits your schedule right here: ${bookingHost}`;
+    const message = `Hi ${lead.firstName || lead.businessName}! Let's lock in a brief walkthrough for ${lead.businessName}. You can pick any open Google Calendar slot right here: ${publicBookingUrl}`;
     const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
     window.open(url, '_blank');
   };
 
-  // Demo / Meeting eligible leads from CRM
   const pipelineProspects = leads.slice(0, 12);
 
   return (
@@ -64,7 +93,7 @@ const Appointments = () => {
       <Sidebar />
 
       <div className="flex-1 flex flex-col h-full overflow-hidden">
-        <Header title="Easy!Appointments Booking Engine & Calendar Hub" />
+        <Header title="Google Calendar Booking Engine & Appointment Hub" />
 
         <div className="flex-1 flex flex-col p-6 sm:p-8 overflow-y-auto custom-scrollbar space-y-6">
           
@@ -77,25 +106,28 @@ const Appointments = () => {
 
           {/* Top Stage Bar / KPI Progression Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 shrink-0">
-            <div className="bg-white border border-slate-200 rounded-lg p-3.5 shadow-2xs">
+            <div className="bg-white border border-slate-200 rounded-xl p-3.5 shadow-2xs">
               <div className="flex items-center justify-between text-slate-500 mb-1">
-                <span className="text-[10px] font-bold uppercase tracking-wider font-delight">Scheduler Engine</span>
-                <Calendar className="w-4 h-4 text-emerald-600" />
+                <span className="text-[10px] font-bold uppercase tracking-wider font-delight">Calendar Engine</span>
+                <Calendar className="w-4 h-4 text-indigo-600" />
               </div>
-              <div className="text-base font-bold text-slate-900">Easy!Appointments</div>
-              <div className="text-[11px] text-slate-500 font-mono mt-0.5">{bookingHost}</div>
+              <div className="text-base font-bold text-slate-900">Google Calendar</div>
+              <div className="text-[11px] text-emerald-700 font-semibold mt-0.5 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span>{calendarStatus?.isConnected ? 'Live API Synced' : 'Active (Direct Mode)'}</span>
+              </div>
             </div>
 
-            <div className="bg-white border border-slate-200 rounded-lg p-3.5 shadow-2xs">
+            <div className="bg-white border border-slate-200 rounded-xl p-3.5 shadow-2xs">
               <div className="flex items-center justify-between text-slate-500 mb-1">
-                <span className="text-[10px] font-bold uppercase tracking-wider font-delight">Database Backend</span>
-                <Database className="w-4 h-4 text-blue-600" />
+                <span className="text-[10px] font-bold uppercase tracking-wider font-delight">Video Conferencing</span>
+                <Video className="w-4 h-4 text-blue-600" />
               </div>
-              <div className="text-base font-bold text-slate-900">MySQL 8.0 Engine</div>
-              <div className="text-[11px] text-slate-500 mt-0.5">Port 3306 (Docker Service)</div>
+              <div className="text-base font-bold text-slate-900">Google Meet</div>
+              <div className="text-[11px] text-slate-500 mt-0.5">Automated Room Links</div>
             </div>
 
-            <div className="bg-white border border-slate-200 rounded-lg p-3.5 shadow-2xs">
+            <div className="bg-white border border-slate-200 rounded-xl p-3.5 shadow-2xs">
               <div className="flex items-center justify-between text-slate-500 mb-1">
                 <span className="text-[10px] font-bold uppercase tracking-wider font-delight">Pipeline Integration</span>
                 <FolderKanban className="w-4 h-4 text-[#C85A32]" />
@@ -104,19 +136,19 @@ const Appointments = () => {
               <div className="text-[11px] text-emerald-700 font-medium mt-0.5">Auto-advances to Demo</div>
             </div>
 
-            <div className="bg-white border border-slate-200 rounded-lg p-3.5 shadow-2xs">
+            <div className="bg-white border border-slate-200 rounded-xl p-3.5 shadow-2xs">
               <div className="flex items-center justify-between text-slate-500 mb-1">
-                <span className="text-[10px] font-bold uppercase tracking-wider font-delight">Public Booking URL</span>
+                <span className="text-[10px] font-bold uppercase tracking-wider font-delight">Confirmed Sessions</span>
                 <CheckCircle2 className="w-4 h-4 text-emerald-600" />
               </div>
               <div className="flex items-center justify-between mt-1">
-                <span className="text-xs font-mono font-bold text-slate-900 truncate max-w-[130px]">{bookingHost}</span>
+                <span className="text-base font-bold text-slate-900">{appointmentsList.length} Bookings</span>
                 <button
                   onClick={handleCopyLink}
-                  className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-[11px] font-semibold flex items-center gap-1 cursor-pointer transition-colors"
+                  className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md text-[11px] font-semibold flex items-center gap-1 cursor-pointer transition-colors"
                 >
-                  {copiedLink ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
-                  <span>{copiedLink ? 'Copied' : 'Copy'}</span>
+                  {copiedLink ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3 text-slate-500" />}
+                  <span>{copiedLink ? 'Copied' : 'Copy Link'}</span>
                 </button>
               </div>
             </div>
@@ -124,92 +156,147 @@ const Appointments = () => {
 
           {/* Sub Navigation Tabs */}
           <div className="flex items-center justify-between border-b border-slate-200 pb-2">
-            <div className="flex items-center gap-1 bg-[#FAF8F5] border border-slate-200 rounded-lg p-1">
+            <div className="flex items-center gap-1 bg-[#FAF8F5] border border-slate-200 rounded-xl p-1">
               <button
                 onClick={() => setActiveTab('scheduler')}
-                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
                   activeTab === 'scheduler'
                     ? 'bg-slate-900 text-white shadow-xs'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 <Calendar className="w-3.5 h-3.5" />
-                <span>Live Booking View</span>
+                <span>Live Scheduler</span>
               </button>
 
               <button
-                onClick={() => setActiveTab('admin')}
-                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
-                  activeTab === 'admin'
+                onClick={() => setActiveTab('appointments')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                  activeTab === 'appointments'
                     ? 'bg-slate-900 text-white shadow-xs'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                <Settings className="w-3.5 h-3.5" />
-                <span>Admin & Services</span>
+                <Clock className="w-3.5 h-3.5" />
+                <span>Confirmed Bookings ({appointmentsList.length})</span>
               </button>
 
               <button
                 onClick={() => setActiveTab('pipeline')}
-                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
                   activeTab === 'pipeline'
                     ? 'bg-slate-900 text-white shadow-xs'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 <Users className="w-3.5 h-3.5" />
-                <span>CRM Lead Dispatch</span>
+                <span>CRM Lead Invites</span>
               </button>
 
               <button
-                onClick={() => setActiveTab('infrastructure')}
-                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
-                  activeTab === 'infrastructure'
+                onClick={() => setActiveTab('setup')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                  activeTab === 'setup'
                     ? 'bg-slate-900 text-white shadow-xs'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                <Server className="w-3.5 h-3.5" />
-                <span>Docker & Architecture</span>
+                <Settings className="w-3.5 h-3.5" />
+                <span>API Setup Guide</span>
               </button>
-            </div>
-
-            <div className="hidden sm:flex items-center gap-2">
-              <a
-                href={bookingHost}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-md text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
-              >
-                <span>Direct Window</span>
-                <ExternalLink className="w-3.5 h-3.5 text-slate-500" />
-              </a>
             </div>
           </div>
 
           {/* TAB 1: LIVE SCHEDULER VIEW */}
           {activeTab === 'scheduler' && (
-            <BookingWidget initialMode="client" />
+            <BookingWidget />
           )}
 
-          {/* TAB 2: ADMIN & SERVICES VIEW */}
-          {activeTab === 'admin' && (
-            <BookingWidget initialMode="admin" />
+          {/* TAB 2: CONFIRMED BOOKINGS LIST */}
+          {activeTab === 'appointments' && (
+            <div className="bg-white border border-slate-200 rounded-xl shadow-2xs overflow-hidden flex flex-col">
+              <div className="p-4 border-b border-slate-200 bg-[#FAF8F5] flex items-center justify-between">
+                <div>
+                  <h3 className="font-bold text-sm text-slate-900 tracking-tight">Confirmed Google Calendar Sessions</h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Real meetings scheduled with prospects and synchronized to your Google Calendar.
+                  </p>
+                </div>
+              </div>
+
+              {appointmentsList.length === 0 ? (
+                <div className="p-12 text-center text-slate-500 text-xs">
+                  No appointments booked yet. Open the Live Scheduler to create your first session.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase text-[10px]">
+                      <tr>
+                        <th className="py-2.5 px-4">Attendee &amp; Company</th>
+                        <th className="py-2.5 px-4">Contact</th>
+                        <th className="py-2.5 px-4">Session Date &amp; Slot</th>
+                        <th className="py-2.5 px-4">Meeting Room</th>
+                        <th className="py-2.5 px-4 text-right">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {appointmentsList.map((app, idx) => (
+                        <tr key={app.id || idx} className="hover:bg-slate-50 transition-colors">
+                          <td className="py-3 px-4 font-bold text-slate-900">
+                            {app.customerName || app.businessName}
+                            <div className="text-[10px] text-slate-400 font-normal">{app.businessName}</div>
+                          </td>
+                          <td className="py-3 px-4 font-mono text-[11px] text-slate-700">
+                            <div>{app.customerEmail}</div>
+                            {app.customerPhone && <div className="text-slate-400 text-[10px]">{app.customerPhone}</div>}
+                          </td>
+                          <td className="py-3 px-4 text-slate-700">
+                            <span className="font-bold">{app.timeSlot || 'Scheduled'}</span>
+                            <div className="text-[10px] text-slate-400">{new Date(app.appointmentDate).toLocaleDateString()}</div>
+                          </td>
+                          <td className="py-3 px-4">
+                            {app.meetLink ? (
+                              <a
+                                href={app.meetLink}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200 text-xs font-bold transition-colors"
+                              >
+                                <Video className="w-3.5 h-3.5 text-indigo-600" />
+                                <span>Join Google Meet</span>
+                              </a>
+                            ) : (
+                              <span className="text-[11px] text-slate-400 italic">Google Calendar Event</span>
+                            )}
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                              {app.status || 'Confirmed'}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
           )}
 
           {/* TAB 3: PIPELINE CRM LEAD DISPATCH */}
           {activeTab === 'pipeline' && (
-            <div className="bg-white border border-slate-200 rounded-lg shadow-2xs overflow-hidden flex flex-col">
+            <div className="bg-white border border-slate-200 rounded-xl shadow-2xs overflow-hidden flex flex-col">
               <div className="p-4 border-b border-slate-200 bg-[#FAF8F5] flex items-center justify-between">
                 <div>
                   <h3 className="font-bold text-sm text-slate-900 tracking-tight">Active Pipeline Lead Dispatch</h3>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    1-Click invite prospects to book an Easy!Appointments session. Confirmed bookings automatically update stage to Demo.
+                    1-Click invite prospects to book a Google Calendar session. Confirmed bookings automatically advance stage to Demo.
                   </p>
                 </div>
                 <button
                   onClick={() => navigate('/crm')}
-                  className="px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-md text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                  className="px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
                 >
                   <span>Open CRM Pipeline</span>
                   <ArrowRight className="w-3.5 h-3.5" />
@@ -248,7 +335,7 @@ const Appointments = () => {
                             {lead.phone && (
                               <button
                                 onClick={() => handleSendWhatsAppInvite(lead)}
-                                className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded text-xs font-semibold flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
+                                className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
                                 title="Send booking link via WhatsApp"
                               >
                                 <MessageCircle className="w-3.5 h-3.5 text-emerald-400" />
@@ -261,7 +348,7 @@ const Appointments = () => {
                                 handleCopyLink();
                                 showToast(`Copied booking link for ${lead.businessName}`);
                               }}
-                              className="px-2.5 py-1 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded text-xs font-semibold flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
+                              className="px-2.5 py-1 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg text-xs font-semibold flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
                             >
                               <Copy className="w-3.5 h-3.5 text-slate-500" />
                               <span>Copy Link</span>
@@ -269,7 +356,7 @@ const Appointments = () => {
 
                             <button
                               onClick={() => navigate('/outreach')}
-                              className="px-2.5 py-1 bg-[#C85A32] hover:bg-[#B04B25] text-white rounded text-xs font-semibold flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
+                              className="px-2.5 py-1 bg-[#C85A32] hover:bg-[#B04B25] text-white rounded-lg text-xs font-semibold flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
                               title="Send Email Template"
                             >
                               <Send className="w-3.5 h-3.5" />
@@ -285,78 +372,60 @@ const Appointments = () => {
             </div>
           )}
 
-          {/* TAB 4: DOCKER & ARCHITECTURE GUIDE */}
-          {activeTab === 'infrastructure' && (
-            <div className="bg-white border border-slate-200 rounded-lg p-6 space-y-6 shadow-2xs">
+          {/* TAB 4: GOOGLE CALENDAR SETUP GUIDE */}
+          {activeTab === 'setup' && (
+            <div className="bg-white border border-slate-200 rounded-xl p-6 space-y-6 shadow-2xs text-xs">
               <div>
-                <h3 className="font-bold text-base text-slate-900 tracking-tight">Easy!Appointments Multi-Service Architecture</h3>
-                <p className="text-xs text-slate-600 mt-1">
-                  How LeadPulse orchestrates its Node.js and React stack alongside the Easy!Appointments PHP / MySQL container services.
+                <h3 className="font-bold text-base text-slate-900 tracking-tight">Google Calendar &amp; Meet API Architecture</h3>
+                <p className="text-slate-600 mt-1">
+                  How LeadPulse integrates directly with Google Calendar to manage live booking slots, query free/busy conflicts, and auto-provision Google Meet links.
                 </p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="border border-slate-200 rounded-lg p-4 space-y-3 bg-[#FAF8F5]">
+                <div className="border border-slate-200 rounded-xl p-4 space-y-3 bg-[#FAF8F5]">
                   <h4 className="font-bold text-xs uppercase tracking-wider text-slate-800 flex items-center gap-2">
-                    <Server className="w-4 h-4 text-[#C85A32]" />
-                    <span>Container Service Map</span>
+                    <Key className="w-4 h-4 text-indigo-600" />
+                    <span>Step-by-Step Google Cloud Setup</span>
                   </h4>
-                  <ul className="space-y-2 text-xs text-slate-700 font-mono">
-                    <li className="flex items-center justify-between p-2 bg-white rounded border border-slate-200">
-                      <span>easyappointments (PHP 8.2)</span>
-                      <span className="font-bold text-emerald-700">Port 8088:80</span>
+                  <ol className="space-y-2 text-slate-700 list-decimal pl-4 leading-relaxed">
+                    <li>
+                      <strong>Google Cloud Project:</strong> Go to <a href="https://console.cloud.google.com" target="_blank" rel="noreferrer" className="text-indigo-600 underline font-semibold">Google Cloud Console</a> and create or select your project.
                     </li>
-                    <li className="flex items-center justify-between p-2 bg-white rounded border border-slate-200">
-                      <span>mysql (MySQL 8.0)</span>
-                      <span className="font-bold text-blue-700">Port 3306:3306</span>
+                    <li>
+                      <strong>Enable API:</strong> Under <em>APIs &amp; Services &gt; Library</em>, search for <strong>Google Calendar API</strong> and click <strong>Enable</strong>.
                     </li>
-                    <li className="flex items-center justify-between p-2 bg-white rounded border border-slate-200">
-                      <span>leadpulse-server (Express API)</span>
-                      <span className="font-bold text-purple-700">Port 3001:3001</span>
+                    <li>
+                      <strong>Service Account:</strong> Under <em>IAM &amp; Admin &gt; Service Accounts</em>, create a Service Account, click <em>Keys &gt; Add Key &gt; Create new key (JSON)</em>, and download the key.
                     </li>
-                    <li className="flex items-center justify-between p-2 bg-white rounded border border-slate-200">
-                      <span>leadpulse-client (React / Vite)</span>
-                      <span className="font-bold text-amber-700">Port 5173:5173</span>
+                    <li>
+                      <strong>Share Your Calendar:</strong> In Google Calendar UI, open Settings for your calendar, scroll to <em>Share with specific people</em>, and add your service account email with <strong>"Make changes to events"</strong> permission.
                     </li>
-                  </ul>
+                    <li>
+                      <strong>Save in LeadPulse:</strong> Open <em>Calendar Settings</em> in the Live Scheduler above and paste your Calendar ID and Service Account JSON.
+                    </li>
+                  </ol>
                 </div>
 
-                <div className="border border-slate-200 rounded-lg p-4 space-y-3 bg-slate-900 text-white font-mono">
+                <div className="border border-slate-200 rounded-xl p-4 space-y-3 bg-slate-900 text-white font-mono">
                   <h4 className="font-bold text-xs uppercase tracking-wider text-slate-300 flex items-center gap-2">
-                    <Terminal className="w-4 h-4 text-emerald-400" />
-                    <span>Quickstart Terminal Commands</span>
+                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                    <span>Calendar SDK Architecture</span>
                   </h4>
-                  <div className="space-y-2 text-xs">
-                    <div>
-                      <div className="text-slate-400 text-[10px]"># Start Easy!Appointments & MySQL in Background</div>
-                      <div className="p-1.5 bg-slate-950 rounded border border-slate-800 text-emerald-300 select-all">
-                        docker compose up -d easyappointments mysql
-                      </div>
+                  <div className="space-y-2.5 text-[11px] leading-relaxed text-slate-300">
+                    <div className="p-2 bg-slate-950 rounded border border-slate-800">
+                      <div className="text-emerald-400 font-bold mb-0.5">1. Free/Busy Detection</div>
+                      <div>Calls <code className="text-indigo-300">calendar.freebusy.query</code> to inspect real conflicts and hide busy slots dynamically.</div>
                     </div>
-                    <div>
-                      <div className="text-slate-400 text-[10px]"># Start Full LeadPulse Stack (Client + Server + Scheduler)</div>
-                      <div className="p-1.5 bg-slate-950 rounded border border-slate-800 text-emerald-300 select-all">
-                        docker compose up -d
-                      </div>
+                    <div className="p-2 bg-slate-950 rounded border border-slate-800">
+                      <div className="text-emerald-400 font-bold mb-0.5">2. Event Creation &amp; Google Meet</div>
+                      <div>Calls <code className="text-indigo-300">calendar.events.insert</code> with conferenceData to provision live Google Meet rooms automatically.</div>
                     </div>
-                    <div>
-                      <div className="text-slate-400 text-[10px]"># View Live MySQL & Easy!Appointments Logs</div>
-                      <div className="p-1.5 bg-slate-950 rounded border border-slate-800 text-emerald-300 select-all">
-                        docker compose logs -f easyappointments
-                      </div>
+                    <div className="p-2 bg-slate-950 rounded border border-slate-800">
+                      <div className="text-emerald-400 font-bold mb-0.5">3. CRM Pipeline Sync</div>
+                      <div>Matches attendee email to CRM leads, records appointment timeline activity, and advances pipeline stage to Demo.</div>
                     </div>
                   </div>
-                </div>
-              </div>
-
-              <div className="border-t border-slate-200 pt-4 flex flex-wrap items-center justify-between gap-4 text-xs text-slate-600">
-                <div className="flex items-center gap-2">
-                  <Database className="w-4 h-4 text-slate-400" />
-                  <span>Config file: <code className="bg-slate-100 px-1 py-0.5 rounded font-mono text-slate-800">easyappointments/config.php</code></span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                  <span>Google Calendar Sync compatible via Easy!Appointments Admin Settings</span>
                 </div>
               </div>
             </div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useStore } from '../store/useStore';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
@@ -618,7 +618,7 @@ const Dashboard = () => {
             {/* Global Calling Window Radar */}
             <div className="space-y-1.5">
               <div className="text-[10px] font-delight uppercase tracking-wider font-semibold text-[#6E675F]">
-                B2B Calling Windows (9 AM – 6 PM)
+                B2B Calling Windows (9 AM - 6 PM)
               </div>
               <div className="divide-y divide-[#E5E0D5] border border-[#E5E0D5] rounded-md bg-white">
                 {zones.map(z => {
@@ -1225,7 +1225,7 @@ const Dashboard = () => {
                   <div>
                     <div className="text-xs font-bold font-delight text-[#191716] flex items-center gap-2">
                       <span className="w-2 h-2 rounded-full bg-[#C85A32]" />
-                      <span>Interactive Layout Studio Active — Drag Widgets to Rearrange or Resize Column Spans</span>
+                      <span>Interactive Layout Studio Active - Drag Widgets to Rearrange or Resize Column Spans</span>
                     </div>
                     <p className="text-[11px] font-delight text-[#6E675F] mt-0.5">
                       Drag any widget card by its header to reorder it, choose width spans (1/3, 1/2, 2/3, Full), or toggle widgets below.

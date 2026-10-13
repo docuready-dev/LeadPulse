@@ -48,8 +48,8 @@ Thumbs.db
 *.sln
 *.sw?
 
-# Local workspace reference folders (already copied into client/public/)
-/screenshots/
+# Local workspace reference folders
+# /screenshots/
 /fonts/
 /integrations-icons/
 

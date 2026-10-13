@@ -211,11 +211,11 @@ const getAppSteps = (app: IntegrationApp) => {
       'Save to enable WhatsApp Click-to-Chat and automated multi-channel sequences'
     ];
   }
-  if (id === 'calendly' || id === 'easyappointments') {
+  if (id === 'google-calendar' || id === 'calendly') {
     return [
-      'Enter your Easy!Appointments instance URL (default: http://localhost:8088) or custom Calendly link',
-      'Automatically resolves into {{booking_link}} merge tags and interactive email templates',
-      'Powers the live booking engine and calendar scheduling across LeadPulse'
+      'Enable Google Calendar API in Google Cloud Console and generate Service Account JSON or OAuth credentials',
+      'Enter your Google Calendar ID (primary or your-calendar@group.calendar.google.com)',
+      'Automatically resolves into {{booking_link}} merge tags, live slot availability, and Google Meet video calls'
     ];
   }
   if (id === 'hubspot') {

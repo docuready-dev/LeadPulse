@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
 import { 
@@ -743,7 +743,7 @@ const Team = () => {
                     className="w-full h-8 px-2.5 border border-slate-200 rounded-md text-xs font-delight font-medium bg-white outline-none cursor-pointer"
                   >
                     {ROLES.map(r => (
-                      <option key={r.name} value={r.name}>{r.name} — {r.badge}</option>
+                      <option key={r.name} value={r.name}>{r.name} - {r.badge}</option>
                     ))}
                     <option value="__CUSTOM__">Custom Role (Type your own...)</option>
                   </select>

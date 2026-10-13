@@ -47,6 +47,40 @@ function getBrowserExecutablePath(): string | undefined {
   return undefined;
 }
 
+function getRandomDelay(minMs: number = 3000, maxMs: number = 7000): number {
+  return Math.floor(Math.random() * (maxMs - minMs + 1)) + minMs;
+}
+
+class RotatingProxyPool {
+  private proxies: string[] = [];
+  private index = 0;
+
+  constructor() {
+    this.reload();
+  }
+
+  reload() {
+    const raw = process.env.PROXY_LIST || process.env.HTTP_PROXY || process.env.HTTPS_PROXY || '';
+    this.proxies = raw.split(',').map(p => p.trim()).filter(Boolean);
+    if (this.proxies.length > 0) {
+      console.log(`[Scraper Proxy] Initialized proxy pool with ${this.proxies.length} rotating addresses.`);
+    }
+  }
+
+  getNextProxy(): string | null {
+    if (this.proxies.length === 0) return null;
+    const chosen = this.proxies[this.index % this.proxies.length];
+    this.index++;
+    return chosen;
+  }
+
+  hasProxies(): boolean {
+    return this.proxies.length > 0;
+  }
+}
+
+export const proxyPool = new RotatingProxyPool();
+
 class InMemScraperQueue {
   private queue: ScrapeJob[] = [];
   private isProcessing = false;
@@ -160,23 +194,41 @@ class InMemScraperQueue {
 
       try {
         const puppeteer = require('puppeteer');
+        const activeProxy = proxyPool.getNextProxy();
+        const launchArgs = [
+          '--no-sandbox', 
+          '--disable-setuid-sandbox',
+          '--disable-blink-features=AutomationControlled',
+          '--disable-gpu',
+          '--window-size=1280,800'
+        ];
+
+        if (activeProxy) {
+          launchArgs.push(`--proxy-server=${activeProxy}`);
+          console.log(`[Scraper] Routing request through rotating proxy: ${activeProxy.split('@').pop()}`);
+        }
+
         const launchOptions: any = {
           headless: true,
-          args: [
-            '--no-sandbox', 
-            '--disable-setuid-sandbox',
-            '--disable-blink-features=AutomationControlled',
-            '--disable-gpu',
-            '--window-size=1280,800'
-          ]
+          args: launchArgs
         };
 
         if (executablePath) {
           launchOptions.executablePath = executablePath;
         }
 
+        // Add human-like random pause before connecting to Google Maps
+        const humanPreDelay = getRandomDelay(2000, 4000);
+        await new Promise(r => setTimeout(r, humanPreDelay));
+
         browser = await puppeteer.launch(launchOptions);
         const page = await browser.newPage();
+        
+        // Anti-detection: mask navigator.webdriver
+        await page.evaluateOnNewDocument(() => {
+          Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
+        });
+
         await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36');
         await page.setViewport({ width: 1280, height: 800 });
 
@@ -186,23 +238,36 @@ class InMemScraperQueue {
           timeout: 28000 
         });
 
+        // Graceful block detection: check for CAPTCHA wall
+        const isBlocked = await page.evaluate(() => {
+          const body = document.body?.innerText || '';
+          return body.includes('unusual traffic') || body.includes('recaptcha') || body.includes('sorry/index');
+        }).catch(() => false);
+
+        if (isBlocked) {
+          console.warn('[Scraper] Google Maps bot challenge detected. Waiting backoff period to avoid IP blocking...');
+          await new Promise(r => setTimeout(r, 3000));
+        }
+
         this.updateStatus(job.id, {
           progress: 55,
-          stageMessage: `Parsing live listings and scanning local businesses in ${job.location}...`
+          stageMessage: `Parsing live listings with human scroll cadence in ${job.location}...`
         });
 
         // Wait for results container or business cards
         await page.waitForSelector('.hfpxzc', { timeout: 8000 }).catch(() => {});
 
-        // Scroll the feed container multiple times to load real business listings
-        for (let s = 0; s < 3; s++) {
+        // Scroll the feed container with human-like randomized micro-steps
+        for (let s = 0; s < 4; s++) {
           await page.evaluate(() => {
             const feed = document.querySelector('div[role="feed"]') || document.querySelector('.m6QErb');
             if (feed) {
-              feed.scrollTop = feed.scrollHeight;
+              const randomScroll = Math.floor(Math.random() * 500) + 400;
+              feed.scrollTop += randomScroll;
             }
           }).catch(() => {});
-          await new Promise(r => setTimeout(r, 1000));
+          const scrollPause = getRandomDelay(800, 1600);
+          await new Promise(r => setTimeout(r, scrollPause));
         }
 
         // Extract authentic items directly from Google Maps cards
