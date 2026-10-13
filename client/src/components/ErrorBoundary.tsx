@@ -26,12 +26,13 @@ export class ErrorBoundary extends Component<Props, State> {
 
   private handleReset = () => {
     this.setState({ hasError: false, error: null });
-    window.location.href = '/dashboard';
+    // Perform hard reload with cache-busting query to discard stale script bundles
+    window.location.href = window.location.pathname + '?reload=' + Date.now();
   };
 
   private handleClearAndHome = () => {
     localStorage.removeItem('leadpulse-storage');
-    window.location.href = '/';
+    window.location.href = '/?reload=' + Date.now();
   };
 
   public render() {

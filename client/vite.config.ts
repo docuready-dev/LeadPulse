@@ -20,5 +20,12 @@ export default defineConfig({
   build: {
     chunkSizeWarningLimit: 1200,
     sourcemap: false,
+    rollupOptions: {
+      output: {
+        entryFileNames: 'assets/[name]-[hash]-v31.js',
+        chunkFileNames: 'assets/[name]-[hash]-v31.js',
+        assetFileNames: 'assets/[name]-[hash]-v31.[ext]',
+      },
+    },
   },
 })
