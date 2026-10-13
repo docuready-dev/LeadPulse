@@ -8,7 +8,7 @@ import {
   Smartphone, Sparkles, Sliders, Edit3, ArrowRight,
   ShieldCheck, Tag, Search, Check, Loader2, ExternalLink, Key,
   Plus, Trash2, Upload, Wand2, Calendar,
-  Image, FileText, Paperclip, Download, X, File, Eye
+  Image, FileText, Paperclip, Download, X, File, Eye, Copy
 } from 'lucide-react';
 import TemplateGalleryModal from '../components/TemplateGalleryModal';
 import DispatchTrackerModal from '../components/DispatchTrackerModal';
@@ -472,17 +472,34 @@ const OutreachCenter = () => {
   const renderPreviewHtml = (text?: string) => {
     if (!text) return '';
     let rendered = text;
+    const targetLead = previewLead || workspaceProfileLead || {
+      businessName: 'Target Business',
+      location: 'Local Market',
+      fieldOfWork: 'B2B Services',
+      category: 'B2B Services',
+      firstName: 'Partner',
+      phone: '+91 98765 43210',
+      rating: '4.8'
+    };
+    const bName = targetLead.businessName || 'Target Business';
+    const loc = targetLead.location || 'Local Market';
+    const fow = targetLead.fieldOfWork || targetLead.category || 'B2B Services';
+    const tag = targetLead.category || targetLead.fieldOfWork || 'B2B Services';
+    const fName = targetLead.firstName || (targetLead.businessName ? targetLead.businessName.split(' ')[0] : 'Partner');
+    const phone = targetLead.phone || '+91 98765 43210';
+    const rating = targetLead.rating || '4.8';
+
     const senderName = user?.name || 'Workspace Operator';
     const senderEmail = user?.email || 'outreach@leadpulse.io';
     const senderCompany = user?.company_name || 'LeadPulse';
 
-    rendered = rendered.replace(/{{business_name}}/g, `<span class="bg-amber-100 text-amber-900 font-bold px-1 rounded">${previewLead.businessName}</span>`);
-    rendered = rendered.replace(/{{location}}/g, `<span class="bg-gray-100 text-accent font-bold px-1 rounded">${previewLead.location}</span>`);
-    rendered = rendered.replace(/{{field_of_work}}/g, `<span class="bg-purple-100 text-accent font-bold px-1 rounded">${previewLead.fieldOfWork}</span>`);
-    rendered = rendered.replace(/{{tag}}/g, `<span class="bg-purple-100 text-accent font-bold px-1 rounded">${previewLead.category || previewLead.fieldOfWork}</span>`);
-    rendered = rendered.replace(/{{first_name}}/g, `<span class="bg-gray-100 text-accent font-bold px-1 rounded">${previewLead.firstName}</span>`);
-    rendered = rendered.replace(/{{phone}}/g, `<span class="bg-gray-200 text-gray-900 font-bold px-1 rounded">${previewLead.phone}</span>`);
-    rendered = rendered.replace(/{{rating}}/g, `<span class="bg-amber-100 text-amber-900 font-bold px-1 rounded">${previewLead.rating}</span>`);
+    rendered = rendered.replace(/{{business_name}}/g, `<span class="bg-amber-100 text-amber-900 font-bold px-1 rounded">${bName}</span>`);
+    rendered = rendered.replace(/{{location}}/g, `<span class="bg-gray-100 text-accent font-bold px-1 rounded">${loc}</span>`);
+    rendered = rendered.replace(/{{field_of_work}}/g, `<span class="bg-purple-100 text-accent font-bold px-1 rounded">${fow}</span>`);
+    rendered = rendered.replace(/{{tag}}/g, `<span class="bg-purple-100 text-accent font-bold px-1 rounded">${tag}</span>`);
+    rendered = rendered.replace(/{{first_name}}/g, `<span class="bg-gray-100 text-accent font-bold px-1 rounded">${fName}</span>`);
+    rendered = rendered.replace(/{{phone}}/g, `<span class="bg-gray-200 text-gray-900 font-bold px-1 rounded">${phone}</span>`);
+    rendered = rendered.replace(/{{rating}}/g, `<span class="bg-amber-100 text-amber-900 font-bold px-1 rounded">${rating}</span>`);
     rendered = rendered.replace(/{{(booking_link|calendly_link|appointment_link)}}/g, `<a href="${resolvedBookingUrl}" target="_blank" rel="noreferrer" class="bg-indigo-50 text-indigo-700 hover:text-indigo-900 border border-indigo-200 font-delight font-bold px-2 py-0.5 rounded underline inline-flex items-center gap-1 shadow-2xs"><span>Book an Appointment </span>↗</a>`);
     rendered = rendered.replace(/{{sender_name}}/g, `<span class="bg-blue-100 text-blue-900 font-bold px-1 rounded">${senderName}</span>`);
     rendered = rendered.replace(/{{user_name}}/g, `<span class="bg-blue-100 text-blue-900 font-bold px-1 rounded">${senderName}</span>`);
@@ -594,25 +611,43 @@ const OutreachCenter = () => {
 
   // Format Text for External Copy / Dispatch
   const getCompiledWhatsAppMessage = (lead: any) => {
-    let msg = whatsAppMessage;
-    msg = msg.replace(/{{business_name}}/g, lead.businessName);
-    msg = msg.replace(/{{location}}/g, lead.location);
-    msg = msg.replace(/{{field_of_work}}/g, lead.fieldOfWork || lead.category);
-    msg = msg.replace(/{{tag}}/g, lead.category || lead.fieldOfWork);
-    msg = msg.replace(/{{first_name}}/g, lead.firstName || lead.businessName);
-    msg = msg.replace(/{{phone}}/g, lead.phone);
-    msg = msg.replace(/{{rating}}/g, lead.rating || '4.8');
+    const targetLead = lead || previewLead || workspaceProfileLead || {};
+    let msg = whatsAppMessage || '';
+    const bName = targetLead.businessName || 'Business';
+    const loc = targetLead.location || 'Local Area';
+    const fow = targetLead.fieldOfWork || targetLead.category || 'Services';
+    const tag = targetLead.category || targetLead.fieldOfWork || 'Services';
+    const fName = targetLead.firstName || (targetLead.businessName ? targetLead.businessName.split(' ')[0] : 'Partner');
+    const phone = targetLead.phone || '';
+    const rating = targetLead.rating || '4.8';
+
+    msg = msg.replace(/{{business_name}}/g, bName);
+    msg = msg.replace(/{{location}}/g, loc);
+    msg = msg.replace(/{{field_of_work}}/g, fow);
+    msg = msg.replace(/{{tag}}/g, tag);
+    msg = msg.replace(/{{first_name}}/g, fName);
+    msg = msg.replace(/{{phone}}/g, phone);
+    msg = msg.replace(/{{rating}}/g, rating);
     msg = msg.replace(/{{(booking_link|calendly_link|appointment_link)}}/g, `Book an Appointment : ${resolvedBookingUrl}`);
 
-    // Append Media Attachments neatly
+    // Append Media Attachments neatly (Safeguard: never embed giant data: base64 URLs in text or wa.me URLs)
     const mediaItems: string[] = [];
-    if (whatsAppPdf.enabled && whatsAppPdf.url) {
-      const cleanPdfName = (whatsAppPdf.fileName || 'Overview.pdf').replace(/{{business_name}}/g, lead.businessName);
-      mediaItems.push(`📄 *Document Attached:* ${cleanPdfName} (${whatsAppPdf.fileSize || 'PDF'})\n🔗 Access Link: ${whatsAppPdf.url}`);
+    if (whatsAppPdf?.enabled) {
+      const cleanPdfName = String(whatsAppPdf.fileName || 'Overview.pdf').replace(/{{business_name}}/g, bName);
+      if (whatsAppPdf.url && (whatsAppPdf.url.startsWith('http://') || whatsAppPdf.url.startsWith('https://'))) {
+        mediaItems.push(`📄 *Document Attached:* ${cleanPdfName} (${whatsAppPdf.fileSize || 'PDF'})\n🔗 Access Link: ${whatsAppPdf.url}`);
+      } else {
+        mediaItems.push(`📄 *Document Attached:* ${cleanPdfName} (${whatsAppPdf.fileSize || 'PDF'}) [📎 File Attached in LeadPulse]`);
+      }
     }
-    if (whatsAppImage.enabled && whatsAppImage.url) {
+    if (whatsAppImage?.enabled) {
       const captionStr = whatsAppImage.caption ? ` (${whatsAppImage.caption})` : '';
-      mediaItems.push(`🖼️ *Visual Preview:* ${whatsAppImage.fileName || 'Image'}${captionStr}\n🔗 Access Link: ${whatsAppImage.url}`);
+      const cleanImgName = whatsAppImage.fileName || 'Visual Preview';
+      if (whatsAppImage.url && (whatsAppImage.url.startsWith('http://') || whatsAppImage.url.startsWith('https://'))) {
+        mediaItems.push(`🖼️ *Visual Preview:* ${cleanImgName}${captionStr}\n🔗 Access Link: ${whatsAppImage.url}`);
+      } else {
+        mediaItems.push(`🖼️ *Visual Preview:* ${cleanImgName}${captionStr} [📎 Visual Attached in LeadPulse]`);
+      }
     }
 
     if (mediaItems.length > 0) {
@@ -623,9 +658,20 @@ const OutreachCenter = () => {
   };
 
   // Open Direct in WhatsApp Web
-  const handleOpenWhatsAppWeb = (lead: any) => {
-    const rawText = getCompiledWhatsAppMessage(lead);
-    const cleanPhone = (lead.phone || '').replace(/[^0-9]/g, '');
+  const handleOpenWhatsAppWeb = async (lead: any) => {
+    const targetLead = lead || previewLead || workspaceProfileLead;
+    const cleanPhone = (targetLead?.phone || '').replace(/[^0-9]/g, '');
+    
+    if (!cleanPhone || cleanPhone.length < 7) {
+      await alertDialog({
+        title: 'Missing Phone Number',
+        message: `No valid WhatsApp phone number was found for "${targetLead?.businessName || 'this prospect'}". Please set a valid contact number in the CRM or select a lead with a phone listing before launching WhatsApp Web.`,
+        variant: 'warning'
+      });
+      return;
+    }
+
+    const rawText = getCompiledWhatsAppMessage(targetLead);
     const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(rawText)}`;
     window.open(url, '_blank');
   };
@@ -3685,11 +3731,11 @@ const OutreachCenter = () => {
                   <div className="bg-gradient-to-r from-emerald-600 to-teal-700 text-white p-3.5 flex items-center justify-between shrink-0 shadow-xs">
                     <div className="flex items-center gap-2.5 min-w-0">
                       <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center font-bold text-xs backdrop-blur-xs text-white shrink-0">
-                        {previewLead.businessName?.charAt(0) || 'L'}
+                        {previewLead?.businessName?.charAt(0) || 'L'}
                       </div>
                       <div className="min-w-0">
                         <div className="font-bold text-xs truncate max-w-[170px] text-white">
-                          {previewLead.businessName}
+                          {previewLead?.businessName || 'Target Business'}
                         </div>
                         <div className="text-[10px] text-emerald-100 font-delight font-medium flex items-center gap-1">
                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse"></span>
@@ -3726,7 +3772,7 @@ const OutreachCenter = () => {
                             {/* File Metadata */}
                             <div className="min-w-0 flex-1">
                               <div className="text-[11px] font-bold text-slate-900 truncate leading-snug">
-                                {whatsAppPdf.fileName.replace(/{{business_name}}/g, previewLead.businessName) || 'Document_Attachment.pdf'}
+                                {String(whatsAppPdf?.fileName || 'Document_Attachment.pdf').replace(/{{business_name}}/g, previewLead?.businessName || 'Prospect')}
                               </div>
                               <div className="text-[9px] text-slate-500 font-medium flex items-center gap-1 mt-0.5">
                                 <span>{whatsAppPdf.pageCount || '6 pages'}</span>
