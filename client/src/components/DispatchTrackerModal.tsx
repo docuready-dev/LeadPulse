@@ -32,6 +32,7 @@ interface DispatchTrackerModalProps {
   availableLeads: LeadItem[];
   currentPreviewLead: LeadItem;
   user: any;
+  connectedMailbox?: any;
   onCampaignDispatched?: () => void;
 }
 
@@ -59,6 +60,7 @@ const DispatchTrackerModal = ({
   availableLeads,
   currentPreviewLead,
   user,
+  connectedMailbox,
   onCampaignDispatched
 }: DispatchTrackerModalProps) => {
   const { setUpgradeModalOpen, recordEmailDispatch } = useStore();
@@ -93,6 +95,13 @@ const DispatchTrackerModal = ({
           }];
 
   const handleStartDispatch = async () => {
+    // Mailbox Connection Check
+    if (!connectedMailbox) {
+      setErrorMessage('No verified sending mailbox connected. Please connect your Gmail, Brevo Free Relay, Outlook, or Custom SMTP account before launching outreach.');
+      setDispatchState('error');
+      return;
+    }
+
     // Quota validation prior to starting
     const plan = (user?.plan || 'free').toLowerCase();
     const emailLimit = user?.emails_limit || (plan === 'pro' ? 5000 : plan === 'basic' ? 1500 : 50);
@@ -122,8 +131,8 @@ const DispatchTrackerModal = ({
           ? availableLeads.map(l => l._id).filter(Boolean)
           : audienceMode === 'single' && currentPreviewLead._id ? [currentPreviewLead._id] : [],
         fallbackLeads: selectedLeadsToDispatch,
-        fromName: user?.name ? `${user.name} | LeadPulse` : 'LeadPulse Growth Engine',
-        fromEmail: user?.email || 'outreach@leadpulse.io'
+        fromName: connectedMailbox?.fromName || (user?.name ? `${user.name} | LeadPulse` : 'LeadPulse Growth Engine'),
+        fromEmail: connectedMailbox?.email || user?.email || 'outreach@leadpulse.io'
       };
 
       setProgressPercent(45);
@@ -220,9 +229,17 @@ const DispatchTrackerModal = ({
                       <span>50/50 A/B Split Active</span>
                     </span>
                   )}
-                  <span className="px-2 py-0.5 rounded-sm bg-blue-50 text-blue-700 font-delight text-[10px] font-semibold border border-blue-200">
-                    Direct SMTP Transport
-                  </span>
+                  {connectedMailbox ? (
+                    <span className="px-2 py-0.5 rounded-sm bg-emerald-50 text-emerald-700 font-delight text-[10px] font-semibold border border-emerald-200 flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      <span>{connectedMailbox.email} ({(connectedMailbox.provider || 'smtp').toUpperCase()})</span>
+                    </span>
+                  ) : (
+                    <span className="px-2 py-0.5 rounded-sm bg-amber-50 text-amber-800 font-delight text-[10px] font-semibold border border-amber-200 flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3 text-amber-600" />
+                      <span>No Outbox Connected</span>
+                    </span>
+                  )}
                 </div>
               </div>
 

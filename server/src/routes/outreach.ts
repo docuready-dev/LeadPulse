@@ -1,7 +1,7 @@
 import express from 'express';
 import { db } from '../index';
 import { compileEmailHtml, LeadData } from '../services/emailRenderer';
-import { sendDirectEmail, DispatchResult, inAppDeliveredInbox } from '../services/mailer';
+import { sendDirectEmail, verifyMailboxConnection, DispatchResult, inAppDeliveredInbox, UserSmtpSettings } from '../services/mailer';
 
 const router = express.Router();
 
@@ -68,6 +68,13 @@ router.post('/dispatch-batch', requireAuth, async (req: any, res: any) => {
   if (userPlan === 'free' && isAbTesting) {
     return res.status(403).json({ 
       error: 'A/B Split Testing is locked on the Free tier. Upgrade to Basic (₹699/mo) or Pro (₹1,999/mo) to enable split campaigns.' 
+    });
+  }
+
+  // Sending Mailbox Enforcement
+  if (!userSmtpSettings || (!userSmtpSettings.user && !userSmtpSettings.resendApiKey && !process.env.SMTP_USER)) {
+    return res.status(400).json({ 
+      error: 'No sending mailbox connected. Please connect your email account (Gmail, Brevo, Outlook, Yahoo, Zoho, or Custom SMTP) in Mailbox Settings to dispatch live outreach to real inboxes.' 
     });
   }
 
@@ -278,6 +285,13 @@ router.post('/dispatch-single', requireAuth, async (req: any, res: any) => {
     });
   }
 
+  // Sending Mailbox Enforcement
+  if (!userSmtpSettings || (!userSmtpSettings.user && !userSmtpSettings.resendApiKey && !process.env.SMTP_USER)) {
+    return res.status(400).json({ 
+      error: 'No sending mailbox connected. Please connect your email account (Gmail, Brevo, Outlook, Yahoo, Zoho, or Custom SMTP) in Mailbox Settings to dispatch live outreach to real inboxes.' 
+    });
+  }
+
   try {
     const lead: LeadData = targetLead || {
       businessName: req.user?.company_name || 'Target Business',
@@ -337,13 +351,123 @@ router.post('/dispatch-single', requireAuth, async (req: any, res: any) => {
 });
 
 // ============================================================================
-// 3. SMTP & EMAIL PROVIDER SETTINGS CONTROLLER
+// 3. MAIL APP OUTBOX & SENDING MAILBOX CONTROLLER
 // ============================================================================
+
+// Get connected mailbox status
+router.get('/mailbox', requireAuth, async (req: any, res: any) => {
+  try {
+    const userDoc = await db.collection('users').doc(req.user._id).get();
+    const smtpSettings = userDoc.data()?.smtpSettings;
+    const isConnected = !!(smtpSettings && (smtpSettings.user || smtpSettings.resendApiKey));
+
+    res.json({
+      isConnected,
+      mailbox: isConnected ? {
+        provider: smtpSettings.provider || 'gmail',
+        user: smtpSettings.user || '',
+        host: smtpSettings.host || '',
+        port: smtpSettings.port || 587,
+        fromName: smtpSettings.fromName || req.user.name || '',
+        fromEmail: smtpSettings.fromEmail || smtpSettings.user || '',
+        verifiedAt: smtpSettings.verifiedAt || null,
+        hasPassword: !!smtpSettings.pass
+      } : null
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to fetch mailbox settings' });
+  }
+});
+
+// Verify & connect sending mailbox (with real test email option)
+router.post('/verify-mailbox', requireAuth, async (req: any, res: any) => {
+  const { 
+    provider = 'gmail', 
+    host, 
+    port, 
+    secure, 
+    user, 
+    pass, 
+    fromName, 
+    fromEmail, 
+    resendApiKey, 
+    sendTestPing = true, 
+    testRecipient 
+  } = req.body;
+
+  const testEmailTarget = testRecipient || req.user.email || user;
+
+  const candidateSettings: UserSmtpSettings = {
+    provider,
+    host: host || '',
+    port: port ? parseInt(port) : 587,
+    secure: secure !== undefined ? secure : (parseInt(port) === 465),
+    user: user || '',
+    pass: pass || '',
+    fromName: fromName || req.user.name || 'LeadPulse Operator',
+    fromEmail: fromEmail || user || req.user.email || 'outreach@leadpulse.io',
+    resendApiKey: resendApiKey || ''
+  };
+
+  try {
+    const verification = await verifyMailboxConnection(
+      candidateSettings,
+      sendTestPing ? testEmailTarget : undefined
+    );
+
+    if (!verification.success) {
+      return res.status(400).json({
+        success: false,
+        error: verification.message,
+        details: verification.error
+      });
+    }
+
+    // Save verified mailbox to user profile in Firestore
+    const savedRecord = {
+      ...candidateSettings,
+      verifiedAt: new Date().toISOString()
+    };
+
+    await db.collection('users').doc(req.user._id).update({
+      smtpSettings: savedRecord
+    });
+
+    res.json({
+      success: true,
+      message: verification.message,
+      mailbox: {
+        provider: candidateSettings.provider,
+        user: candidateSettings.user,
+        fromName: candidateSettings.fromName,
+        fromEmail: candidateSettings.fromEmail,
+        verifiedAt: savedRecord.verifiedAt
+      }
+    });
+
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message || 'Verification failed' });
+  }
+});
+
+// Disconnect sending mailbox
+router.delete('/disconnect-mailbox', requireAuth, async (req: any, res: any) => {
+  try {
+    await db.collection('users').doc(req.user._id).update({
+      smtpSettings: null
+    });
+    res.json({ success: true, message: 'Sending mailbox disconnected.' });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to disconnect mailbox' });
+  }
+});
+
+// Backwards-compatible smtp-config endpoints
 router.get('/smtp-config', requireAuth, async (req: any, res: any) => {
   try {
     const userDoc = await db.collection('users').doc(req.user._id).get();
     const smtpSettings = userDoc.data()?.smtpSettings || {
-      provider: 'test',
+      provider: 'gmail',
       fromName: req.user.name || 'LeadPulse Growth Director',
       fromEmail: req.user.email || 'outreach@leadpulse.io'
     };
