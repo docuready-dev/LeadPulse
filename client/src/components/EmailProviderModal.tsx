@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { alertDialog } from './AppConfirmModal';
 import { 
@@ -26,6 +26,85 @@ const EmailProviderModal = ({ isOpen, onClose, user, onSaved }: EmailProviderMod
   const [accountPassword, setAccountPassword] = useState('');
   const [fromName, setFromName] = useState(user?.name || 'LeadPulse Growth Director');
   const [showPassword, setShowPassword] = useState(false);
+
+  // 4-box segmented App Password state for Google (4 blocks of 4 chars = 16 chars)
+  const [appPasswordBlocks, setAppPasswordBlocks] = useState<[string, string, string, string]>(['', '', '', '']);
+  const [useSegmentedInput, setUseSegmentedInput] = useState(true);
+  const block0Ref = useRef<HTMLInputElement>(null);
+  const block1Ref = useRef<HTMLInputElement>(null);
+  const block2Ref = useRef<HTMLInputElement>(null);
+  const block3Ref = useRef<HTMLInputElement>(null);
+  const blockRefs = [block0Ref, block1Ref, block2Ref, block3Ref];
+
+  const syncBlocksFromPassword = (raw: string) => {
+    const clean = raw.replace(/\s+/g, '').slice(0, 16);
+    setAppPasswordBlocks([
+      clean.slice(0, 4),
+      clean.slice(4, 8),
+      clean.slice(8, 12),
+      clean.slice(12, 16)
+    ]);
+  };
+
+  const handleBlockChange = (index: number, val: string) => {
+    const clean = val.replace(/[^a-zA-Z0-9]/g, '');
+    if (clean.length > 4) {
+      const full = (
+        appPasswordBlocks.slice(0, index).join('') +
+        clean +
+        appPasswordBlocks.slice(index + 1).join('')
+      ).slice(0, 16);
+      syncBlocksFromPassword(full);
+      setAccountPassword(full);
+      const nextIdx = Math.min(Math.floor((full.length - 1) / 4) + 1, 3);
+      blockRefs[nextIdx].current?.focus();
+      return;
+    }
+
+    const cleanVal = clean.slice(0, 4);
+    const updated = [...appPasswordBlocks] as [string, string, string, string];
+    updated[index] = cleanVal;
+    setAppPasswordBlocks(updated);
+    const combined = updated.join('');
+    setAccountPassword(combined);
+
+    // Auto-advance to next box if 4 chars reached
+    if (cleanVal.length === 4 && index < 3) {
+      blockRefs[index + 1].current?.focus();
+    }
+  };
+
+  const handleBlockKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
+    if (e.key === 'Backspace' && appPasswordBlocks[index] === '' && index > 0) {
+      e.preventDefault();
+      blockRefs[index - 1].current?.focus();
+    } else if (e.key === 'ArrowLeft' && e.currentTarget.selectionStart === 0 && index > 0) {
+      e.preventDefault();
+      blockRefs[index - 1].current?.focus();
+    } else if (e.key === 'ArrowRight' && e.currentTarget.selectionStart === appPasswordBlocks[index].length && index < 3) {
+      e.preventDefault();
+      blockRefs[index + 1].current?.focus();
+    }
+  };
+
+  const handleBlockPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData('text') || '';
+    const clean = pasted.replace(/[^a-zA-Z0-9]/g, '').slice(0, 16);
+    if (!clean) return;
+
+    syncBlocksFromPassword(clean);
+    setAccountPassword(clean);
+
+    const nextIdx = Math.min(Math.floor((clean.length - 1) / 4) + 1, 3);
+    blockRefs[nextIdx].current?.focus();
+  };
+
+  useEffect(() => {
+    if (provider === 'gmail' && accountPassword) {
+      syncBlocksFromPassword(accountPassword);
+    }
+  }, [provider]);
 
   // Custom SMTP settings
   const [smtpHost, setSmtpHost] = useState('');
@@ -97,11 +176,21 @@ const EmailProviderModal = ({ isOpen, onClose, user, onSaved }: EmailProviderMod
     setVerificationSuccess(null);
     setVerificationError(null);
 
+    const cleanPass = accountPassword.replace(/\s+/g, '').trim();
+
+    if (provider === 'gmail' && cleanPass.length !== 16) {
+      setIsVerifying(false);
+      setVerificationError(
+        `Google App Password must be exactly 16 characters (4 boxes of 4 characters each). You currently have ${cleanPass.length} character${cleanPass.length === 1 ? '' : 's'} entered.`
+      );
+      return;
+    }
+
     try {
       const payload: any = {
         provider,
         user: emailAccount.trim(),
-        pass: accountPassword.trim(),
+        pass: cleanPass,
         fromName: fromName.trim() || 'LeadPulse Growth Director',
         fromEmail: emailAccount.trim(),
         sendTestPing: sendTestEmail,
@@ -421,27 +510,125 @@ const EmailProviderModal = ({ isOpen, onClose, user, onSaved }: EmailProviderMod
                   </span>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-delight font-bold text-slate-700 mb-1">
-                    {provider === 'brevo' ? 'Brevo SMTP Master Key' : provider === 'gmail' ? 'Google 16-Character App Password' : 'Password / App Password'}
-                  </label>
-                  <div className="relative">
-                    <input 
-                      type={showPassword ? 'text' : 'password'}
-                      value={accountPassword}
-                      onChange={(e) => setAccountPassword(e.target.value)}
-                      placeholder={provider === 'brevo' ? 'xsmtpsib-...' : provider === 'gmail' ? 'abcd efgh ijkl mnop' : '••••••••••••'}
-                      className="w-full h-9 pl-3 pr-10 bg-white border border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 rounded-xl text-xs font-sans font-medium text-slate-900 outline-none transition-all"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
-                    >
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
+                {provider === 'gmail' && useSegmentedInput ? (
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <label className="block text-xs font-delight font-bold text-slate-700">
+                        Google 16-Character App Password
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-[11px] font-mono font-bold px-1.5 py-0.5 rounded ${
+                          accountPassword.replace(/\s+/g, '').length === 16 
+                            ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' 
+                            : 'bg-slate-100 text-slate-500'
+                        }`}>
+                          {accountPassword.replace(/\s+/g, '').length}/16 chars
+                          {accountPassword.replace(/\s+/g, '').length === 16 ? ' ✓' : ''}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="text-xs font-delight text-slate-500 hover:text-slate-800 flex items-center gap-1 cursor-pointer"
+                        >
+                          {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                          <span className="text-[10px]">{showPassword ? 'Hide' : 'Show'}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setUseSegmentedInput(false)}
+                          className="text-[10px] font-delight text-indigo-600 hover:text-indigo-800 underline cursor-pointer"
+                        >
+                          Single box
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* 4 segmented boxes styled like software product keys */}
+                    <div className="flex items-center gap-2">
+                      {[0, 1, 2, 3].map((idx) => (
+                        <div key={idx} className="flex-1 flex items-center gap-2">
+                          <input
+                            ref={blockRefs[idx]}
+                            type={showPassword ? 'text' : 'password'}
+                            value={appPasswordBlocks[idx]}
+                            maxLength={4}
+                            onChange={(e) => handleBlockChange(idx, e.target.value)}
+                            onKeyDown={(e) => handleBlockKeyDown(e, idx)}
+                            onPaste={handleBlockPaste}
+                            placeholder="xxxx"
+                            autoComplete="off"
+                            spellCheck={false}
+                            className={`w-full h-11 text-center font-mono text-sm tracking-widest font-bold bg-white border rounded-xl outline-none transition-all shadow-xs ${
+                              appPasswordBlocks[idx].length === 4
+                                ? 'border-emerald-400 bg-emerald-50/20 text-emerald-950 focus:ring-2 focus:ring-emerald-200'
+                                : 'border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 text-slate-900'
+                            }`}
+                          />
+                          {idx < 3 && (
+                            <span className="text-slate-300 font-bold text-sm select-none shrink-0">-</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="flex items-center justify-between text-[11px] font-delight text-slate-500 pt-0.5">
+                      <span>Spaces are stripped automatically. Type or paste all 16 characters.</span>
+                      <a
+                        href="https://myaccount.google.com/apppasswords"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-indigo-600 hover:text-indigo-800 font-semibold underline"
+                      >
+                        Get app password
+                      </a>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-xs font-delight font-bold text-slate-700">
+                        {provider === 'brevo' 
+                          ? 'Brevo SMTP Master Key' 
+                          : provider === 'gmail' 
+                          ? 'Google 16-Character App Password' 
+                          : 'Password / App Password'}
+                      </label>
+                      {provider === 'gmail' && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            syncBlocksFromPassword(accountPassword);
+                            setUseSegmentedInput(true);
+                          }}
+                          className="text-[10px] font-delight text-indigo-600 hover:text-indigo-800 underline cursor-pointer"
+                        >
+                          Switch to 4 boxes
+                        </button>
+                      )}
+                    </div>
+                    <div className="relative">
+                      <input 
+                        type={showPassword ? 'text' : 'password'}
+                        value={accountPassword}
+                        onChange={(e) => {
+                          setAccountPassword(e.target.value);
+                          if (provider === 'gmail') {
+                            syncBlocksFromPassword(e.target.value);
+                          }
+                        }}
+                        placeholder={provider === 'brevo' ? 'xsmtpsib-...' : provider === 'gmail' ? 'abcd efgh ijkl mnop' : '••••••••••••'}
+                        className="w-full h-9 pl-3 pr-10 bg-white border border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 rounded-xl text-xs font-sans font-medium text-slate-900 outline-none transition-all"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                      >
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+                )}
               </>
             ) : (
               <div>
@@ -540,9 +727,31 @@ const EmailProviderModal = ({ isOpen, onClose, user, onSaved }: EmailProviderMod
           {verificationError && (
             <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs font-delight text-rose-900 flex items-start gap-2 shadow-2xs">
               <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
-              <div>
+              <div className="flex-1">
                 <strong className="block font-bold">Verification Failed</strong>
                 <p className="mt-0.5">{verificationError}</p>
+                {provider === 'gmail' && (
+                  <div className="mt-2.5 pt-2 border-t border-rose-200/80 flex flex-wrap gap-3">
+                    <a
+                      href="https://myaccount.google.com/apppasswords"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1 font-bold text-rose-800 hover:text-rose-950 underline text-[11px]"
+                    >
+                      <span>1. Generate New App Password</span>
+                      <span>&rarr;</span>
+                    </a>
+                    <a
+                      href="https://myaccount.google.com/signinoptions/two-step-verification"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1 font-bold text-rose-800 hover:text-rose-950 underline text-[11px]"
+                    >
+                      <span>2. Verify 2-Step Verification is ON</span>
+                      <span>&rarr;</span>
+                    </a>
+                  </div>
+                )}
               </div>
             </div>
           )}

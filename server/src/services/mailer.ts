@@ -56,13 +56,17 @@ export const inAppDeliveredInbox: DeliveredMessageLog[] = [];
  */
 export function getTransporterConfig(settings: UserSmtpSettings) {
   const provider = (settings.provider || 'custom').toLowerCase();
+  const cleanUser = (settings.user || '').trim();
+  const cleanPass = (settings.pass || '').replace(/\s+/g, '').trim();
 
   if (provider === 'gmail') {
     return {
-      service: 'gmail',
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true,
       auth: {
-        user: settings.user,
-        pass: settings.pass
+        user: cleanUser,
+        pass: cleanPass
       }
     };
   }
@@ -73,8 +77,8 @@ export function getTransporterConfig(settings: UserSmtpSettings) {
       port: 587,
       secure: false,
       auth: {
-        user: settings.user,
-        pass: settings.pass
+        user: cleanUser,
+        pass: cleanPass
       }
     };
   }
@@ -85,8 +89,8 @@ export function getTransporterConfig(settings: UserSmtpSettings) {
       port: 587,
       secure: false,
       auth: {
-        user: settings.user,
-        pass: settings.pass
+        user: cleanUser,
+        pass: cleanPass
       }
     };
   }
@@ -97,8 +101,8 @@ export function getTransporterConfig(settings: UserSmtpSettings) {
       port: 465,
       secure: true,
       auth: {
-        user: settings.user,
-        pass: settings.pass
+        user: cleanUser,
+        pass: cleanPass
       }
     };
   }
@@ -109,8 +113,8 @@ export function getTransporterConfig(settings: UserSmtpSettings) {
       port: 465,
       secure: true,
       auth: {
-        user: settings.user,
-        pass: settings.pass
+        user: cleanUser,
+        pass: cleanPass
       }
     };
   }
@@ -121,8 +125,8 @@ export function getTransporterConfig(settings: UserSmtpSettings) {
       port: 587,
       secure: false,
       auth: {
-        user: settings.user,
-        pass: settings.pass
+        user: cleanUser,
+        pass: cleanPass
       }
     };
   }
@@ -131,12 +135,12 @@ export function getTransporterConfig(settings: UserSmtpSettings) {
   const port = settings.port || 587;
   const secure = settings.secure !== undefined ? settings.secure : (port === 465);
   return {
-    host: settings.host,
+    host: (settings.host || '').trim(),
     port,
     secure,
     auth: {
-      user: settings.user,
-      pass: settings.pass
+      user: cleanUser,
+      pass: cleanPass
     }
   };
 }
@@ -273,7 +277,10 @@ export async function verifyMailboxConnection(
   }
 
   // Validate required SMTP fields
-  if (!settings.user || !settings.pass) {
+  const cleanUser = (settings.user || '').trim();
+  const cleanPass = (settings.pass || '').replace(/\s+/g, '').trim();
+
+  if (!cleanUser || !cleanPass) {
     return {
       success: false,
       message: 'Username/Email and Password are required to connect your mailbox.',
@@ -281,8 +288,23 @@ export async function verifyMailboxConnection(
     };
   }
 
-  const config = getTransporterConfig(settings);
-  const transporter: Transporter = nodemailer.createTransport({
+  // Pre-flight check for Gmail 16-character App Password requirement
+  if (settings.provider === 'gmail' && cleanPass.length !== 16) {
+    return {
+      success: false,
+      message: `Google App Passwords must be exactly 16 characters (4 boxes of 4 characters). You provided ${cleanPass.length} characters. Turn on 2-Step Verification and generate an App Password at myaccount.google.com/apppasswords.`,
+      error: `Invalid Google App Password length (${cleanPass.length} chars instead of 16)`
+    };
+  }
+
+  const sanitizedSettings = {
+    ...settings,
+    user: cleanUser,
+    pass: cleanPass
+  };
+
+  let config = getTransporterConfig(sanitizedSettings);
+  let transporter: Transporter = nodemailer.createTransport({
     ...config,
     connectionTimeout: 10000,
     greetingTimeout: 10000,
@@ -294,16 +316,47 @@ export async function verifyMailboxConnection(
 
   try {
     // 1. Verify connection and credentials
-    await transporter.verify();
+    try {
+      await transporter.verify();
+    } catch (primaryErr: any) {
+      // If Gmail on port 465 encountered a socket/timeout issue, attempt fallback to port 587 (STARTTLS)
+      if (
+        sanitizedSettings.provider === 'gmail' && 
+        (primaryErr.code === 'ETIMEDOUT' || primaryErr.code === 'ESOCKET' || primaryErr.code === 'ECONNREFUSED' || primaryErr.code === 'ECONNRESET')
+      ) {
+        console.warn('[Mailer] Gmail port 465 timed out, attempting port 587 fallback...');
+        config = {
+          host: 'smtp.gmail.com',
+          port: 587,
+          secure: false,
+          auth: {
+            user: cleanUser,
+            pass: cleanPass
+          }
+        };
+        transporter = nodemailer.createTransport({
+          ...config,
+          connectionTimeout: 10000,
+          greetingTimeout: 10000,
+          socketTimeout: 15000,
+          tls: {
+            rejectUnauthorized: false
+          }
+        });
+        await transporter.verify();
+      } else {
+        throw primaryErr;
+      }
+    }
 
     // 2. Dispatch real test email to testRecipient if provided
     let testMessageId = `test_${Date.now()}`;
     if (testRecipient) {
-      const senderEmail = settings.fromEmail || settings.user;
-      const formattedSender = `"${settings.fromName || 'LeadPulse Operator'}" <${senderEmail}>`;
+      const senderEmail = sanitizedSettings.fromEmail || cleanUser;
+      const formattedSender = `"${sanitizedSettings.fromName || 'LeadPulse Operator'}" <${senderEmail}>`;
       const info = await transporter.sendMail({
         from: formattedSender,
-        to: testRecipient,
+        to: testRecipient.trim(),
         subject: 'LeadPulse Mailbox Verification: Ready for Live Outreach',
         text: `Your sending mailbox (${senderEmail}) has been successfully connected to LeadPulse. You can now dispatch real outreach campaigns directly from this account.`,
         html: `
@@ -319,7 +372,7 @@ export async function verifyMailboxConnection(
             </p>
             <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px; font-size: 13px; font-family: monospace; color: #1e293b;">
               <strong>Sender:</strong> ${formattedSender}<br/>
-              <strong>Provider:</strong> ${(settings.provider || 'SMTP').toUpperCase()}<br/>
+              <strong>Provider:</strong> ${(sanitizedSettings.provider || 'SMTP').toUpperCase()}<br/>
               <strong>Transport:</strong> Direct Socket Handshake (TLS/SSL)
             </div>
             <p style="margin: 0; font-size: 13px; line-height: 1.5; color: #64748b;">
@@ -334,7 +387,7 @@ export async function verifyMailboxConnection(
     return {
       success: true,
       message: testRecipient
-        ? `Mailbox verified! A live test email has been delivered to ${testRecipient}.`
+        ? `Mailbox verified! A live test email has been delivered to ${testRecipient.trim()}.`
         : 'Mailbox connection verified successfully!',
       messageId: testMessageId
     };
@@ -342,24 +395,30 @@ export async function verifyMailboxConnection(
     console.error('[Mailer] Mailbox verification failed:', err.message);
     let friendlyMessage = err.message || 'SMTP connection failed';
 
-    if (err.message?.includes('535') || err.message?.includes('Username and Password not accepted') || err.message?.includes('BadCredentials')) {
-      if (settings.provider === 'gmail') {
-        friendlyMessage = 'Gmail authentication failed: Google requires a 16-character App Password (not your normal password). Turn on 2-Step Verification and generate an App Password at myaccount.google.com/apppasswords.';
-      } else if (settings.provider === 'brevo') {
-        friendlyMessage = 'Brevo authentication failed: Check your SMTP login email and your SMTP key (from Brevo -> SMTP & API -> SMTP).';
-      } else if (settings.provider === 'outlook') {
-        friendlyMessage = 'Outlook / Office 365 authentication failed: Verify your Microsoft email and password. If 2FA is enabled, generate an App Password in your Microsoft Account Security settings.';
-      } else if (settings.provider === 'yahoo') {
-        friendlyMessage = 'Yahoo authentication failed: Yahoo requires an App Password. Generate one in Yahoo Account Security -> Manage App Passwords.';
-      } else if (settings.provider === 'zoho') {
-        friendlyMessage = 'Zoho authentication failed: Zoho requires an Application-Specific Password. Generate one in Zoho Accounts -> Security -> App Passwords.';
+    if (
+      err.responseCode === 535 || 
+      err.code === 'EAUTH' || 
+      err.message?.includes('535') || 
+      err.message?.includes('Username and Password not accepted') || 
+      err.message?.includes('BadCredentials')
+    ) {
+      if (sanitizedSettings.provider === 'gmail') {
+        friendlyMessage = 'Google authentication rejected (535 Bad Credentials). Ensure: 1) 2-Step Verification is turned ON in your Google Account. 2) You generated an App Password at myaccount.google.com/apppasswords. 3) You entered your full Gmail address correctly.';
+      } else if (sanitizedSettings.provider === 'brevo') {
+        friendlyMessage = 'Brevo authentication rejected (535): Verify your SMTP login email and SMTP Master Key (from app.brevo.com -> SMTP & API).';
+      } else if (sanitizedSettings.provider === 'outlook') {
+        friendlyMessage = 'Outlook / Office 365 authentication rejected (535): Verify your Microsoft email and password. If 2FA is active, generate a Microsoft App Password.';
+      } else if (sanitizedSettings.provider === 'yahoo') {
+        friendlyMessage = 'Yahoo authentication rejected (535): Yahoo requires an App Password from Yahoo Account Security.';
+      } else if (sanitizedSettings.provider === 'zoho') {
+        friendlyMessage = 'Zoho authentication rejected (535): Zoho requires an Application-Specific Password from Zoho Accounts.';
       } else {
-        friendlyMessage = 'Authentication failed: Invalid username or password for this SMTP server.';
+        friendlyMessage = 'Authentication failed (535): Invalid username or password for this SMTP server.';
       }
     } else if (err.code === 'ETIMEDOUT' || err.code === 'ESOCKET') {
-      friendlyMessage = `Connection timed out while connecting to ${settings.host || config.host}:${settings.port || config.port}. Check your network, host, or port settings.`;
+      friendlyMessage = `Connection timed out while connecting to ${sanitizedSettings.host || config.host}:${sanitizedSettings.port || config.port}. Check your network, firewall, or port settings.`;
     } else if (err.code === 'ENOTFOUND') {
-      friendlyMessage = `Could not resolve SMTP server hostname (${settings.host || config.host}). Please check the server address.`;
+      friendlyMessage = `Could not resolve SMTP server hostname (${sanitizedSettings.host || config.host}). Please check the server address.`;
     }
 
     return {

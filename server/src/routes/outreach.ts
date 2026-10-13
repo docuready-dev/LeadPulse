@@ -395,18 +395,20 @@ router.post('/verify-mailbox', requireAuth, async (req: any, res: any) => {
     testRecipient 
   } = req.body;
 
-  const testEmailTarget = testRecipient || req.user.email || user;
+  const cleanUser = (user || '').trim();
+  const cleanPass = (pass || '').replace(/\s+/g, '').trim();
+  const testEmailTarget = (testRecipient || req.user.email || cleanUser).trim();
 
   const candidateSettings: UserSmtpSettings = {
     provider,
     host: host || '',
     port: port ? parseInt(port) : 587,
     secure: secure !== undefined ? secure : (parseInt(port) === 465),
-    user: user || '',
-    pass: pass || '',
+    user: cleanUser,
+    pass: cleanPass,
     fromName: fromName || req.user.name || 'LeadPulse Operator',
-    fromEmail: fromEmail || user || req.user.email || 'outreach@leadpulse.io',
-    resendApiKey: resendApiKey || ''
+    fromEmail: fromEmail || cleanUser || req.user.email || 'outreach@leadpulse.io',
+    resendApiKey: (resendApiKey || '').trim()
   };
 
   try {
