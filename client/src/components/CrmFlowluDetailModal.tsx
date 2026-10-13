@@ -428,7 +428,7 @@ export const CrmFlowluDetailModal: React.FC<CrmFlowluModalProps> = ({
               <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-2xs space-y-3.5">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-slate-900">Opportunity Economics</span>
-                  <span className="text-[10px] font-mono text-slate-400">QuickSheetsCo Sync</span>
+                  <span className="text-[10px] font-mono text-slate-400">CRM Pipeline Sync</span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 text-xs">

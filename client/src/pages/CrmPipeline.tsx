@@ -42,7 +42,7 @@ const DEFAULT_COL_HEIGHT = 560;
 const CrmPipeline = () => {
   const { user, integrations, notifyIntegration, syncLeadsToIntegration } = useStore();
   const navigate = useNavigate();
-  const [viewMode, setViewMode] = useState<'kanban' | 'table'>('kanban');
+  const [viewMode, setViewMode] = useState<'kanban' | 'table'>('table');
   const [activeSheetTab, setActiveSheetTab] = useState<'Opportunities' | 'Contacts' | 'Organizations' | 'Interactions' | 'Dashboard' | 'Setup Data'>('Opportunities');
   const [leads, setLeads] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -568,14 +568,14 @@ const CrmPipeline = () => {
                 </button>
               )}
 
-              {/* QuickSheetsCo Export Actions */}
+              {/* Export Actions */}
               <button
                 onClick={() => {
                   exportCrmToXlsx(filteredLeads, user);
-                  showToast(`Exported ${filteredLeads.length} leads to QuickSheetsCo XLSX (4 Sheets)`);
+                  showToast(`Exported ${filteredLeads.length} leads to CRM XLSX (4 Sheets)`);
                 }}
                 className="bg-[#107C41] hover:bg-[#0E6C38] text-white px-3 py-1.5 rounded-md text-xs font-semibold transition-all shadow-2xs flex items-center gap-1.5 cursor-pointer"
-                title="Download 4-sheet formatted CRM workbook (.xlsx)"
+                title="Download formatted CRM workbook (.xlsx)"
               >
                 <FileSpreadsheet className="w-3.5 h-3.5" />
                 <span>Export XLSX</span>
@@ -584,10 +584,10 @@ const CrmPipeline = () => {
               <button
                 onClick={() => {
                   exportCrmToCsv(filteredLeads, user);
-                  showToast(`Exported ${filteredLeads.length} leads to QuickSheetsCo CSV`);
+                  showToast(`Exported ${filteredLeads.length} leads to CRM CSV`);
                 }}
                 className="bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 px-2.5 py-1.5 rounded-md text-xs font-semibold transition-all shadow-2xs flex items-center gap-1.5 cursor-pointer"
-                title="Download QuickSheetsCo formatted CSV"
+                title="Download formatted CRM CSV"
               >
                 <Download className="w-3.5 h-3.5 text-slate-500" />
                 <span>Export CSV</span>
@@ -843,85 +843,36 @@ const CrmPipeline = () => {
           {viewMode === 'table' && (
             <div className="flex-1 bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden flex flex-col min-h-0">
               
-              {/* Top Google Sheets Document Header */}
-              <div className="bg-[#F8F9FA] border-b border-slate-200 px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 shrink-0">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded bg-[#0F9D58] flex items-center justify-center text-white shadow-2xs shrink-0">
-                    <FileSpreadsheet className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-bold text-xs sm:text-sm text-slate-900 tracking-tight">
-                        CRM - Customer Relationship Management | QuickSheetsCo.
-                      </h3>
-                      <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 font-mono">
-                        .XLSX & .CSV
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-3 text-[11px] text-slate-500 pt-0.5">
-                      <span className="hover:text-slate-900 cursor-pointer transition-colors">File</span>
-                      <span className="hover:text-slate-900 cursor-pointer transition-colors">Edit</span>
-                      <span className="hover:text-slate-900 cursor-pointer transition-colors">View</span>
-                      <span className="hover:text-slate-900 cursor-pointer transition-colors">Insert</span>
-                      <span className="hover:text-slate-900 cursor-pointer transition-colors">Format</span>
-                      <span className="hover:text-slate-900 cursor-pointer transition-colors">Data</span>
-                      <span className="hover:text-slate-900 cursor-pointer transition-colors">Tools</span>
-                      <span className="hover:text-slate-900 cursor-pointer transition-colors">Extensions</span>
-                      <span className="hover:text-slate-900 cursor-pointer transition-colors">Help</span>
-                      <span className="text-slate-300">•</span>
-                      <span className="text-slate-500 flex items-center gap-1 text-[10px]">
-                        <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                        Firestore Synced
-                      </span>
-                    </div>
-                  </div>
+              {/* CRM Category Tabs & Metrics Strip */}
+              <div className="bg-[#FAF8F5] border-b border-slate-200 px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 shrink-0">
+                <div className="flex items-center gap-1.5 overflow-x-auto">
+                  {(['Opportunities', 'Contacts', 'Organizations', 'Interactions', 'Dashboard', 'Setup Data'] as const).map(tab => (
+                    <button
+                      key={tab}
+                      onClick={() => setActiveSheetTab(tab)}
+                      className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer flex items-center gap-1.5 ${
+                        activeSheetTab === tab
+                          ? 'bg-slate-900 text-white shadow-xs'
+                          : 'bg-white border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                      }`}
+                    >
+                      <span>{tab === 'Opportunities' ? 'Opportunities (Deals)' : tab === 'Dashboard' ? 'Analytics' : tab}</span>
+                      {activeSheetTab === tab && tab === 'Opportunities' && (
+                        <span className="text-[10px] bg-slate-800 text-slate-200 px-1.5 py-0.2 rounded-full font-mono">
+                          {filteredLeads.length}
+                        </span>
+                      )}
+                    </button>
+                  ))}
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => {
-                      exportCrmToXlsx(filteredLeads, user);
-                      showToast(`Exported ${filteredLeads.length} leads to QuickSheetsCo XLSX (4 Sheets)`);
-                    }}
-                    className="bg-[#107C41] hover:bg-[#0E6C38] text-white px-3 py-1.5 rounded-md text-xs font-semibold flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
-                    title="Download 4-sheet formatted XLSX"
-                  >
-                    <FileSpreadsheet className="w-3.5 h-3.5" />
-                    <span>Export .xlsx</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      exportCrmToCsv(filteredLeads, user);
-                      showToast(`Exported ${filteredLeads.length} leads to QuickSheetsCo CSV`);
-                    }}
-                    className="bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 px-3 py-1.5 rounded-md text-xs font-semibold flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
-                    title="Download formatted CSV"
-                  >
-                    <Download className="w-3.5 h-3.5 text-slate-500" />
-                    <span>Export .csv</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Google Sheets Formula Bar */}
-              <div className="bg-white border-b border-slate-200 px-3 py-1.5 flex items-center gap-2 text-xs shrink-0 font-mono">
-                <div className="px-2 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-700 text-[11px] font-bold">
-                  {activeSheetTab === 'Opportunities' ? 'B2' : 'A1'}
-                </div>
-                <div className="font-bold text-slate-400 italic text-[11px]">fx</div>
-                <div className="flex-1 bg-slate-50 border border-slate-200 rounded px-2.5 py-0.5 text-slate-800 text-[11px] truncate">
-                  {activeSheetTab === 'Opportunities' 
-                    ? `=COUNTA(Opportunities!B2:B) & " Active Deals • Total Pipeline: ₹" & TEXT(SUM(Opportunities!I2:I), "₹##,##,##0")`
-                    : activeSheetTab === 'Contacts'
-                      ? `=COUNTA(Contacts!A2:A) & " Verified Contacts Across Workspace"`
-                      : activeSheetTab === 'Organizations'
-                        ? `=COUNTA(Organizations!A2:A) & " Accounts In Portfolio"`
-                        : activeSheetTab === 'Interactions'
-                          ? `=COUNTA(Interactions!A2:A) & " Logged Touchpoints & Communications"`
-                          : activeSheetTab === 'Dashboard'
-                            ? `=FORECAST(Pipeline_Revenue) & " 100% Real-Time Forecast"`
-                            : `=VLOOKUP(Stage, SetupData!A2:C6, 2, FALSE)`
-                  }
+                <div className="flex items-center gap-2.5 text-xs text-slate-600 font-medium hidden sm:flex">
+                  <span className="flex items-center gap-1 text-[11px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                    <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                    <span>Firestore Synced</span>
+                  </span>
+                  <span>•</span>
+                  <span>Total Pipeline: <b>₹{leads.reduce((s, l) => s + getEstimatedValue(l), 0).toLocaleString('en-IN')}</b></span>
                 </div>
               </div>
 
@@ -1299,7 +1250,7 @@ const CrmPipeline = () => {
                     </div>
 
                     <div className="bg-white p-5 rounded-lg border border-slate-200 shadow-2xs space-y-4">
-                      <h4 className="font-bold text-xs uppercase tracking-wider text-slate-700">QuickSheetsCo Stage Progression</h4>
+                      <h4 className="font-bold text-xs uppercase tracking-wider text-slate-700">Pipeline Stage Progression</h4>
                       <div className="space-y-3">
                         {KANBAN_STAGES.map((st) => {
                           const count = leads.filter(l => mapStageToQuickSheets(l.status) === st).length;
@@ -1328,7 +1279,7 @@ const CrmPipeline = () => {
                 {/* TAB 6: SETUP DATA SHEET */}
                 {activeSheetTab === 'Setup Data' && (
                   <div className="p-6 space-y-6">
-                    <h4 className="font-bold text-sm text-slate-900 tracking-tight">QuickSheetsCo CRM Pipeline Schema Reference</h4>
+                    <h4 className="font-bold text-sm text-slate-900 tracking-tight">CRM Pipeline Schema Reference</h4>
                     <table className="w-full text-left border-collapse text-xs border border-slate-200">
                       <thead className="bg-[#1C3549] text-white">
                         <tr className="text-[10px] uppercase font-bold tracking-wider">
@@ -1376,42 +1327,20 @@ const CrmPipeline = () => {
 
               </div>
 
-              {/* Bottom Google Sheets Tab Navigation Bar */}
-              <div className="bg-[#F8F9FA] border-t border-slate-200 px-3 py-1 flex items-center justify-between shrink-0 select-none">
-                <div className="flex items-center gap-1">
-                  <button className="p-1 hover:bg-slate-200 rounded text-slate-600 transition-colors" title="Add Sheet">
-                    <Plus className="w-3.5 h-3.5" />
-                  </button>
-                  <button className="p-1 hover:bg-slate-200 rounded text-slate-600 transition-colors" title="All Sheets">
-                    <Menu className="w-3.5 h-3.5" />
-                  </button>
-                  <div className="h-4 w-px bg-slate-300 mx-1"></div>
-                  
-                  {/* Interactive Sheet Tabs */}
-                  {(['Dashboard', 'Organizations', 'Contacts', 'Opportunities', 'Interactions', 'Setup Data'] as const).map(tab => (
-                    <button
-                      key={tab}
-                      onClick={() => setActiveSheetTab(tab)}
-                      className={`px-3 py-1 text-xs font-medium rounded-t transition-all flex items-center gap-1.5 cursor-pointer ${
-                        activeSheetTab === tab
-                          ? 'bg-white text-slate-900 border-t-2 border-emerald-600 shadow-xs font-semibold'
-                          : 'text-slate-600 hover:bg-slate-200/80 hover:text-slate-900'
-                      }`}
-                    >
-                      <span>{tab}</span>
-                      {activeSheetTab === tab && (
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                      )}
-                    </button>
-                  ))}
+              {/* Table Footer Status */}
+              <div className="bg-white border-t border-slate-200 px-4 py-2 flex items-center justify-between text-xs text-slate-500 font-medium shrink-0">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
+                  <span>CRM Database Active</span>
+                  {selectedLeads.length > 0 && (
+                    <>
+                      <span>•</span>
+                      <span className="text-slate-900 font-semibold">{selectedLeads.length} leads selected</span>
+                    </>
+                  )}
                 </div>
-
-                <div className="flex items-center gap-3 text-[11px] text-slate-500 font-mono hidden md:flex">
-                  <span>Displaying 100%</span>
-                  <span>•</span>
-                  <span>{filteredLeads.length} Records</span>
-                  <span>•</span>
-                  <span className="text-emerald-700 font-medium">QuickSheetsCo. Engine</span>
+                <div>
+                  <span>Showing {filteredLeads.length} of {leads.length} total leads</span>
                 </div>
               </div>
 
