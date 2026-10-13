@@ -19,6 +19,11 @@ export interface User {
   niche?: string;
   goals?: string;
   profile_picture?: string;
+  // Outreach & Email Marketing Quotas
+  emails_limit?: number;
+  emails_sent?: number;
+  ai_pitches_limit?: number;
+  ai_pitches_used?: number;
 }
 
 export interface WorkspaceIntegration {
@@ -50,10 +55,25 @@ const INITIAL_WORKSPACE_INTEGRATIONS: WorkspaceIntegration[] = [];
 const normalizeUserCredits = (user: User | null): User | null => {
   if (!user) return null;
   const plan = (user.plan || 'free').toLowerCase();
-  if (plan === 'free' && !(user as any).has_topup && (user.lead_credits === undefined || user.lead_credits > 15)) {
-    return { ...user, lead_credits: 15 };
+  
+  // Lead Credits
+  let leadCredits = user.lead_credits;
+  if (plan === 'free' && !(user as any).has_topup && (leadCredits === undefined || leadCredits > 15)) {
+    leadCredits = 15;
   }
-  return user;
+
+  // Email limits by tier
+  const emailsLimit = plan === 'pro' ? 5000 : plan === 'basic' ? 1500 : 50;
+  const aiPitchesLimit = plan === 'pro' ? -1 : plan === 'basic' ? 250 : 5;
+
+  return {
+    ...user,
+    lead_credits: leadCredits,
+    emails_limit: user.emails_limit || emailsLimit,
+    emails_sent: user.emails_sent || 0,
+    ai_pitches_limit: user.ai_pitches_limit !== undefined ? user.ai_pitches_limit : aiPitchesLimit,
+    ai_pitches_used: user.ai_pitches_used || 0
+  };
 };
 
 interface AppState {
@@ -69,6 +89,8 @@ interface AppState {
   setToken: (token: string | null) => void;
   setActiveFilter: (filter: string) => void;
   updateCredits: (credits: number) => void;
+  recordEmailDispatch: (count: number) => void;
+  recordAiGeneration: () => void;
   refreshUserProfile: (userId?: string) => Promise<void>;
   setTopUpOpen: (isOpen: boolean) => void;
   setUpgradeModalOpen: (isOpen: boolean) => void;
@@ -103,6 +125,12 @@ export const useStore = create<AppState>()(
       setActiveFilter: (filter) => set({ activeFilter: filter }),
       updateCredits: (credits) => set((state) => ({ 
         user: state.user ? normalizeUserCredits({ ...state.user, lead_credits: credits }) : null 
+      })),
+      recordEmailDispatch: (count: number) => set((state) => ({
+        user: state.user ? { ...state.user, emails_sent: (state.user.emails_sent || 0) + count } : null
+      })),
+      recordAiGeneration: () => set((state) => ({
+        user: state.user ? { ...state.user, ai_pitches_used: (state.user.ai_pitches_used || 0) + 1 } : null
       })),
       refreshUserProfile: async (overrideUserId?: string) => {
         const uid = overrideUserId || get().user?._id;

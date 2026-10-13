@@ -31,8 +31,8 @@ const PRICING_CATALOG: Record<string, { name: string; amount: number; type: 'bun
     amount: 1999,
     type: 'subscription',
     plan: 'pro',
-    credits: 1000,
-    dailyLimit: 1000
+    credits: 1500,
+    dailyLimit: 1500
   }
 };
 
@@ -130,6 +130,10 @@ router.post('/webhook', async (req, res) => {
         updates.plan = newPlan;
         updates.daily_leads_limit = item.dailyLimit;
         updates.lead_credits = updatedCredits;
+        updates.emails_limit = item.plan === 'pro' ? 5000 : 1500;
+        updates.emails_sent = 0;
+        updates.ai_pitches_limit = item.plan === 'pro' ? -1 : 250;
+        updates.ai_pitches_used = 0;
         updates.subscribed_at = new Date().toISOString();
       }
 
@@ -140,7 +144,11 @@ router.post('/webhook', async (req, res) => {
       success: true, 
       message: `${item.name} activated via PhonePe!`,
       credits: updatedCredits,
-      plan: newPlan
+      plan: newPlan,
+      emails_limit: newPlan === 'pro' ? 5000 : newPlan === 'basic' ? 1500 : 50,
+      emails_sent: 0,
+      ai_pitches_limit: newPlan === 'pro' ? -1 : newPlan === 'basic' ? 250 : 5,
+      ai_pitches_used: 0
     });
 
   } catch (err) {

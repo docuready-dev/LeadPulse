@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { 
-  X, Check, Layout, ArrowRight
+  X, Check, Layout, ArrowRight, Lock
 } from 'lucide-react';
 import { EMAIL_TEMPLATES } from '../data/emailTemplates';
 import type { TemplateId } from '../data/emailTemplates';
+import { useStore } from '../store/useStore';
 
 interface GalleryModalProps {
   isOpen: boolean;
@@ -18,9 +19,13 @@ const TemplateGalleryModal = ({
   selectedTemplateId, 
   onSelectTemplate 
 }: GalleryModalProps) => {
+  const { user, setUpgradeModalOpen } = useStore();
   const [filterCategory, setFilterCategory] = useState<'all' | 'direct' | 'promotional' | 'newsletter' | 'ecommerce'>('all');
 
   if (!isOpen) return null;
+
+  const currentPlan = (user?.plan || 'free').toLowerCase();
+  const isFreePlan = currentPlan === 'free';
 
   const templateList = Object.values(EMAIL_TEMPLATES);
   const filteredTemplates = filterCategory === 'all' 
@@ -253,34 +258,61 @@ const TemplateGalleryModal = ({
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {filteredTemplates.map((template) => {
               const isSelected = selectedTemplateId === template.id;
+              const isLocked = isFreePlan && template.id !== 'text_only' && template.id !== 'one_column';
 
               return (
                 <div 
                   key={template.id}
                   onClick={() => {
+                    if (isLocked) {
+                      onClose();
+                      setUpgradeModalOpen(true);
+                      return;
+                    }
                     onSelectTemplate(template.id);
                     onClose();
                   }}
-                  className={`rounded-md border p-3.5 cursor-pointer transition-all flex flex-col justify-between hover:border-slate-400 group ${
-                    isSelected 
-                      ? 'border-blue-600 bg-blue-50/20 ring-1 ring-blue-600' 
-                      : 'border-slate-200 bg-white hover:border-slate-300'
+                  className={`rounded-md border p-3.5 cursor-pointer transition-all flex flex-col justify-between hover:border-slate-400 group relative ${
+                    isLocked 
+                      ? 'border-slate-200 bg-slate-50/60 opacity-95'
+                      : isSelected 
+                        ? 'border-blue-600 bg-blue-50/20 ring-1 ring-blue-600' 
+                        : 'border-slate-200 bg-white hover:border-slate-300'
                   }`}
                 >
                   <div>
                     {/* Visual Wireframe Preview */}
                     <div className="mb-3 relative overflow-hidden rounded-md border border-slate-200">
                       {renderWireframe(template.id)}
-                      {isSelected && (
+                      
+                      {isLocked && (
+                        <div className="absolute inset-0 bg-slate-950/40 backdrop-blur-2xs flex flex-col items-center justify-center text-white gap-1 p-2">
+                          <div className="w-7 h-7 rounded-full bg-slate-900/90 border border-white/20 flex items-center justify-center">
+                            <Lock className="w-3.5 h-3.5 text-amber-400" />
+                          </div>
+                          <span className="text-[10px] font-delight font-bold uppercase tracking-wider bg-[#191716] px-2 py-0.5 rounded text-amber-400 border border-amber-400/30">
+                            Basic Plan (₹699)
+                          </span>
+                        </div>
+                      )}
+
+                      {!isLocked && isSelected && (
                         <div className="absolute top-2 right-2 w-5 h-5 rounded-sm bg-blue-600 text-white flex items-center justify-center shadow-xs">
                           <Check className="w-3.5 h-3.5" />
                         </div>
                       )}
                     </div>
 
-                    <h4 className="font-bold text-sm text-slate-900 mb-0.5 group-hover:text-blue-600 transition-colors">
-                      {template.name}
-                    </h4>
+                    <div className="flex items-center justify-between gap-1 mb-0.5">
+                      <h4 className="font-bold text-sm text-slate-900 group-hover:text-blue-600 transition-colors">
+                        {template.name}
+                      </h4>
+                      {isLocked && (
+                        <span className="text-[9.5px] font-delight font-bold text-amber-600 bg-amber-50 border border-amber-200 px-1.5 py-0.2 rounded shrink-0">
+                          Basic Tier
+                        </span>
+                      )}
+                    </div>
                     <p className="text-[11px] font-delight text-blue-600 mb-2 font-medium">
                       {template.tagline}
                     </p>
@@ -295,13 +327,24 @@ const TemplateGalleryModal = ({
                     </span>
                     <button 
                       className={`w-full py-1.5 rounded-md text-xs font-delight font-medium transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                        isSelected 
-                          ? 'bg-blue-600 text-white shadow-xs' 
-                          : 'bg-slate-100 text-slate-700 group-hover:bg-slate-900 group-hover:text-white'
+                        isLocked
+                          ? 'bg-amber-500 hover:bg-amber-600 text-white font-bold shadow-xs'
+                          : isSelected 
+                            ? 'bg-blue-600 text-white shadow-xs' 
+                            : 'bg-slate-100 text-slate-700 group-hover:bg-slate-900 group-hover:text-white'
                       }`}
                     >
-                      <span>{isSelected ? 'Active Template' : 'Select Layout'}</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
+                      {isLocked ? (
+                        <>
+                          <Lock className="w-3 h-3 text-white" />
+                          <span>Unlock with Basic Tier &rarr;</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>{isSelected ? 'Active Template' : 'Select Layout'}</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </>
+                      )}
                     </button>
                   </div>
                 </div>

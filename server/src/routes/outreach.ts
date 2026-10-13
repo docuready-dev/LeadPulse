@@ -5,6 +5,18 @@ import { sendDirectEmail, DispatchResult, inAppDeliveredInbox } from '../service
 
 const router = express.Router();
 
+const ALLOWED_FREE_TEMPLATES = ['one_column', 'text_only'];
+
+const getTierEmailLimit = (plan?: string) => {
+  const p = (plan || 'free').toLowerCase();
+  return p === 'pro' ? 5000 : p === 'basic' ? 1500 : 50;
+};
+
+const getTierAiLimit = (plan?: string) => {
+  const p = (plan || 'free').toLowerCase();
+  return p === 'pro' ? -1 : p === 'basic' ? 250 : 5;
+};
+
 // Middleware to check auth
 const requireAuth = async (req: any, res: any, next: any) => {
   const userId = req.headers.userid;
@@ -14,13 +26,13 @@ const requireAuth = async (req: any, res: any, next: any) => {
     const userDoc = await db.collection('users').doc(userId).get();
     if (!userDoc.exists) {
       // Fallback for mock/local test accounts
-      req.user = { _id: userId, name: 'LeadPulse Growth User', email: 'user@leadpulse.io' };
+      req.user = { _id: userId, name: 'LeadPulse Growth User', email: 'user@leadpulse.io', plan: 'free' };
       return next();
     }
     req.user = { _id: userDoc.id, ...userDoc.data() };
     next();
   } catch (err) {
-    req.user = { _id: userId, name: 'LeadPulse Growth User', email: 'user@leadpulse.io' };
+    req.user = { _id: userId, name: 'LeadPulse Growth User', email: 'user@leadpulse.io', plan: 'free' };
     next();
   }
 };
@@ -43,7 +55,21 @@ router.post('/dispatch-batch', requireAuth, async (req: any, res: any) => {
   } = req.body;
 
   const userId = req.user._id.toString();
+  const userPlan = (req.user?.plan || 'free').toLowerCase();
   const userSmtpSettings = customSmtp || req.user.smtpSettings || undefined;
+
+  // Tier Enforcements: Templates & A/B Split Testing
+  if (userPlan === 'free' && !ALLOWED_FREE_TEMPLATES.includes(templateId)) {
+    return res.status(403).json({ 
+      error: 'This Link Mobility framework is locked on the Free tier. Upgrade to Basic (₹699/mo) to unlock all 8 frameworks.' 
+    });
+  }
+
+  if (userPlan === 'free' && isAbTesting) {
+    return res.status(403).json({ 
+      error: 'A/B Split Testing is locked on the Free tier. Upgrade to Basic (₹699/mo) or Pro (₹1,999/mo) to enable split campaigns.' 
+    });
+  }
 
   try {
     console.log(`[Dispatch Engine] Received outreach batch request for user ${userId}. Target IDs: ${leadIds.length}. A/B Testing: ${isAbTesting}`);
@@ -94,6 +120,15 @@ router.post('/dispatch-batch', requireAuth, async (req: any, res: any) => {
     // If still empty, return error
     if (targetLeads.length === 0) {
       return res.status(400).json({ error: 'No target leads selected for dispatch.' });
+    }
+
+    // Check Email Dispatch Quota
+    const emailLimit = req.user.emails_limit || getTierEmailLimit(userPlan);
+    const currentSent = req.user.emails_sent || 0;
+    if (currentSent + targetLeads.length > emailLimit) {
+      return res.status(403).json({ 
+        error: `Monthly email dispatch limit reached (${currentSent}/${emailLimit} sent). Upgrade your tier to dispatch this batch of ${targetLeads.length} emails.` 
+      });
     }
 
     // 2. Loop through selected CRM lead rows and dispatch direct-to-inbox
@@ -155,6 +190,17 @@ router.post('/dispatch-batch', requireAuth, async (req: any, res: any) => {
       await new Promise(r => setTimeout(r, 200));
     }
 
+    // Update user emails_sent in Firestore
+    if (deliveredCount > 0) {
+      try {
+        await db.collection('users').doc(userId).update({
+          emails_sent: currentSent + deliveredCount
+        });
+      } catch (uErr) {
+        console.warn('[Dispatch Engine] Could not update user emails_sent:', uErr);
+      }
+    }
+
     // 3. Record Campaign Log in Firestore
     const campaignRecord = {
       userId,
@@ -208,7 +254,24 @@ router.post('/dispatch-single', requireAuth, async (req: any, res: any) => {
     customSmtp
   } = req.body;
 
+  const userPlan = (req.user?.plan || 'free').toLowerCase();
   const userSmtpSettings = customSmtp || req.user.smtpSettings || undefined;
+
+  // Tier Enforcements: Template restriction on Free tier
+  if (userPlan === 'free' && !ALLOWED_FREE_TEMPLATES.includes(templateId)) {
+    return res.status(403).json({ 
+      error: 'This Link Mobility framework is locked on the Free tier. Upgrade to Basic (₹699/mo) to unlock all 8 frameworks.' 
+    });
+  }
+
+  // Check Email Dispatch Quota
+  const emailLimit = req.user.emails_limit || getTierEmailLimit(userPlan);
+  const currentSent = req.user.emails_sent || 0;
+  if (currentSent + 1 > emailLimit) {
+    return res.status(403).json({ 
+      error: `Monthly email dispatch limit reached (${currentSent}/${emailLimit} sent). Upgrade your tier to dispatch more outreach.` 
+    });
+  }
 
   try {
     const lead: LeadData = targetLead || {
@@ -237,6 +300,16 @@ router.post('/dispatch-single', requireAuth, async (req: any, res: any) => {
       fromEmail: fromEmail || req.user.email,
       userSmtp: userSmtpSettings
     });
+
+    if (result.success) {
+      try {
+        await db.collection('users').doc(req.user._id).update({
+          emails_sent: currentSent + 1
+        });
+      } catch (uErr) {
+        console.warn('[Dispatch Engine] Could not update user emails_sent on single send:', uErr);
+      }
+    }
 
     res.json({
       success: result.success,
@@ -308,6 +381,16 @@ router.post('/ai-generate', requireAuth, async (req: any, res: any) => {
   if (!prompt || typeof prompt !== 'string' || prompt.trim().length === 0) {
     return res.status(400).json({ error: 'Please provide a prompt or target goal.' });
   }
+
+  const userPlan = (req.user?.plan || 'free').toLowerCase();
+  const aiLimit = req.user.ai_pitches_limit !== undefined ? req.user.ai_pitches_limit : getTierAiLimit(userPlan);
+  const aiUsed = req.user.ai_pitches_used || 0;
+  if (aiLimit !== -1 && aiUsed >= aiLimit) {
+    return res.status(403).json({
+      error: `Monthly AI pitch generation limit reached (${aiUsed}/${aiLimit} used). Upgrade to Basic (250/mo) or Pro (Unlimited) to compose more pitches.`
+    });
+  }
+
   let niche = 'general clients';
   let targetAudience = 'high-value clients';
   let goals = 'scale your operations and increase revenue';
@@ -400,12 +483,23 @@ Would you be open to a quick, friendly chat this week to see if we'd be a good f
       break;
   }
 
+  // Increment user's ai_pitches_used in Firestore
+  try {
+    await db.collection('users').doc(req.user._id).update({
+      ai_pitches_used: aiUsed + 1
+    });
+  } catch (uErr) {
+    console.warn('[AI] Could not update ai_pitches_used in Firestore:', uErr);
+  }
+
   return res.json({
     success: true,
     message: 'Template segments successfully auto-composed by AI Assistant!',
     templateId,
     prompt: cleanPrompt,
-    generatedData
+    generatedData,
+    aiPitchesUsed: aiUsed + 1,
+    aiPitchesLimit: aiLimit
   });
 });
 

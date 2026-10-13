@@ -6,6 +6,8 @@ import {
   Users, User, Check, RefreshCw
 } from 'lucide-react';
 
+import { useStore } from '../store/useStore';
+
 interface LeadItem {
   _id?: string;
   businessName: string;
@@ -59,6 +61,7 @@ const DispatchTrackerModal = ({
   user,
   onCampaignDispatched
 }: DispatchTrackerModalProps) => {
+  const { setUpgradeModalOpen, recordEmailDispatch } = useStore();
   if (!isOpen) return null;
 
   // Target audience mode
@@ -90,6 +93,18 @@ const DispatchTrackerModal = ({
           }];
 
   const handleStartDispatch = async () => {
+    // Quota validation prior to starting
+    const plan = (user?.plan || 'free').toLowerCase();
+    const emailLimit = user?.emails_limit || (plan === 'pro' ? 5000 : plan === 'basic' ? 1500 : 50);
+    const emailsSent = user?.emails_sent || 0;
+    const needed = selectedLeadsToDispatch.length;
+
+    if (emailsSent + needed > emailLimit) {
+      setErrorMessage(`Monthly email dispatch quota exceeded. You have used ${emailsSent}/${emailLimit} emails this month. Dispathing this batch requires ${needed} emails. Please upgrade to Basic (1,500/mo) or Pro (5,000+/mo).`);
+      setDispatchState('error');
+      return;
+    }
+
     setDispatchState('sending');
     setProgressPercent(15);
     setDeliveryLogs([]);
@@ -120,6 +135,11 @@ const DispatchTrackerModal = ({
       setProgressPercent(100);
       setDeliveryLogs(res.data.logs || []);
       setDispatchState('completed');
+
+      const delivered = res.data.deliveredCount || (res.data.logs ? res.data.logs.filter((l: any) => l.status === 'delivered').length : needed);
+      if (delivered > 0) {
+        recordEmailDispatch(delivered);
+      }
 
       if (onCampaignDispatched) {
         onCampaignDispatched();
@@ -505,12 +525,25 @@ const DispatchTrackerModal = ({
             <div className="p-6 text-center space-y-3 bg-red-50 border border-red-200 rounded-md">
               <h3 className="text-sm font-bold text-red-950">Dispatch Encountered an Error</h3>
               <p className="text-xs text-red-700 max-w-md mx-auto">{errorMessage}</p>
-              <button
-                onClick={handleReset}
-                className="px-4 py-1.5 rounded-md bg-red-600 hover:bg-red-700 text-white font-delight font-medium text-xs transition-colors cursor-pointer"
-              >
-                Try Again
-              </button>
+              <div className="flex items-center justify-center gap-2 pt-1">
+                <button
+                  onClick={handleReset}
+                  className="px-4 py-1.5 rounded-md bg-slate-900 hover:bg-slate-800 text-white font-delight font-medium text-xs transition-colors cursor-pointer"
+                >
+                  Try Again
+                </button>
+                {(errorMessage.toLowerCase().includes('upgrade') || errorMessage.toLowerCase().includes('quota') || errorMessage.toLowerCase().includes('limit')) && (
+                  <button
+                    onClick={() => {
+                      onClose();
+                      setUpgradeModalOpen(true);
+                    }}
+                    className="px-4 py-1.5 rounded-md bg-[#C85A32] hover:bg-[#B04B25] text-white font-delight font-bold text-xs transition-colors cursor-pointer"
+                  >
+                    Upgrade Plan &rarr;
+                  </button>
+                )}
+              </div>
             </div>
           )}
 

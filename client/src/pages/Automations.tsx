@@ -154,7 +154,7 @@ const TEMPLATE_PRESETS = [
 ];
 
 const Automations = () => {
-  const { user, integrations, notifyIntegration } = useStore();
+  const { user, integrations, notifyIntegration, setUpgradeModalOpen } = useStore();
   const [journeys, setJourneys] = useState<Journey[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -293,7 +293,29 @@ const Automations = () => {
 
     let stepsToUse = [];
     if (selectedTemplateIndex !== null && TEMPLATE_PRESETS[selectedTemplateIndex]) {
-      stepsToUse = TEMPLATE_PRESETS[selectedTemplateIndex].steps;
+      const selectedPreset = TEMPLATE_PRESETS[selectedTemplateIndex];
+      const plan = (user?.plan || 'free').toLowerCase();
+      const presetActions = selectedPreset.steps.filter(s => s.type !== 'trigger');
+
+      if (plan === 'free' && presetActions.length > 1) {
+        await alertDialog({
+          title: 'Automated Sequence Locked',
+          message: 'The Free Explorer tier is limited to single one-off dispatches. Upgrade to Basic (₹699/mo) to unlock 2-step automated follow-up sequences, or Pro (₹1,999/mo) for unlimited multi-step journeys!',
+          variant: 'info'
+        });
+        setUpgradeModalOpen(true);
+        return;
+      }
+      if (plan === 'basic' && presetActions.length > 2) {
+        await alertDialog({
+          title: 'Multi-Step Sequence (Pro)',
+          message: `This blueprint contains ${presetActions.length} sequence steps. Basic tier supports 2-step sequences (Initial + Follow-up). Upgrade to Pro for unlimited multi-step journeys.`,
+          variant: 'info'
+        });
+        setUpgradeModalOpen(true);
+        return;
+      }
+      stepsToUse = selectedPreset.steps;
     }
 
     try {
@@ -325,6 +347,28 @@ const Automations = () => {
   // Instantiate from template picker
   const handleUsePreset = async (preset: typeof TEMPLATE_PRESETS[0]) => {
     if (!user?._id) return;
+    const plan = (user?.plan || 'free').toLowerCase();
+    const presetActions = preset.steps.filter(s => s.type !== 'trigger');
+
+    if (plan === 'free' && presetActions.length > 1) {
+      await alertDialog({
+        title: 'Automated Sequence Locked',
+        message: `Template "${preset.name}" contains ${presetActions.length} sequence steps. Free Explorer is limited to single one-off dispatches. Upgrade to Basic (₹699/mo) to unlock 2-step sequences or Pro for unlimited multi-step journeys!`,
+        variant: 'info'
+      });
+      setUpgradeModalOpen(true);
+      return;
+    }
+    if (plan === 'basic' && presetActions.length > 2) {
+      await alertDialog({
+        title: 'Multi-Step Sequence (Pro)',
+        message: `Template "${preset.name}" requires Pro Tier for deep multi-touchpoint workflows (${presetActions.length} steps). Basic tier includes 2-step sequences (Initial + Follow-up).`,
+        variant: 'info'
+      });
+      setUpgradeModalOpen(true);
+      return;
+    }
+
     try {
       const res = await axios.post('http://localhost:3001/api/automations', {
         name: preset.name,
@@ -347,6 +391,29 @@ const Automations = () => {
   // Add Step to active journey
   const handleAddStep = async (type: JourneyStep['type'], integrationApp?: { id: string; name: string }) => {
     if (!activeJourney || !user?._id) return;
+
+    const plan = (user?.plan || 'free').toLowerCase();
+    const currentActions = activeJourney.steps.filter(s => s.type !== 'trigger');
+
+    if (plan === 'free' && currentActions.length >= 1) {
+      await alertDialog({
+        title: 'Sequence Limit Reached',
+        message: 'The Free Explorer tier is limited to single one-off dispatches. Upgrade to Basic (₹699/mo) to unlock 2-step automated follow-up sequences, or Pro (₹1,999/mo) for unlimited multi-step journeys!',
+        variant: 'info'
+      });
+      setUpgradeModalOpen(true);
+      return;
+    }
+
+    if (plan === 'basic' && currentActions.length >= 2) {
+      await alertDialog({
+        title: 'Sequence Depth Limit Reached',
+        message: 'Basic tier supports 2-Step Follow-Up Sequences (Initial + Follow-up). Upgrade to Pro (₹1,999/mo) to unlock unlimited multi-step behavioral journeys and WhatsApp bridges!',
+        variant: 'info'
+      });
+      setUpgradeModalOpen(true);
+      return;
+    }
 
     let newStep: JourneyStep = {
       id: `step_${Date.now()}`,

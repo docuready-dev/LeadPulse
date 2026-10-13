@@ -31,6 +31,24 @@ export async function syncUserPoolCredits(userId: string, data: any): Promise<an
       }
     }
   }
+
+  // Email & AI Pitch Tier Quotas
+  const tierEmailLimit = plan === 'pro' ? 5000 : plan === 'basic' ? 1500 : 50;
+  const tierAiLimit = plan === 'pro' ? -1 : plan === 'basic' ? 250 : 5;
+
+  if (data.emails_limit === undefined) {
+    data.emails_limit = tierEmailLimit;
+  }
+  if (data.emails_sent === undefined) {
+    data.emails_sent = 0;
+  }
+  if (data.ai_pitches_limit === undefined) {
+    data.ai_pitches_limit = tierAiLimit;
+  }
+  if (data.ai_pitches_used === undefined) {
+    data.ai_pitches_used = 0;
+  }
+
   return data;
 }
 
@@ -75,6 +93,10 @@ router.post('/google', async (req, res) => {
         lead_credits: 15,
         plan: 'free',
         pool_refreshed_at: new Date().toISOString(),
+        emails_limit: 50,
+        emails_sent: 0,
+        ai_pitches_limit: 5,
+        ai_pitches_used: 0,
         onboarding_complete: false,
         createdAt: new Date().toISOString()
       };
@@ -148,6 +170,10 @@ router.post('/register', async (req, res) => {
       lead_credits: 15,
       plan: 'free',
       pool_refreshed_at: new Date().toISOString(),
+      emails_limit: 50,
+      emails_sent: 0,
+      ai_pitches_limit: 5,
+      ai_pitches_used: 0,
       onboarding_complete: false,
       createdAt: new Date().toISOString()
     };

@@ -121,7 +121,7 @@ const Sidebar = () => {
               {currentPlan.toUpperCase()} TIER
             </span>
             <span className="text-[10px] font-delight font-bold text-[#C85A32] tabular-nums">
-              {displayCredits} / {maxPoolLabel} Tokens
+              {user?.emails_sent || 0} / {currentPlan === 'pro' ? '5k' : currentPlan === 'basic' ? '1.5k' : '50'} Emails
             </span>
           </div>
 
@@ -129,13 +129,14 @@ const Sidebar = () => {
             <div 
               className="h-full bg-[#C85A32] transition-all duration-300"
               style={{
-                width: `${currentPlan === 'free'
-                  ? Math.min(100, Math.round((displayCredits / 15) * 100))
-                  : currentPlan === 'basic'
-                    ? Math.min(100, Math.round((displayCredits / 600) * 100))
-                    : 100}%`
+                width: `${Math.min(100, Math.round(((user?.emails_sent || 0) / Math.max(1, user?.emails_limit || (currentPlan === 'pro' ? 5000 : currentPlan === 'basic' ? 1500 : 50))) * 100))}%`
               }}
             />
+          </div>
+
+          <div className="flex items-center justify-between text-[9.5px] font-delight text-[#6E675F] pt-0.5">
+            <span>Bonus Leads:</span>
+            <span className="font-semibold text-[#191716]">{displayCredits} / {maxPoolLabel} tokens</span>
           </div>
 
           <button

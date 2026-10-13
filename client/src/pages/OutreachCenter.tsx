@@ -20,7 +20,7 @@ import { alertDialog } from '../components/AppConfirmModal';
 import axios from 'axios';
 
 const OutreachCenter = () => {
-  const { user, integrations } = useStore();
+  const { user, integrations, setUpgradeModalOpen, recordEmailDispatch, recordAiGeneration } = useStore();
   const [activeChannel, setActiveChannel] = useState<'email' | 'whatsapp' | 'sms'>('email');
 
   const calendlyIntegration = integrations.find(i => i.id === 'calendly' && i.connected);
@@ -260,6 +260,21 @@ const OutreachCenter = () => {
   const handleAiGenerate = async (customPrompt?: string) => {
     const promptToUse = customPrompt || aiPrompt;
     if (!promptToUse.trim()) return;
+
+    // Monthly AI Copilot Quota Check
+    const plan = (user?.plan || 'free').toLowerCase();
+    const aiLimit = user?.ai_pitches_limit !== undefined ? user.ai_pitches_limit : (plan === 'pro' ? -1 : plan === 'basic' ? 250 : 5);
+    const aiUsed = user?.ai_pitches_used || 0;
+    if (aiLimit !== -1 && aiUsed >= aiLimit) {
+      await alertDialog({
+        title: 'Monthly AI Pitch Limit Reached',
+        message: `You have used all ${aiLimit} AI pitch generations for your ${plan.toUpperCase()} tier this month. Upgrade to Basic (250/mo) or Pro (Unlimited) to continue composing pitches.`,
+        variant: 'warning'
+      });
+      setUpgradeModalOpen(true);
+      return;
+    }
+
     setIsAiGenerating(true);
     setAiSuccessMessage(null);
 
@@ -279,10 +294,20 @@ const OutreachCenter = () => {
           ...prev,
           ...res.data.generatedData
         }));
+        recordAiGeneration();
         setAiSuccessMessage('✨ All template segments auto-composed with merge tags!');
         setTimeout(() => setAiSuccessMessage(null), 6000);
       }
-    } catch (err) {
+    } catch (err: any) {
+      if (err?.response?.status === 403) {
+        await alertDialog({
+          title: 'Monthly AI Pitch Limit Reached',
+          message: err.response.data?.error || `Monthly AI generation quota reached. Upgrade your plan to compose more pitches.`,
+          variant: 'warning'
+        });
+        setUpgradeModalOpen(true);
+        return;
+      }
       console.warn('Backend AI endpoint failed, falling back to instant client AI synthesis:', err);
       // Robust client-side fallback synthesizer
       const p = promptToUse.trim();
@@ -345,6 +370,7 @@ const OutreachCenter = () => {
       }
 
       setTemplateData(prev => ({ ...prev, ...generated }));
+      recordAiGeneration();
       setAiSuccessMessage('✨ All template segments auto-composed with merge tags!');
       setTimeout(() => setAiSuccessMessage(null), 6000);
     } finally {
@@ -430,6 +456,20 @@ const OutreachCenter = () => {
 
   // Direct Single Email Test Dispatcher
   const handleSendSingleTest = async () => {
+    // Email Quota Check
+    const plan = (user?.plan || 'free').toLowerCase();
+    const emailLimit = user?.emails_limit || (plan === 'pro' ? 5000 : plan === 'basic' ? 1500 : 50);
+    const emailsSent = user?.emails_sent || 0;
+    if (emailsSent + 1 > emailLimit) {
+      await alertDialog({
+        title: 'Monthly Email Quota Reached',
+        message: `You have reached your monthly email dispatch cap (${emailsSent}/${emailLimit} sent). Upgrade to Basic (1,500/mo) or Pro (5,000+/mo) to continue dispatching.`,
+        variant: 'warning'
+      });
+      setUpgradeModalOpen(true);
+      return;
+    }
+
     setIsSendingSingle(true);
     setDispatchNotification(null);
     try {
@@ -446,12 +486,22 @@ const OutreachCenter = () => {
       });
 
       if (res.data.success) {
+        recordEmailDispatch(1);
         setDispatchNotification({
           message: `Direct test email dispatched to ${previewLead.businessName}!`,
           previewUrl: res.data.result?.previewUrl
         });
       }
     } catch (err: any) {
+      if (err?.response?.status === 403) {
+        await alertDialog({
+          title: 'Dispatch Limit Reached',
+          message: err.response.data?.error || 'Monthly dispatch limit reached. Upgrade your plan to send more outreach.',
+          variant: 'warning'
+        });
+        setUpgradeModalOpen(true);
+        return;
+      }
       console.error('Failed to send single test:', err);
       setDispatchNotification({
         message: `Failed to dispatch test: ${err?.response?.data?.error || err.message}`
@@ -577,7 +627,17 @@ const OutreachCenter = () => {
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => {
+                  onClick={async () => {
+                    const plan = (user?.plan || 'free').toLowerCase();
+                    if (plan === 'free') {
+                      await alertDialog({
+                        title: 'A/B Split Testing Locked',
+                        message: '50/50 A/B Split Testing is available on Basic (₹699/mo) and Pro (₹1,999/mo) tiers. Upgrade to test subject lines and email variants side-by-side.',
+                        variant: 'info'
+                      });
+                      setUpgradeModalOpen(true);
+                      return;
+                    }
                     const next = !isAbTesting;
                     setIsAbTesting(next);
                     if (next) {
@@ -880,6 +940,9 @@ const OutreachCenter = () => {
                                 <span className="text-[9px] font-delight font-semibold uppercase tracking-wider px-1.5 py-0.2 rounded bg-slate-200/80 text-[#191716]">
                                   Auto-Fill Engine
                                 </span>
+                                <span className="text-[9px] font-delight font-semibold uppercase tracking-wider px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800">
+                                  {user?.ai_pitches_limit === -1 ? 'Unlimited' : `${Math.max(0, (user?.ai_pitches_limit ?? 5) - (user?.ai_pitches_used || 0))} Pitches Left`}
+                                </span>
                                 {aiSuccessMessage && (
                                   <span className="text-[10px] font-delight font-semibold text-emerald-600 flex items-center gap-1">
                                     <Check className="w-3 h-3" /> Populated
@@ -909,6 +972,9 @@ const OutreachCenter = () => {
                                   </h4>
                                   <span className="text-[9px] font-delight uppercase tracking-wider px-2 py-0.5 rounded bg-white/15 text-white font-semibold">
                                     Auto-Fill Engine
+                                  </span>
+                                  <span className="text-[9px] font-delight uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-500/30">
+                                    {user?.ai_pitches_limit === -1 ? 'Unlimited Pitches' : `${Math.max(0, (user?.ai_pitches_limit ?? 5) - (user?.ai_pitches_used || 0))} / ${user?.ai_pitches_limit ?? 5} Left`}
                                   </span>
                                 </div>
                                 <p className="text-[11px] text-slate-300 font-delight mt-0.5">
@@ -1723,6 +1789,11 @@ const OutreachCenter = () => {
                 </div>
               ) : (
                 <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                  <div className="hidden sm:flex items-center gap-1 px-2.5 py-1 rounded bg-slate-100 border border-slate-200 text-[11px] font-delight text-slate-600">
+                    <span className="font-bold text-[#191716]">{user?.emails_sent || 0}</span>
+                    <span>/</span>
+                    <span>{user?.emails_limit || 50} Emails</span>
+                  </div>
                   <button 
                     onClick={handleSendSingleTest}
                     disabled={isSendingSingle}

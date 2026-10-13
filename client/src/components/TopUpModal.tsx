@@ -125,13 +125,13 @@ const TopUpModal = () => {
           <div className="max-w-2xl pr-10">
             <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-sm bg-blue-500/10 border border-blue-500/20 text-blue-400 font-delight text-[11px] font-semibold mb-2">
               <Zap className="w-3.5 h-3.5 fill-current" />
-              <span>Compute Scaling & Tier Matrix</span>
+              <span>Email Marketing Suite & Tier Matrix</span>
             </div>
             <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-white leading-tight">
-              Unlock Unlimited B2B Lead Acquisition
+              Scale Your Email Marketing & Outreach Engine
             </h2>
             <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-              Scale past the Free 15-token pool. Upgrade to continuous daily harvesting limits, automated multi-channel sequences, and PhonePe instant micro-top-ups.
+              Unlock all 8 Link Mobility frameworks, 50/50 A/B split testing, multi-step sequences, high-volume inbox dispatch, and bonus lead tokens.
             </p>
           </div>
 
@@ -175,7 +175,7 @@ const TopUpModal = () => {
           <div className="p-16 text-center space-y-4">
             <h3 className="text-xl font-bold tracking-tight text-slate-900">Payment Verified by PhonePe!</h3>
             <p className="text-xs text-slate-600 max-w-md mx-auto">
-              Successfully activated <span className="font-bold text-slate-900">{successItemName}</span>. Your account compute pool has been updated!
+              Successfully activated <span className="font-bold text-slate-900">{successItemName}</span>. Your account email outreach limits and compute pool have been updated!
             </p>
             <button 
               onClick={handleClose}
@@ -199,7 +199,7 @@ const TopUpModal = () => {
               <div className={`p-5 rounded-md border transition-all flex flex-col justify-between ${currentPlan === 'free' ? 'border-slate-300 bg-slate-50' : 'border-slate-200 bg-white'}`}>
                 <div>
                   <div className="flex justify-between items-center mb-2">
-                    <span className="text-[11px] font-delight uppercase tracking-wider text-slate-500 font-semibold">Free Tier</span>
+                    <span className="text-[11px] font-delight uppercase tracking-wider text-slate-500 font-semibold">Free Explorer</span>
                     {currentPlan === 'free' && (
                       <span className="text-[10px] font-delight font-semibold bg-slate-200 text-slate-700 px-2 py-0.5 rounded-sm">
                         Active Plan
@@ -212,31 +212,31 @@ const TopUpModal = () => {
                   <ul className="space-y-2.5 text-xs">
                     <li className="flex items-center gap-2 text-slate-700">
                       <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                      <span><strong>2 Workspace Seats</strong> (Fixed)</span>
+                      <span><strong>50 Test Emails / Month</strong> (Single relay)</span>
                     </li>
                     <li className="flex items-center gap-2 text-slate-700">
                       <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                      <span><strong>15 Tokens / Saved Leads Pool</strong> (Refreshes every 4d)</span>
+                      <span><strong>2 Standard Templates</strong> (Basic text)</span>
                     </li>
                     <li className="flex items-center gap-2 text-slate-700">
                       <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                      <span><strong>10 Leads Max</strong> per query</span>
+                      <span><strong>5 AI Pitches / Mo</strong> (Smart Copilot)</span>
                     </li>
                     <li className="flex items-center gap-2 text-slate-700">
                       <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                      <span>Quick Scan compute</span>
+                      <span><strong>Single One-Off Blast</strong> (1 step)</span>
+                    </li>
+                    <li className="flex items-center gap-2 text-slate-700">
+                      <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      <span><strong>15 Bonus Lead Tokens</strong> (4-day refresh)</span>
                     </li>
                     <li className="flex items-center gap-2 text-slate-400">
                       <Lock className="w-3.5 h-3.5 text-slate-300 shrink-0" />
-                      <span className="line-through">Continuous Daily Limits</span>
+                      <span className="line-through">50/50 A/B Split Testing</span>
                     </li>
                     <li className="flex items-center gap-2 text-slate-400">
                       <Lock className="w-3.5 h-3.5 text-slate-300 shrink-0" />
-                      <span className="line-through">Unlimited CSV/Excel Export</span>
-                    </li>
-                    <li className="flex items-center gap-2 text-slate-400">
-                      <Lock className="w-3.5 h-3.5 text-slate-300 shrink-0" />
-                      <span className="line-through">Automated Outreach Templates</span>
+                      <span className="line-through">6 Advanced Link Mobility Frameworks</span>
                     </li>
                   </ul>
                 </div>
@@ -270,31 +270,31 @@ const TopUpModal = () => {
                   <ul className="space-y-2.5 text-xs">
                     <li className="flex items-center gap-2 text-slate-800">
                       <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                      <span><strong>50% Registered Seats</strong> with universal tokens</span>
+                      <span><strong>1,500 Emails / Month</strong> (Up to 2 connected inboxes)</span>
                     </li>
                     <li className="flex items-center gap-2 text-slate-800">
                       <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                      <span><strong>600 Saved Leads</strong> & daily continuous limit</span>
+                      <span><strong>All 8 Link Mobility Frameworks</strong> Unlocked</span>
+                    </li>
+                    <li className="flex items-center gap-2 text-slate-800">
+                      <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      <span><strong>50/50 A/B Split Testing Enabled</strong></span>
+                    </li>
+                    <li className="flex items-center gap-2 text-slate-800">
+                      <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      <span><strong>250 AI Pitches / Mo</strong> Auto-Composition</span>
+                    </li>
+                    <li className="flex items-center gap-2 text-slate-800">
+                      <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      <span><strong>2-Step Follow-Up Sequence</strong> (Initial + Follow-up)</span>
+                    </li>
+                    <li className="flex items-center gap-2 text-slate-800">
+                      <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      <span><strong>600 Bonus Lead Tokens</strong> & continuous harvest</span>
                     </li>
                     <li className="flex items-center gap-2 text-slate-800">
                       <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                       <span><strong>Unlimited CSV & Excel</strong> exports</span>
-                    </li>
-                    <li className="flex items-center gap-2 text-slate-800">
-                      <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                      <span><strong>Automated Templates</strong> & merge tags</span>
-                    </li>
-                    <li className="flex items-center gap-2 text-slate-800">
-                      <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                      <span>Deep Multi-Page Harvest scope</span>
-                    </li>
-                    <li className="flex items-center gap-2 text-slate-400">
-                      <Lock className="w-3.5 h-3.5 text-slate-300 shrink-0" />
-                      <span className="line-through">Dedicated Worker Priority</span>
-                    </li>
-                    <li className="flex items-center gap-2 text-slate-400">
-                      <Lock className="w-3.5 h-3.5 text-slate-300 shrink-0" />
-                      <span className="line-through">API Hooks & Webhooks</span>
                     </li>
                   </ul>
                 </div>
@@ -334,31 +334,31 @@ const TopUpModal = () => {
                   <ul className="space-y-2.5 text-xs">
                     <li className="flex items-center gap-2 text-slate-800">
                       <Check className="w-3.5 h-3.5 text-purple-600 shrink-0" />
-                      <span><strong>100% Registered Seats</strong> with universal tokens</span>
+                      <span><strong>5,000+ Emails / Month</strong> (Unlimited inboxes & SMTPs)</span>
                     </li>
                     <li className="flex items-center gap-2 text-slate-800">
                       <Check className="w-3.5 h-3.5 text-purple-600 shrink-0" />
-                      <span><strong>Unlimited Saved Leads</strong> & 1,000 daily limit</span>
+                      <span><strong>8 Frameworks + Custom Template Library</strong></span>
                     </li>
                     <li className="flex items-center gap-2 text-slate-800">
                       <Check className="w-3.5 h-3.5 text-purple-600 shrink-0" />
-                      <span><strong>Dedicated Worker Priority</strong> (Instant queue)</span>
+                      <span><strong>Multi-Variant A/B/C Testing</strong></span>
                     </li>
                     <li className="flex items-center gap-2 text-slate-800">
                       <Check className="w-3.5 h-3.5 text-purple-600 shrink-0" />
-                      <span><strong>Advanced Sequences</strong> & dynamic tags</span>
+                      <span><strong>Unlimited AI Pitch Generations</strong></span>
                     </li>
                     <li className="flex items-center gap-2 text-slate-800">
                       <Check className="w-3.5 h-3.5 text-purple-600 shrink-0" />
-                      <span><strong>WhatsApp & SMS</strong> template pathways</span>
+                      <span><strong>Multi-Step Behavioral Journeys</strong> (WhatsApp bridge)</span>
                     </li>
                     <li className="flex items-center gap-2 text-slate-800">
                       <Check className="w-3.5 h-3.5 text-purple-600 shrink-0" />
-                      <span><strong>API Hooks</strong> & CRM webhooks</span>
+                      <span><strong>1,500 Bonus Lead Tokens</strong> / Month</span>
                     </li>
                     <li className="flex items-center gap-2 text-slate-800">
                       <Check className="w-3.5 h-3.5 text-purple-600 shrink-0" />
-                      <span><strong>Domain Deliverability</strong> guidance</span>
+                      <span><strong>Dedicated Worker Node</strong> & Full API Access</span>
                     </li>
                   </ul>
                 </div>
@@ -392,72 +392,66 @@ const TopUpModal = () => {
                 <table className="w-full text-xs text-left border-collapse">
                   <thead>
                     <tr className="border-b border-slate-200 bg-white text-slate-500 font-delight font-semibold text-[11px]">
-                      <th className="p-3 pl-4">Capability / Feature</th>
-                      <th className="p-3 text-center">Free Tier (₹0)</th>
+                      <th className="p-3 pl-4">Capability / Dimension</th>
+                      <th className="p-3 text-center">Free Explorer (₹0)</th>
                       <th className="p-3 text-center text-blue-600">Basic (₹699/mo)</th>
                       <th className="p-3 text-center text-purple-700">Pro (₹1,999/mo)</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     <tr>
-                      <td className="p-3 pl-4 font-semibold text-slate-800">Saved Leads Capacity & Pool</td>
-                      <td className="p-3 text-center font-delight font-medium text-slate-600">15 Tokens / Leads (4-day pool)</td>
-                      <td className="p-3 text-center font-delight font-bold text-blue-600">600 Saved Leads</td>
-                      <td className="p-3 text-center font-delight font-bold text-purple-700">Unlimited Saved Leads</td>
+                      <td className="p-3 pl-4 font-semibold text-slate-800">Email Dispatch Volume</td>
+                      <td className="p-3 text-center font-delight font-medium text-slate-600">50 test emails/month</td>
+                      <td className="p-3 text-center font-delight font-bold text-blue-600">1,500 emails/month (2 inboxes)</td>
+                      <td className="p-3 text-center font-delight font-bold text-purple-700">5,000+ emails/month (unlimited inboxes)</td>
                     </tr>
                     <tr>
-                      <td className="p-3 pl-4 font-semibold text-slate-800">Daily Harvesting Velocity</td>
-                      <td className="p-3 text-center font-delight font-medium text-slate-600">10 Leads / Query</td>
-                      <td className="p-3 text-center font-delight font-bold text-blue-600">600 Leads / Day</td>
-                      <td className="p-3 text-center font-delight font-bold text-purple-700">1,000+ Leads / Day</td>
+                      <td className="p-3 pl-4 font-semibold text-slate-800">Link Mobility Frameworks</td>
+                      <td className="p-3 text-center font-delight font-medium text-slate-600">2 Standard Templates</td>
+                      <td className="p-3 text-center font-delight font-bold text-blue-600">All 8 Frameworks Unlocked</td>
+                      <td className="p-3 text-center font-delight font-bold text-purple-700">8 Frameworks + Custom Reusable Library</td>
                     </tr>
                     <tr>
-                      <td className="p-3 pl-4 font-semibold text-slate-800">Per-Query Generation Limit</td>
-                      <td className="p-3 text-center font-delight text-amber-600 font-bold">10 Leads Max</td>
-                      <td className="p-3 text-center font-delight text-slate-800 font-medium">Batch Limits (20+)</td>
-                      <td className="p-3 text-center font-delight font-bold text-purple-700">Unlimited Batches</td>
-                    </tr>
-                    <tr>
-                      <td className="p-3 pl-4 font-semibold text-slate-800">Pool Auto-Refresh Schedule</td>
-                      <td className="p-3 text-center font-delight font-medium text-slate-600">Every 4 Days</td>
-                      <td className="p-3 text-center font-delight text-emerald-600 font-bold">Daily Continuous</td>
-                      <td className="p-3 text-center font-delight text-emerald-600 font-bold">Daily Continuous</td>
-                    </tr>
-                    <tr>
-                      <td className="p-3 pl-4 font-semibold text-slate-800">Scope Proficiency Modes</td>
-                      <td className="p-3 text-center font-delight font-medium text-slate-600">Quick Scan only</td>
-                      <td className="p-3 text-center font-delight text-emerald-600 font-bold">Deep Multi-Page Harvest</td>
-                      <td className="p-3 text-center font-delight text-emerald-600 font-bold">Deep Multi-Page Harvest</td>
-                    </tr>
-                    <tr>
-                      <td className="p-3 pl-4 font-semibold text-slate-800">CSV & Excel Lead Export</td>
+                      <td className="p-3 pl-4 font-semibold text-slate-800">A/B Split Testing</td>
                       <td className="p-3 text-center font-delight text-red-500 font-bold">Locked</td>
-                      <td className="p-3 text-center font-delight text-emerald-600 font-bold">Unlimited</td>
-                      <td className="p-3 text-center font-delight text-emerald-600 font-bold">Unlimited + JSON</td>
+                      <td className="p-3 text-center font-delight text-emerald-600 font-bold">50/50 Split Testing Enabled</td>
+                      <td className="p-3 text-center font-delight font-bold text-purple-700">Multi-Variant A/B/C Testing</td>
                     </tr>
                     <tr>
-                      <td className="p-3 pl-4 font-semibold text-slate-800">Outreach Email Templates & Merge Tags</td>
-                      <td className="p-3 text-center font-delight text-red-500 font-bold">Locked</td>
-                      <td className="p-3 text-center font-delight text-emerald-600 font-bold">Unlimited Tags</td>
-                      <td className="p-3 text-center font-delight text-emerald-600 font-bold">Advanced Sequences</td>
+                      <td className="p-3 pl-4 font-semibold text-slate-800">AI Copilot Pitch Synthesis</td>
+                      <td className="p-3 text-center font-delight font-medium text-slate-600">5 generations/month</td>
+                      <td className="p-3 text-center font-delight font-bold text-blue-600">250 generations/month</td>
+                      <td className="p-3 text-center font-delight font-bold text-purple-700">Unlimited AI Generations</td>
                     </tr>
                     <tr>
-                      <td className="p-3 pl-4 font-semibold text-slate-800">WhatsApp & SMS Integration</td>
-                      <td className="p-3 text-center font-delight text-red-500 font-bold">Locked</td>
-                      <td className="p-3 text-center font-delight font-normal text-slate-400">Standard Pathways</td>
-                      <td className="p-3 text-center font-delight text-purple-700 font-bold">Official WhatsApp API</td>
+                      <td className="p-3 pl-4 font-semibold text-slate-800">Automated Sequence Depth</td>
+                      <td className="p-3 text-center font-delight font-medium text-slate-600">Single one-off blast</td>
+                      <td className="p-3 text-center font-delight text-emerald-600 font-bold">2-Step Sequence (Initial + Follow-up)</td>
+                      <td className="p-3 text-center font-delight text-purple-700 font-bold">Multi-Step Behavioral Journeys + WhatsApp</td>
                     </tr>
                     <tr>
-                      <td className="p-3 pl-4 font-semibold text-slate-800">Dedicated Worker Priority (No Queuing)</td>
-                      <td className="p-3 text-center font-delight text-red-500 font-bold">Locked</td>
-                      <td className="p-3 text-center font-delight text-red-500 font-bold">Locked</td>
-                      <td className="p-3 text-center font-delight text-purple-700 font-bold">Dedicated Worker</td>
+                      <td className="p-3 pl-4 font-semibold text-slate-800">Bonus Lead Token Pool</td>
+                      <td className="p-3 text-center font-delight font-medium text-slate-600">15 Tokens (4-day pool)</td>
+                      <td className="p-3 text-center font-delight font-bold text-blue-600">600 Tokens (bonus)</td>
+                      <td className="p-3 text-center font-delight font-bold text-purple-700">1,500 Tokens (bonus)</td>
                     </tr>
                     <tr>
-                      <td className="p-3 pl-4 font-semibold text-slate-800">API Hooks & Webhooks</td>
+                      <td className="p-3 pl-4 font-semibold text-slate-800">Data Exports & CRM Sync</td>
+                      <td className="p-3 text-center font-delight text-red-500 font-bold">In-app preview only</td>
+                      <td className="p-3 text-center font-delight text-emerald-600 font-bold">Unlimited CSV & Excel Export</td>
+                      <td className="p-3 text-center font-delight text-emerald-600 font-bold">Unlimited CSV + Webhooks + API</td>
+                    </tr>
+                    <tr>
+                      <td className="p-3 pl-4 font-semibold text-slate-800">Dedicated Worker Priority</td>
+                      <td className="p-3 text-center font-delight text-red-500 font-bold">Standard Queue</td>
+                      <td className="p-3 text-center font-delight text-red-500 font-bold">Standard Queue</td>
+                      <td className="p-3 text-center font-delight text-purple-700 font-bold">Dedicated Headless Worker Node</td>
+                    </tr>
+                    <tr>
+                      <td className="p-3 pl-4 font-semibold text-slate-800">API Access & Webhooks</td>
                       <td className="p-3 text-center font-delight text-red-500 font-bold">Locked</td>
                       <td className="p-3 text-center font-delight text-red-500 font-bold">Locked</td>
-                      <td className="p-3 text-center font-delight text-purple-700 font-bold">Full API Access</td>
+                      <td className="p-3 text-center font-delight text-purple-700 font-bold">Full API Access & Webhooks</td>
                     </tr>
                   </tbody>
                 </table>

@@ -1035,7 +1035,7 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
                 <span className="text-xs font-delight text-[#78716A]">/ forever free</span>
               </div>
               <p className="text-xs text-[#57524B] mb-6 pb-5 border-b border-[#E5E0D5]">
-                Experience live spatial harvesting, Kanban pipeline management, and Outreach Studio preview with zero commitment.
+                Test your email marketing copy with direct test relays, 2 standard frameworks, AI pitch synthesis, and 15 bonus leads.
               </p>
 
               {/* Bifurcation Breakdown */}
@@ -1046,19 +1046,19 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
                 <ul className="space-y-2.5 text-xs text-[#191716]">
                   <li className="flex items-start gap-2">
                     <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
-                    <span><strong>15 Lead Tokens / Saved Pool</strong> (Auto-refreshes every 4 days)</span>
+                    <span><strong>50 Test Emails / Month</strong> via verified direct mail transport</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
-                    <span><strong>Up to 10 Verified Leads</strong> per spatial extraction query</span>
+                    <span><strong>2 Standard Templates</strong> (Plain Text &amp; Single-Column)</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
-                    <span><strong>2 Fixed Workspace Seats</strong> for initial team evaluation</span>
+                    <span><strong>5 AI Pitch Generations / Mo</strong> with dynamic merge tags</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
-                    <span><strong>Quick Scan Engine</strong> (1 token / query) + 6-Stage Kanban CRM</span>
+                    <span><strong>Single One-Off Blast</strong> + 15 Bonus Leads (4-day pool)</span>
                   </li>
                 </ul>
               </div>
@@ -1089,7 +1089,7 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
                   LeadPulse Basic
                 </span>
                 <span className="text-[10px] font-delight font-bold px-2 py-0.5 rounded-[4px] bg-[#C85A32]/10 text-[#C85A32] border border-[#C85A32]/25">
-                  ₹1.16 / Lead Effective
+                  1,500 Emails + 600 Leads
                 </span>
               </div>
 
@@ -1099,7 +1099,7 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
                 <span className="text-xs font-delight text-slate-400 line-through ml-1">₹4,100+ market</span>
               </div>
               <p className="text-xs text-[#57524B] mb-6 pb-5 border-b border-[#E5E0D5]">
-                Built for solo founders, consultants, and lean agencies ready for daily harvesting, AI outreach, and full CSV exports.
+                Built for solo operators and growing agencies running daily email campaigns with all 8 Link Mobility frameworks.
               </p>
 
               {/* Bifurcation Breakdown */}
@@ -1110,23 +1110,23 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
                 <ul className="space-y-2.5 text-xs text-[#191716]">
                   <li className="flex items-start gap-2">
                     <Check className="w-3.5 h-3.5 text-[#C85A32] shrink-0 mt-0.5" />
-                    <span><strong>600 Saved Leads Pool</strong> with continuous daily refresh</span>
+                    <span><strong>1,500 Emails / Month</strong> (Up to 2 connected inboxes)</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <Check className="w-3.5 h-3.5 text-[#C85A32] shrink-0 mt-0.5" />
-                    <span><strong>20+ Batch Extraction Limit</strong> + Deep Multi-Page Website Scan</span>
+                    <span><strong>All 8 Link Mobility Frameworks</strong> Unlocked</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <Check className="w-3.5 h-3.5 text-[#C85A32] shrink-0 mt-0.5" />
-                    <span><strong>50% Registered Team Seats</strong> sharing universal workspace tokens</span>
+                    <span><strong>50/50 A/B Split Testing Enabled</strong> for subject &amp; copy</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <Check className="w-3.5 h-3.5 text-[#C85A32] shrink-0 mt-0.5" />
-                    <span><strong>Full Outreach Studio &amp; AI Copilot</strong> + 8 Link Mobility templates</span>
+                    <span><strong>250 AI Pitch Generations / Mo</strong> + 2-Step Sequences</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <Check className="w-3.5 h-3.5 text-[#C85A32] shrink-0 mt-0.5" />
-                    <span><strong>Unlimited CSV &amp; Excel Exports</strong> + Direct SMTP Inbox Dispatch</span>
+                    <span><strong>600 Bonus Lead Tokens</strong> + Unlimited CSV &amp; Excel Exports</span>
                   </li>
                 </ul>
               </div>
@@ -1153,7 +1153,7 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
                   LeadPulse Pro
                 </span>
                 <span className="text-[10px] font-delight font-bold px-2 py-0.5 rounded-[4px] bg-white/10 text-[#FAF8F5] border border-white/15">
-                  Unlimited Scale
+                  5,000+ Emails / mo
                 </span>
               </div>
 
@@ -1163,7 +1163,7 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
                 <span className="text-xs font-delight text-[#78716A] line-through ml-1">₹16,500+ market</span>
               </div>
               <p className="text-xs text-[#B8B0A4] mb-6 pb-5 border-b border-white/10">
-                Unrestricted commercial acquisition for high-velocity sales teams requiring dedicated worker priority, webhooks, and 100% seat allocation.
+                Unrestricted commercial email infrastructure for high-velocity teams running multi-variant campaigns and behavioral workflows.
               </p>
 
               {/* Bifurcation Breakdown */}
@@ -1174,23 +1174,23 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
                 <ul className="space-y-2.5 text-xs text-[#FAF8F5]">
                   <li className="flex items-start gap-2">
                     <Check className="w-3.5 h-3.5 text-[#E07A5F] shrink-0 mt-0.5" />
-                    <span><strong>Unlimited Saved Leads Pool</strong> &amp; 1,000+ daily extraction velocity</span>
+                    <span><strong>5,000+ Emails / Month</strong> (Unlimited inboxes &amp; custom SMTPs)</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <Check className="w-3.5 h-3.5 text-[#E07A5F] shrink-0 mt-0.5" />
-                    <span><strong>100% Registered Team Seats</strong> with shared universal tokens</span>
+                    <span><strong>8 Frameworks + Custom Reusable Template Library</strong></span>
                   </li>
                   <li className="flex items-start gap-2">
                     <Check className="w-3.5 h-3.5 text-[#E07A5F] shrink-0 mt-0.5" />
-                    <span><strong>Dedicated Headless Worker Priority</strong> (Zero queue latency)</span>
+                    <span><strong>Multi-Variant A/B/C Testing</strong> + Unlimited AI Pitch Copilot</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <Check className="w-3.5 h-3.5 text-[#E07A5F] shrink-0 mt-0.5" />
-                    <span><strong>WhatsApp &amp; SMS Pathways</strong> + 50/50 A/B Split Campaigns</span>
+                    <span><strong>Multi-Step Behavioral Journeys</strong> (Email + WhatsApp bridge)</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <Check className="w-3.5 h-3.5 text-[#E07A5F] shrink-0 mt-0.5" />
-                    <span><strong>Full Developer REST API</strong>, AES-256 Webhooks &amp; 24+ Integrations</span>
+                    <span><strong>1,500 Bonus Lead Tokens / Mo</strong> + Dedicated Worker Node</span>
                   </li>
                 </ul>
               </div>
@@ -1306,39 +1306,46 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
               </thead>
               <tbody className="divide-y divide-[#E5E0D5] font-delight">
                 <tr>
-                  <td className="py-3 px-5 font-bold text-[#191716]">Saved Leads / Token Pool Capacity</td>
-                  <td className="py-3 px-4 text-center text-[#57524B]">15 Tokens (4-day auto-refresh)</td>
-                  <td className="py-3 px-4 text-center font-bold text-[#C85A32] bg-[#C85A32]/5">600 Saved Leads</td>
-                  <td className="py-3 px-4 text-center font-bold text-[#191716]">Unlimited Saved Leads</td>
-                  <td className="py-3 px-4 text-center text-slate-400 line-through">₹4,100+/mo</td>
+                  <td className="py-3 px-5 font-bold text-[#191716]">Monthly Email Dispatch Volume</td>
+                  <td className="py-3 px-4 text-center text-[#57524B]">50 test emails / mo</td>
+                  <td className="py-3 px-4 text-center font-bold text-[#C85A32] bg-[#C85A32]/5">1,500 emails / mo (2 inboxes)</td>
+                  <td className="py-3 px-4 text-center font-bold text-[#191716]">5,000+ emails / mo (unlimited inboxes)</td>
+                  <td className="py-3 px-4 text-center text-slate-400 line-through">₹3,200+/mo</td>
                 </tr>
                 <tr>
-                  <td className="py-3 px-5 font-bold text-[#191716]">Per-Query Spatial Extraction Cap</td>
-                  <td className="py-3 px-4 text-center text-[#57524B]">10 Leads / Query</td>
-                  <td className="py-3 px-4 text-center font-bold text-[#C85A32] bg-[#C85A32]/5">20+ Batch Extraction</td>
-                  <td className="py-3 px-4 text-center font-bold text-[#191716]">1,000+ Daily Velocity</td>
-                  <td className="py-3 px-4 text-center text-slate-400">Capped Credits</td>
+                  <td className="py-3 px-5 font-bold text-[#191716]">Outreach Templates Suite</td>
+                  <td className="py-3 px-4 text-center text-[#57524B]">2 Standard Templates</td>
+                  <td className="py-3 px-4 text-center font-bold text-[#C85A32] bg-[#C85A32]/5">All 8 Link Mobility Frameworks</td>
+                  <td className="py-3 px-4 text-center font-bold text-[#191716]">8 Frameworks + Custom Reusable Library</td>
+                  <td className="py-3 px-4 text-center text-slate-400 line-through">₹4,900+/mo</td>
                 </tr>
                 <tr>
-                  <td className="py-3 px-5 font-bold text-[#191716]">Scraping Depth &amp; Domain Verification</td>
-                  <td className="py-3 px-4 text-center text-[#57524B]">Quick Scan (1 Token)</td>
-                  <td className="py-3 px-4 text-center font-bold text-[#C85A32] bg-[#C85A32]/5">Quick + Deep Multi-Page (2 Tokens)</td>
-                  <td className="py-3 px-4 text-center font-bold text-[#191716]">Priority Headless Worker</td>
-                  <td className="py-3 px-4 text-center text-slate-400">Extra Add-On</td>
+                  <td className="py-3 px-5 font-bold text-[#191716]">A/B Split Testing Capabilities</td>
+                  <td className="py-3 px-4 text-center text-red-500 font-bold">Locked</td>
+                  <td className="py-3 px-4 text-center font-bold text-emerald-700 bg-[#C85A32]/5">50/50 Split Testing Enabled</td>
+                  <td className="py-3 px-4 text-center font-bold text-emerald-700">Multi-Variant A/B/C Testing</td>
+                  <td className="py-3 px-4 text-center text-slate-400">Locked / Add-on</td>
                 </tr>
                 <tr>
-                  <td className="py-3 px-5 font-bold text-[#191716]">AI Email Copilot &amp; 8 Structural Templates</td>
-                  <td className="py-3 px-4 text-center text-[#57524B]">Studio Preview</td>
-                  <td className="py-3 px-4 text-center font-bold text-emerald-700 bg-[#C85A32]/5">Unlimited Synthesis &amp; Tags</td>
-                  <td className="py-3 px-4 text-center font-bold text-emerald-700">Unlimited + 50/50 A/B Split</td>
-                  <td className="py-3 px-4 text-center text-slate-400 line-through">₹3,100+/mo</td>
+                  <td className="py-3 px-5 font-bold text-[#191716]">AI Copilot Pitch Synthesis</td>
+                  <td className="py-3 px-4 text-center text-[#57524B]">5 pitches / mo</td>
+                  <td className="py-3 px-4 text-center font-bold text-[#C85A32] bg-[#C85A32]/5">250 pitches / mo</td>
+                  <td className="py-3 px-4 text-center font-bold text-[#191716]">Unlimited AI Generations</td>
+                  <td className="py-3 px-4 text-center text-slate-400 line-through">₹3,800+/mo</td>
                 </tr>
                 <tr>
-                  <td className="py-3 px-5 font-bold text-[#191716]">Direct SMTP, Gmail, Resend &amp; WhatsApp Bridge</td>
-                  <td className="py-3 px-4 text-center text-[#57524B]">Test Dispatch</td>
-                  <td className="py-3 px-4 text-center font-bold text-[#C85A32] bg-[#C85A32]/5">Direct Inbox SMTP + CSV Export</td>
-                  <td className="py-3 px-4 text-center font-bold text-[#191716]">Official WhatsApp + Full API</td>
-                  <td className="py-3 px-4 text-center text-slate-400 line-through">₹2,800+/mo</td>
+                  <td className="py-3 px-5 font-bold text-[#191716]">Automated Sequence Depth</td>
+                  <td className="py-3 px-4 text-center text-[#57524B]">Single one-off blast</td>
+                  <td className="py-3 px-4 text-center font-bold text-[#C85A32] bg-[#C85A32]/5">2-Step Sequence (Initial + Follow-up)</td>
+                  <td className="py-3 px-4 text-center font-bold text-[#191716]">Multi-Step Journeys + WhatsApp Bridge</td>
+                  <td className="py-3 px-4 text-center text-slate-400 line-through">₹3,500+/mo</td>
+                </tr>
+                <tr>
+                  <td className="py-3 px-5 font-bold text-[#191716]">Bonus Lead Token Pool</td>
+                  <td className="py-3 px-4 text-center text-[#57524B]">15 Tokens (4-day refresh)</td>
+                  <td className="py-3 px-4 text-center font-bold text-[#C85A32] bg-[#C85A32]/5">600 Bonus Tokens</td>
+                  <td className="py-3 px-4 text-center font-bold text-[#191716]">1,500 Bonus Tokens</td>
+                  <td className="py-3 px-4 text-center text-slate-400 line-through">₹4,000+/mo</td>
                 </tr>
                 <tr>
                   <td className="py-3 px-5 font-bold text-[#191716]">Registered Team Seats &amp; Token Sharing</td>
