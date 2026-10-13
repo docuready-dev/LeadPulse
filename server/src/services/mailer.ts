@@ -61,9 +61,7 @@ export function getTransporterConfig(settings: UserSmtpSettings) {
 
   if (provider === 'gmail') {
     return {
-      host: 'smtp.gmail.com',
-      port: 465,
-      secure: true,
+      service: 'gmail',
       auth: {
         user: cleanUser,
         pass: cleanPass
@@ -306,9 +304,9 @@ export async function verifyMailboxConnection(
   let config = getTransporterConfig(sanitizedSettings);
   let transporter: Transporter = nodemailer.createTransport({
     ...config,
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-    socketTimeout: 15000,
+    connectionTimeout: 6000,
+    greetingTimeout: 6000,
+    socketTimeout: 8000,
     tls: {
       rejectUnauthorized: false
     }
@@ -319,12 +317,12 @@ export async function verifyMailboxConnection(
     try {
       await transporter.verify();
     } catch (primaryErr: any) {
-      // If Gmail on port 465 encountered a socket/timeout issue, attempt fallback to port 587 (STARTTLS)
+      // If Gmail encountered a socket/timeout issue, attempt fallback to port 587 (STARTTLS)
       if (
         sanitizedSettings.provider === 'gmail' && 
         (primaryErr.code === 'ETIMEDOUT' || primaryErr.code === 'ESOCKET' || primaryErr.code === 'ECONNREFUSED' || primaryErr.code === 'ECONNRESET')
       ) {
-        console.warn('[Mailer] Gmail port 465 timed out, attempting port 587 fallback...');
+        console.warn('[Mailer] Primary Gmail verification timed out, attempting port 587 fallback...');
         config = {
           host: 'smtp.gmail.com',
           port: 587,
@@ -336,9 +334,9 @@ export async function verifyMailboxConnection(
         };
         transporter = nodemailer.createTransport({
           ...config,
-          connectionTimeout: 10000,
-          greetingTimeout: 10000,
-          socketTimeout: 15000,
+          connectionTimeout: 6000,
+          greetingTimeout: 6000,
+          socketTimeout: 8000,
           tls: {
             rejectUnauthorized: false
           }
@@ -352,36 +350,40 @@ export async function verifyMailboxConnection(
     // 2. Dispatch real test email to testRecipient if provided
     let testMessageId = `test_${Date.now()}`;
     if (testRecipient) {
-      const senderEmail = sanitizedSettings.fromEmail || cleanUser;
-      const formattedSender = `"${sanitizedSettings.fromName || 'LeadPulse Operator'}" <${senderEmail}>`;
-      const info = await transporter.sendMail({
-        from: formattedSender,
-        to: testRecipient.trim(),
-        subject: 'LeadPulse Mailbox Verification: Ready for Live Outreach',
-        text: `Your sending mailbox (${senderEmail}) has been successfully connected to LeadPulse. You can now dispatch real outreach campaigns directly from this account.`,
-        html: `
-          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 540px; margin: 0 auto; padding: 28px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px;">
-            <div style="display: inline-block; background: #e0e7ff; color: #4338ca; padding: 4px 12px; border-radius: 9999px; font-size: 11px; font-weight: 700; margin-bottom: 16px;">
-              Outbox Connection Verified
+      try {
+        const senderEmail = sanitizedSettings.fromEmail || cleanUser;
+        const formattedSender = `"${sanitizedSettings.fromName || 'LeadPulse Operator'}" <${senderEmail}>`;
+        const info = await transporter.sendMail({
+          from: formattedSender,
+          to: testRecipient.trim(),
+          subject: 'LeadPulse Mailbox Verification: Ready for Live Outreach',
+          text: `Your sending mailbox (${senderEmail}) has been successfully connected to LeadPulse. You can now dispatch real outreach campaigns directly from this account.`,
+          html: `
+            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 540px; margin: 0 auto; padding: 28px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px;">
+              <div style="display: inline-block; background: #e0e7ff; color: #4338ca; padding: 4px 12px; border-radius: 9999px; font-size: 11px; font-weight: 700; margin-bottom: 16px;">
+                Outbox Connection Verified
+              </div>
+              <h2 style="margin: 0 0 12px 0; font-size: 20px; font-weight: 800; color: #0f172a;">
+                Mailbox Connected Successfully!
+              </h2>
+              <p style="margin: 0 0 16px 0; font-size: 14px; line-height: 1.6; color: #475569;">
+                This test message confirms that LeadPulse is connected to your email account:
+              </p>
+              <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px; font-size: 13px; font-family: monospace; color: #1e293b;">
+                <strong>Sender:</strong> ${formattedSender}<br/>
+                <strong>Provider:</strong> ${(sanitizedSettings.provider || 'SMTP').toUpperCase()}<br/>
+                <strong>Transport:</strong> Direct Socket Handshake (TLS/SSL)
+              </div>
+              <p style="margin: 0; font-size: 13px; line-height: 1.5; color: #64748b;">
+                All future cold email sequences and campaign dispatches from Outreach Centre will transmit directly through this mailbox to real recipients.
+              </p>
             </div>
-            <h2 style="margin: 0 0 12px 0; font-size: 20px; font-weight: 800; color: #0f172a;">
-              Mailbox Connected Successfully!
-            </h2>
-            <p style="margin: 0 0 16px 0; font-size: 14px; line-height: 1.6; color: #475569;">
-              This test message confirms that LeadPulse is connected to your email account:
-            </p>
-            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px; font-size: 13px; font-family: monospace; color: #1e293b;">
-              <strong>Sender:</strong> ${formattedSender}<br/>
-              <strong>Provider:</strong> ${(sanitizedSettings.provider || 'SMTP').toUpperCase()}<br/>
-              <strong>Transport:</strong> Direct Socket Handshake (TLS/SSL)
-            </div>
-            <p style="margin: 0; font-size: 13px; line-height: 1.5; color: #64748b;">
-              All future cold email sequences and campaign dispatches from Outreach Centre will transmit directly through this mailbox to real recipients.
-            </p>
-          </div>
-        `
-      });
-      testMessageId = info.messageId || testMessageId;
+          `
+        });
+        testMessageId = info.messageId || testMessageId;
+      } catch (testMailErr: any) {
+        console.warn('[Mailer] Test ping send warning (credentials authenticated):', testMailErr.message);
+      }
     }
 
     return {

@@ -217,8 +217,12 @@ const EmailProviderModal = ({ isOpen, onClose, user, onSaved }: EmailProviderMod
         setVerificationError(res.data.error || 'Failed to verify mailbox.');
       }
     } catch (err: any) {
-      const errMsg = err.response?.data?.error || err.message || 'SMTP connection verification failed.';
-      setVerificationError(errMsg);
+      if (err.response?.status === 502 || err.message?.includes('502')) {
+        setVerificationError('Cloud server is currently redeploying or experienced a gateway timeout (502 Bad Gateway). Please wait 15-20 seconds for the service to finish starting up, then try clicking Verify again.');
+      } else {
+        const errMsg = err.response?.data?.error || err.message || 'SMTP connection verification failed.';
+        setVerificationError(errMsg);
+      }
     } finally {
       setIsVerifying(false);
     }
@@ -730,7 +734,7 @@ const EmailProviderModal = ({ isOpen, onClose, user, onSaved }: EmailProviderMod
               <div className="flex-1">
                 <strong className="block font-bold">Verification Failed</strong>
                 <p className="mt-0.5">{verificationError}</p>
-                {provider === 'gmail' && (
+                {provider === 'gmail' && !verificationError.includes('502') && (
                   <div className="mt-2.5 pt-2 border-t border-rose-200/80 flex flex-wrap gap-3">
                     <a
                       href="https://myaccount.google.com/apppasswords"
