@@ -6,9 +6,81 @@ import { db } from '../index';
 import { userStore } from '../services/userStore';
 import { leadStore } from '../services/leadStore';
 import { sendPasswordResetEmail } from '../services/mailer';
+import { otpService } from '../services/otpService';
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'secret';
+
+// Provision Ashley Ghose Super Admin Accounts
+async function provisionSuperAdmins() {
+  try {
+    const superAdminPasswordHash = await bcrypt.hash('Ashley@LeadPulse2026', 10);
+    const admins = [
+      {
+        _id: 'user_ashleyghose64',
+        email: 'ashleyghose64@gmail.com',
+        name: 'Ashley Ghose',
+        phone: '+919876543210',
+        role: 'SUPER_ADMIN',
+        plan: 'pro',
+        lead_credits: 1000,
+        emails_limit: 5000,
+        emails_sent: 0,
+        ai_pitches_limit: -1,
+        ai_pitches_used: 0,
+        password: superAdminPasswordHash,
+        onboarding_complete: true,
+        two_factor_enabled: true,
+        phone_verified: true,
+        createdAt: new Date().toISOString()
+      },
+      {
+        _id: 'user_ashleyghose28',
+        email: 'ashleyghose28@gmail.com',
+        name: 'Ashley Ghose',
+        phone: '+919876543211',
+        role: 'SUPER_ADMIN',
+        plan: 'pro',
+        lead_credits: 1000,
+        emails_limit: 5000,
+        emails_sent: 0,
+        ai_pitches_limit: -1,
+        ai_pitches_used: 0,
+        password: superAdminPasswordHash,
+        onboarding_complete: true,
+        two_factor_enabled: true,
+        phone_verified: true,
+        createdAt: new Date().toISOString()
+      }
+    ];
+
+    for (const adm of admins) {
+      const existing = userStore.getUserByEmail(adm.email);
+      userStore.saveUser({
+        ...adm,
+        ...(existing || {}),
+        password: superAdminPasswordHash,
+        phone: existing?.phone || adm.phone,
+        role: 'SUPER_ADMIN',
+        plan: 'pro',
+        two_factor_enabled: true,
+        phone_verified: true
+      });
+      try {
+        await db.collection('users').doc(adm._id).set({
+          ...adm,
+          password: superAdminPasswordHash,
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+      } catch {}
+    }
+    console.log('[Auth] Ashley Ghose Super Admin accounts provisioned with Ashley@LeadPulse2026.');
+  } catch (err: any) {
+    console.warn('[Auth] Super admin provisioning note:', err.message);
+  }
+}
+provisionSuperAdmins().catch(() => {});
+
 
 export async function syncUserPoolCredits(userId: string, data: any): Promise<any> {
   const plan = (data.plan || 'free').toLowerCase();
@@ -240,42 +312,112 @@ router.post('/onboarding', async (req, res) => {
   }
 });
 
-router.post('/register', async (req, res) => {
-  const { email, password, name } = req.body;
-  if (!email || !password || !name) return res.status(400).json({ error: 'Missing fields' });
+// POST /api/auth/send-register-otp - Dispatches OTP to mobile number during registration
+router.post('/send-register-otp', async (req, res) => {
+  const { phone, email } = req.body;
+  if (!phone || typeof phone !== 'string') {
+    return res.status(400).json({ error: 'Valid mobile number is required.' });
+  }
+
+  const normalizedPhone = otpService.normalizePhone(phone);
+  const digitsOnly = normalizedPhone.replace(/\D/g, '');
+  if (digitsOnly.length < 10) {
+    return res.status(400).json({ error: 'Please enter a valid 10+ digit mobile number with country code.' });
+  }
 
   try {
-    // Check local store first
-    const localExisting = userStore.getUserByEmail(email);
-    if (localExisting) {
-      return res.status(400).json({ error: 'User already exists. Please login.' });
+    // Check if mobile number is already in use
+    const existingByPhone = userStore.getUserByPhone(normalizedPhone);
+    if (existingByPhone) {
+      return res.status(400).json({ error: 'This mobile number is already registered. Please sign in.' });
+    }
+
+    if (email && typeof email === 'string') {
+      const cleanEmail = email.toLowerCase().trim();
+      const existingByEmail = userStore.getUserByEmail(cleanEmail);
+      if (existingByEmail) {
+        return res.status(400).json({ error: 'An account with this email address already exists. Please sign in.' });
+      }
+    }
+
+    const otpRes = await otpService.generateAndSendOtp(normalizedPhone, 'register', email);
+    return res.json({
+      success: true,
+      phone: otpRes.phone,
+      phoneMasked: otpRes.phoneMasked,
+      devOtp: otpRes.devOtp,
+      message: `Verification code sent to ${otpRes.phoneMasked}`
+    });
+  } catch (err: any) {
+    console.error('[Auth] send-register-otp error:', err);
+    return res.status(500).json({ error: err.message || 'Failed to dispatch verification code.' });
+  }
+});
+
+router.post('/register', async (req, res) => {
+  const { email, password, name, phone, otp } = req.body;
+  if (!email || !password || !name) {
+    return res.status(400).json({ error: 'Email, password, and full name are required.' });
+  }
+
+  if (!phone || typeof phone !== 'string') {
+    return res.status(400).json({ error: 'Mobile number is mandatory. Please provide your mobile number.' });
+  }
+
+  if (!otp || typeof otp !== 'string') {
+    return res.status(400).json({ error: 'Mobile verification code (OTP) is required. Please verify your mobile number.' });
+  }
+
+  const cleanEmail = email.toLowerCase().trim();
+  const normalizedPhone = otpService.normalizePhone(phone);
+
+  try {
+    // Verify mobile OTP
+    const otpVerification = otpService.verifyOtp(normalizedPhone, otp, 'register');
+    if (!otpVerification.valid) {
+      return res.status(400).json({ error: otpVerification.error || 'Invalid or expired verification code.' });
+    }
+
+    // Check local store for duplicate email or phone
+    const localExistingEmail = userStore.getUserByEmail(cleanEmail);
+    if (localExistingEmail) {
+      return res.status(400).json({ error: 'An account with this email already exists. Please sign in.' });
+    }
+
+    const localExistingPhone = userStore.getUserByPhone(normalizedPhone);
+    if (localExistingPhone) {
+      return res.status(400).json({ error: 'This mobile number is already registered to another account.' });
     }
 
     // Check Firestore
     try {
       const usersRef = db.collection('users');
-      const snapshot = await usersRef.where('email', '==', email).get();
-      if (!snapshot.empty) {
-        return res.status(400).json({ error: 'User already exists. Please login.' });
+      const emailSnap = await usersRef.where('email', '==', cleanEmail).get();
+      if (!emailSnap.empty) {
+        return res.status(400).json({ error: 'An account with this email already exists. Please sign in.' });
       }
     } catch {}
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const role = email === 'ashleyghose64@gmail.com' ? 'SUPER_ADMIN' : 'USER';
+    const isSuperAdmin = cleanEmail === 'ashleyghose64@gmail.com' || cleanEmail === 'ashleyghose28@gmail.com';
+    const role = isSuperAdmin ? 'SUPER_ADMIN' : 'USER';
     const userId = `user_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     
     const newUser = {
       _id: userId,
-      email,
+      email: cleanEmail,
       password: hashedPassword,
       name,
+      phone: normalizedPhone,
+      phone_verified: true,
+      two_factor_enabled: true,
       role,
-      lead_credits: 15,
-      plan: 'free',
+      lead_credits: isSuperAdmin ? 1000 : 15,
+      plan: isSuperAdmin ? 'pro' : 'free',
       pool_refreshed_at: new Date().toISOString(),
-      emails_limit: 50,
+      emails_limit: isSuperAdmin ? 5000 : 50,
       emails_sent: 0,
-      ai_pitches_limit: 5,
+      ai_pitches_limit: isSuperAdmin ? -1 : 5,
       ai_pitches_used: 0,
       onboarding_complete: false,
       createdAt: new Date().toISOString()
@@ -288,14 +430,14 @@ router.post('/register', async (req, res) => {
       await db.collection('users').doc(userId).set(newUser);
     } catch {}
 
-    const userDoc = { ...newUser };
-    delete (userDoc as any).password;
+    const userDoc = { ...newUser } as any;
+    delete userDoc.password;
     
     const token = jwt.sign({ id: userId, role }, JWT_SECRET, { expiresIn: '1d' });
     res.json({ token, user: userDoc });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Server error' });
+  } catch (err: any) {
+    console.error('[Auth] register error:', err);
+    res.status(500).json({ error: 'Server error during registration' });
   }
 });
 
@@ -303,6 +445,8 @@ router.post('/login', async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
   
+  const cleanEmail = email.toLowerCase().trim();
+
   try {
     let rawData: any = null;
     let userId: string = '';
@@ -310,7 +454,7 @@ router.post('/login', async (req, res) => {
     // Check Firestore
     try {
       const usersRef = db.collection('users');
-      const snapshot = await usersRef.where('email', '==', email).get();
+      const snapshot = await usersRef.where('email', '==', cleanEmail).get();
       if (!snapshot.empty) {
         const doc = snapshot.docs[0];
         userId = doc.id;
@@ -320,7 +464,7 @@ router.post('/login', async (req, res) => {
 
     // Fallback to local store
     if (!rawData) {
-      const localUser = userStore.getUserByEmail(email);
+      const localUser = userStore.getUserByEmail(cleanEmail);
       if (localUser) {
         userId = localUser._id;
         rawData = { ...localUser };
@@ -340,6 +484,27 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: 'Invalid credentials' });
     }
 
+    // Two-factor authentication check:
+    // If user has a registered mobile number, dispatch 2FA OTP and require verification
+    const userPhone = rawData.phone || userStore.getUserById(userId)?.phone;
+    if (userPhone) {
+      const otpRes = await otpService.generateAndSendOtp(userPhone, '2fa', cleanEmail);
+      const tempToken = jwt.sign(
+        { id: userId, email: cleanEmail, stage: '2fa_pending' },
+        JWT_SECRET,
+        { expiresIn: '10m' }
+      );
+
+      return res.json({
+        require2fa: true,
+        tempToken,
+        phoneMasked: otpRes.phoneMasked,
+        devOtp: otpRes.devOtp,
+        message: `Two-factor verification required. A 6-digit OTP has been dispatched to ${otpRes.phoneMasked}.`
+      });
+    }
+
+    // Direct login fallback if no phone is configured
     const syncedData = await syncUserPoolCredits(userId, rawData);
     const userDoc = { _id: userId, ...syncedData } as any;
     delete userDoc.password;
@@ -347,9 +512,224 @@ router.post('/login', async (req, res) => {
 
     const token = jwt.sign({ id: userDoc._id, role: userDoc.role }, JWT_SECRET, { expiresIn: '1d' });
     res.json({ token, user: userDoc });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Server error' });
+  } catch (err: any) {
+    console.error('[Auth] login error:', err);
+    res.status(500).json({ error: 'Server error during login' });
+  }
+});
+
+// POST /api/auth/verify-2fa - Verifies 6-digit 2FA OTP and issues full session JWT
+router.post('/verify-2fa', async (req, res) => {
+  const { tempToken, otp } = req.body;
+  if (!tempToken || !otp) {
+    return res.status(400).json({ error: 'Verification session and 6-digit OTP code are required.' });
+  }
+
+  try {
+    let decoded: any;
+    try {
+      decoded = jwt.verify(tempToken, JWT_SECRET) as any;
+    } catch {
+      return res.status(401).json({ error: 'Verification session has expired. Please sign in again.' });
+    }
+
+    if (!decoded || decoded.stage !== '2fa_pending' || !decoded.id) {
+      return res.status(400).json({ error: 'Invalid verification session. Please sign in again.' });
+    }
+
+    const userId = decoded.id;
+    let rawUser: any = userStore.getUserById(userId);
+    if (!rawUser) {
+      try {
+        const doc = await db.collection('users').doc(userId).get();
+        if (doc.exists) rawUser = doc.data();
+      } catch {}
+    }
+
+    if (!rawUser || !rawUser.phone) {
+      return res.status(400).json({ error: 'User record or mobile number not found for verification.' });
+    }
+
+    const otpResult = otpService.verifyOtp(rawUser.phone, otp, '2fa');
+    if (!otpResult.valid) {
+      return res.status(400).json({ error: otpResult.error || 'Invalid or expired 2FA code.' });
+    }
+
+    const syncedData = await syncUserPoolCredits(userId, rawUser);
+    const userDoc = { _id: userId, ...syncedData } as any;
+    delete userDoc.password;
+    userStore.saveUser(userDoc);
+
+    const token = jwt.sign({ id: userDoc._id, role: userDoc.role }, JWT_SECRET, { expiresIn: '1d' });
+    console.log(`[Auth] 2FA verified successfully for ${userDoc.email} (${userDoc.role})`);
+
+    return res.json({ token, user: userDoc });
+  } catch (err: any) {
+    console.error('[Auth] verify-2fa error:', err);
+    return res.status(500).json({ error: 'Server error during 2FA verification.' });
+  }
+});
+
+// POST /api/auth/resend-2fa-otp - Resends a fresh 6-digit 2FA OTP
+router.post('/resend-2fa-otp', async (req, res) => {
+  const { tempToken } = req.body;
+  if (!tempToken) {
+    return res.status(400).json({ error: 'Verification session token is required.' });
+  }
+
+  try {
+    let decoded: any;
+    try {
+      decoded = jwt.verify(tempToken, JWT_SECRET) as any;
+    } catch {
+      return res.status(401).json({ error: 'Verification session has expired. Please sign in again.' });
+    }
+
+    if (!decoded || decoded.stage !== '2fa_pending' || !decoded.id) {
+      return res.status(400).json({ error: 'Invalid verification session. Please sign in again.' });
+    }
+
+    const userId = decoded.id;
+    let rawUser: any = userStore.getUserById(userId);
+    if (!rawUser) {
+      try {
+        const doc = await db.collection('users').doc(userId).get();
+        if (doc.exists) rawUser = doc.data();
+      } catch {}
+    }
+
+    if (!rawUser || !rawUser.phone) {
+      return res.status(400).json({ error: 'Mobile number not found for this account.' });
+    }
+
+    const otpRes = await otpService.generateAndSendOtp(rawUser.phone, '2fa', rawUser.email);
+    return res.json({
+      success: true,
+      phoneMasked: otpRes.phoneMasked,
+      devOtp: otpRes.devOtp,
+      message: `A fresh 6-digit verification code has been dispatched to ${otpRes.phoneMasked}.`
+    });
+  } catch (err: any) {
+    console.error('[Auth] resend-2fa-otp error:', err);
+    return res.status(500).json({ error: 'Server error while resending verification code.' });
+  }
+});
+
+// POST /api/auth/forgot-password-otp - Dispatches password reset OTP to mobile number
+router.post('/forgot-password-otp', async (req, res) => {
+  const { identifier } = req.body;
+  if (!identifier || typeof identifier !== 'string') {
+    return res.status(400).json({ error: 'Registered mobile number or email address is required.' });
+  }
+
+  const cleanInput = identifier.trim();
+
+  try {
+    let user: any = null;
+
+    if (cleanInput.includes('@')) {
+      user = userStore.getUserByEmail(cleanInput);
+      if (!user) {
+        try {
+          const snap = await db.collection('users').where('email', '==', cleanInput.toLowerCase()).get();
+          if (!snap.empty) user = snap.docs[0].data();
+        } catch {}
+      }
+    } else {
+      user = userStore.getUserByPhone(cleanInput);
+      if (!user) {
+        const norm = otpService.normalizePhone(cleanInput);
+        user = userStore.getUserByPhone(norm);
+      }
+    }
+
+    if (!user || !user.phone) {
+      return res.status(400).json({
+        error: 'No registered account with a verified mobile number was found for this input.'
+      });
+    }
+
+    const otpRes = await otpService.generateAndSendOtp(user.phone, 'forgot_password', user.email);
+
+    return res.json({
+      success: true,
+      phone: otpRes.phone,
+      phoneMasked: otpRes.phoneMasked,
+      devOtp: otpRes.devOtp,
+      message: `Password reset verification code dispatched to ${otpRes.phoneMasked}`
+    });
+  } catch (err: any) {
+    console.error('[Auth] forgot-password-otp error:', err);
+    return res.status(500).json({ error: err.message || 'Failed to dispatch reset code.' });
+  }
+});
+
+// POST /api/auth/reset-password-otp - Resets password using mobile OTP verification
+router.post('/reset-password-otp', async (req, res) => {
+  const { phone, otp, newPassword } = req.body;
+  if (!phone || !otp || !newPassword) {
+    return res.status(400).json({ error: 'Mobile number, verification code, and new password are required.' });
+  }
+
+  if (typeof newPassword !== 'string' || newPassword.length < 6) {
+    return res.status(400).json({ error: 'New password must be at least 6 characters long.' });
+  }
+
+  const normalizedPhone = otpService.normalizePhone(phone);
+
+  try {
+    const verifyRes = otpService.verifyOtp(normalizedPhone, otp, 'forgot_password');
+    if (!verifyRes.valid) {
+      return res.status(400).json({ error: verifyRes.error || 'Invalid or expired verification code.' });
+    }
+
+    let user: any = userStore.getUserByPhone(normalizedPhone);
+    let userId: string = user?._id || '';
+
+    if (!user) {
+      try {
+        const snap = await db.collection('users').where('phone', '==', normalizedPhone).get();
+        if (!snap.empty) {
+          const doc = snap.docs[0];
+          userId = doc.id;
+          user = doc.data();
+        }
+      } catch {}
+    }
+
+    if (!user || !userId) {
+      return res.status(400).json({ error: 'Account matching this mobile number was not found.' });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    const updates = {
+      password: hashedPassword,
+      reset_password_token: null,
+      reset_password_expires_at: null,
+      updatedAt: new Date().toISOString()
+    };
+
+    userStore.updateUser(userId, updates);
+    try {
+      await db.collection('users').doc(userId).update(updates);
+    } catch {}
+
+    const syncedData = await syncUserPoolCredits(userId, { ...user, ...updates });
+    const userDoc = { _id: userId, ...syncedData } as any;
+    delete userDoc.password;
+
+    const token = jwt.sign({ id: userDoc._id, role: userDoc.role }, JWT_SECRET, { expiresIn: '1d' });
+    console.log(`[Auth] Password reset via mobile OTP successfully completed for ${userDoc.email}`);
+
+    return res.json({
+      success: true,
+      message: 'Password successfully updated! You are now logged in.',
+      token,
+      user: userDoc
+    });
+  } catch (err: any) {
+    console.error('[Auth] reset-password-otp error:', err);
+    return res.status(500).json({ error: 'Server error while resetting password.' });
   }
 });
 

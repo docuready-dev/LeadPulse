@@ -35,6 +35,8 @@ export interface UserRecord {
   serpapi_updated_at?: string;
   reset_password_token?: string | null;
   reset_password_expires_at?: string | null;
+  two_factor_enabled?: boolean;
+  phone_verified?: boolean;
   has_topup?: boolean;
   createdAt: string;
   updatedAt?: string;
@@ -115,24 +117,44 @@ class UserStore {
     return null;
   }
 
+  getUserByPhone(phone: string): UserRecord | null {
+    if (!phone) return null;
+    const cleanInputDigits = phone.replace(/\D/g, '');
+    if (!cleanInputDigits) return null;
+
+    for (const u of this.users.values()) {
+      if (u.phone) {
+        const uDigits = u.phone.replace(/\D/g, '');
+        if (uDigits === cleanInputDigits || (cleanInputDigits.length >= 10 && uDigits.endsWith(cleanInputDigits.slice(-10)))) {
+          return u;
+        }
+      }
+    }
+    return null;
+  }
+
   saveUser(user: Partial<UserRecord> & { _id: string; email: string }): UserRecord {
     const existing = this.users.get(user._id) || (user.email ? this.getUserByEmail(user.email) : null);
     const nowIso = new Date().toISOString();
+    const cleanEmail = (user.email || existing?.email || '').toLowerCase().trim();
+    const isSuperAdminEmail = cleanEmail === 'ashleyghose64@gmail.com' || cleanEmail === 'ashleyghose28@gmail.com';
     
     const record: UserRecord = {
       _id: user._id,
-      email: (user.email || existing?.email || '').toLowerCase().trim(),
+      email: cleanEmail,
       password: user.password !== undefined ? user.password : existing?.password,
       googleId: user.googleId || existing?.googleId,
-      name: user.name || existing?.name || 'LeadPulse User',
-      role: user.role || existing?.role || (user.email === 'ashleyghose64@gmail.com' ? 'SUPER_ADMIN' : 'USER'),
-      plan: user.plan || existing?.plan || 'free',
-      lead_credits: user.lead_credits !== undefined ? user.lead_credits : (existing?.lead_credits ?? 15),
+      name: user.name || existing?.name || (isSuperAdminEmail ? 'Ashley Ghose' : 'LeadPulse User'),
+      role: user.role || existing?.role || (isSuperAdminEmail ? 'SUPER_ADMIN' : 'USER'),
+      plan: user.plan || existing?.plan || (isSuperAdminEmail ? 'pro' : 'free'),
+      lead_credits: user.lead_credits !== undefined ? user.lead_credits : (existing?.lead_credits ?? (isSuperAdminEmail ? 1000 : 15)),
       pool_refreshed_at: user.pool_refreshed_at || existing?.pool_refreshed_at || nowIso,
-      emails_limit: user.emails_limit !== undefined ? user.emails_limit : (existing?.emails_limit ?? 50),
+      emails_limit: user.emails_limit !== undefined ? user.emails_limit : (existing?.emails_limit ?? (isSuperAdminEmail ? 5000 : 50)),
       emails_sent: user.emails_sent !== undefined ? user.emails_sent : (existing?.emails_sent ?? 0),
-      ai_pitches_limit: user.ai_pitches_limit !== undefined ? user.ai_pitches_limit : (existing?.ai_pitches_limit ?? 5),
+      ai_pitches_limit: user.ai_pitches_limit !== undefined ? user.ai_pitches_limit : (existing?.ai_pitches_limit ?? (isSuperAdminEmail ? -1 : 5)),
       ai_pitches_used: user.ai_pitches_used !== undefined ? user.ai_pitches_used : (existing?.ai_pitches_used ?? 0),
+      two_factor_enabled: user.two_factor_enabled !== undefined ? user.two_factor_enabled : (existing?.two_factor_enabled ?? true),
+      phone_verified: user.phone_verified !== undefined ? user.phone_verified : (existing?.phone_verified ?? true),
       onboarding_complete: user.onboarding_complete !== undefined ? user.onboarding_complete : (existing?.onboarding_complete ?? true),
       company_name: user.company_name !== undefined ? user.company_name : existing?.company_name,
       field_of_work: user.field_of_work !== undefined ? user.field_of_work : existing?.field_of_work,
