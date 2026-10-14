@@ -152,11 +152,20 @@ export async function verifyMailboxConnection(
       err.message?.includes('535') ||
       err.message?.includes('Username and Password not accepted')
     ) {
-      friendlyMessage = 'Authentication failed (535): Invalid SMTP username or password for this server.';
+      const lowerHost = host.toLowerCase();
+      if (lowerHost.includes('gmail.com') || lowerHost.includes('google')) {
+        friendlyMessage = 'Authentication failed (535): Google Workspace and Gmail require a 16-character Google App Password (not your normal Google password). Generate one in Google Account > Security > 2-Step Verification > App Passwords.';
+      } else if (lowerHost.includes('zoho.com')) {
+        friendlyMessage = 'Authentication failed (535): Zoho Mail requires an Application-Specific Password. Generate one in Zoho Accounts (accounts.zoho.com) > Security > App Passwords.';
+      } else if (lowerHost.includes('office365') || lowerHost.includes('outlook')) {
+        friendlyMessage = 'Authentication failed (535): Invalid Microsoft credentials, or Authenticated Client SMTP is disabled in your Microsoft 365 Admin Center for this mailbox.';
+      } else {
+        friendlyMessage = 'Authentication failed (535): Invalid SMTP username or password. Ensure you are using your full email address as the username.';
+      }
     } else if (err.code === 'ETIMEDOUT' || err.code === 'ESOCKET') {
-      friendlyMessage = `Connection timed out while connecting to ${host}:${port}. Please verify your server address, port (587 or 465), and firewall settings.`;
+      friendlyMessage = `Connection timed out while connecting to ${host}:${port}. Try switching between Port 587 (STARTTLS) and Port 465 (SSL/TLS), or check if your network/host firewall blocks outbound mail ports.`;
     } else if (err.code === 'ENOTFOUND') {
-      friendlyMessage = `Could not resolve SMTP hostname (${host}). Please check the server address.`;
+      friendlyMessage = `Could not resolve SMTP hostname (${host}). Please check the server address (e.g. mail.yourdomain.com).`;
     }
 
     return {

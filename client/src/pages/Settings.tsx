@@ -6,10 +6,11 @@ import {
   User, Mail, Server, Shield, 
   CreditCard, Download, Check,
   Sparkles, Save, CheckCircle2, AlertCircle,
-  MessageCircle, Zap, Lock
+  MessageCircle, Zap, Lock, BookOpen
 } from 'lucide-react';
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
+import EmailProviderModal from '../components/EmailProviderModal';
 
 type SettingsTab = 'profile' | 'smtp' | 'outreach' | 'billing' | 'data';
 
@@ -19,6 +20,7 @@ const Settings = () => {
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
 
   // Profile Form State
   const [name, setName] = useState(user?.name || '');
@@ -433,14 +435,91 @@ const Settings = () => {
           {/* TAB 2: MAIL DELIVERY & SMTP */}
           {activeTab === 'smtp' && (
             <div className="bg-white rounded-md border border-slate-200 p-5 sm:p-6 shadow-none space-y-5">
-              <div className="flex items-start justify-between">
+              <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900">Direct-to-Inbox Mail Transport Configuration</h3>
-                  <p className="text-xs text-slate-500">Connect your custom SMTP server (SendGrid, Mailgun, Amazon SES, Google Workspace) to route outbound email campaigns.</p>
+                  <h3 className="text-sm font-bold text-slate-900 font-delight">Outbox Mail Transport Configuration</h3>
+                  <p className="text-xs text-slate-500 font-delight">Connect your standard outbound SMTP server or custom domain to dispatch verified outreach campaigns.</p>
                 </div>
-                <span className="text-[10px] font-delight font-semibold bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-sm border border-emerald-200">
-                  SMTP Engine Connected
-                </span>
+                <button
+                  type="button"
+                  onClick={() => setIsEmailModalOpen(true)}
+                  className="px-3 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-delight font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+                >
+                  <Server className="w-3.5 h-3.5 text-indigo-600" />
+                  <span>Interactive Outbox Setup &amp; Test</span>
+                </button>
+              </div>
+
+              {/* Domain Preset Selector & Setup Guide */}
+              <div className="p-3.5 bg-slate-50/80 rounded-xl border border-slate-200 space-y-2.5 font-delight">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                    <BookOpen className="w-3.5 h-3.5 text-indigo-600" />
+                    <span>Domain Quick Presets &amp; Setup Guidelines</span>
+                  </span>
+                  <span className="text-[11px] text-slate-500 font-medium">Click to auto-apply recommended host &amp; port</span>
+                </div>
+
+                <div className="flex flex-wrap gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const domain = (fromEmail || smtpUser || user?.email || '').split('@')[1] || 'yourdomain.com';
+                      setSmtpHost(`mail.${domain}`);
+                      setSmtpPort('587');
+                    }}
+                    className="px-2.5 py-1 bg-white hover:bg-indigo-50 border border-slate-200 text-slate-700 rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                  >
+                    Custom Domain (mail.domain:587)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSmtpHost('smtp.gmail.com');
+                      setSmtpPort('587');
+                    }}
+                    className="px-2.5 py-1 bg-white hover:bg-indigo-50 border border-slate-200 text-slate-700 rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                  >
+                    Google Workspace (smtp.gmail.com:587)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSmtpHost('smtp.office365.com');
+                      setSmtpPort('587');
+                    }}
+                    className="px-2.5 py-1 bg-white hover:bg-indigo-50 border border-slate-200 text-slate-700 rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                  >
+                    Microsoft 365 (smtp.office365.com:587)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSmtpHost('smtppro.zoho.com');
+                      setSmtpPort('465');
+                    }}
+                    className="px-2.5 py-1 bg-white hover:bg-indigo-50 border border-slate-200 text-slate-700 rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                  >
+                    Zoho Mail (smtppro.zoho.com:465)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSmtpHost('smtp.sendgrid.net');
+                      setSmtpPort('587');
+                    }}
+                    className="px-2.5 py-1 bg-white hover:bg-indigo-50 border border-slate-200 text-slate-700 rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                  >
+                    Cloud Relay (smtp.sendgrid.net:587)
+                  </button>
+                </div>
+
+                <div className="text-[11px] text-slate-600 leading-relaxed bg-white p-3 rounded-lg border border-slate-200/60 space-y-1.5">
+                  <p><strong>Google Workspace / Gmail:</strong> Requires a 16-character Google App Password (not your regular login password). Generate in Google Account &gt; Security &gt; 2-Step Verification &gt; App Passwords.</p>
+                  <p><strong>Microsoft 365 / Outlook:</strong> Use Port 587 (STARTTLS). Corporate accounts must have Authenticated Client SMTP enabled in Microsoft 365 Admin Center.</p>
+                  <p><strong>Zoho Mail:</strong> Custom domains use smtppro.zoho.com on Port 465 (SSL/TLS). Requires a Zoho Application-Specific Password.</p>
+                  <p><strong>Custom Domains (cPanel / Webmail):</strong> Username is always your full email address (e.g. name@yourdomain.com). Default host is usually mail.yourdomain.com on Port 587 or 465.</p>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
@@ -739,6 +818,14 @@ const Settings = () => {
 
         </div>
       </div>
+
+      {/* Outbox Mail Settings & Domain Instructions Modal */}
+      <EmailProviderModal
+        isOpen={isEmailModalOpen}
+        onClose={() => setIsEmailModalOpen(false)}
+        user={user}
+        onSaved={() => {}}
+      />
     </div>
   );
 };
