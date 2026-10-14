@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   X, Check, Copy, MessageCircle, 
   ExternalLink, Calendar, Clock, Video, 
-  User, Building, Phone, Mail, Edit3, Sparkles, CheckCheck
+  User, Building, Phone, Mail, Edit3, Sparkles, CheckCheck,
+  RotateCcw, SlidersHorizontal, Plus
 } from 'lucide-react';
 
 interface AppointmentMobileWhatsAppModalProps {
@@ -11,6 +12,55 @@ interface AppointmentMobileWhatsAppModalProps {
   appointment: any;
   user?: any;
 }
+
+type MessagePreset = 'standard' | 'concise' | 'formal';
+
+const generateCleanMessage = (
+  preset: MessagePreset,
+  clientName: string,
+  serviceName: string,
+  hostName: string,
+  formattedDate: string,
+  timeSlot: string,
+  meetLink: string
+): string => {
+  if (preset === 'concise') {
+    return `Hi ${clientName}, confirmation for our scheduled session:
+
+Service: ${serviceName}
+Date: ${formattedDate}
+Time: ${timeSlot}
+${meetLink ? `Meeting Link: ${meetLink}` : 'Mode: Direct Phone / Video Consultation'}
+
+Looking forward to speaking with you!`;
+  }
+
+  if (preset === 'formal') {
+    return `Dear ${clientName},
+
+This is a confirmation of our scheduled consultation.
+
+Subject: ${serviceName}
+Host: ${hostName}
+Date: ${formattedDate}
+Time: ${timeSlot}
+${meetLink ? `Meeting Link: ${meetLink}` : 'Mode: Direct Phone / Video Consultation'}
+
+Please let us know if you need to reschedule or have any questions in advance.`;
+  }
+
+  // Standard (Default Clean Format - 100% icon-free)
+  return `Hi ${clientName},
+
+Your appointment for ${serviceName} with ${hostName} has been confirmed.
+
+Date: ${formattedDate}
+Time: ${timeSlot}
+Topic: ${serviceName}
+${meetLink ? `Meeting Link: ${meetLink}` : 'Mode: Direct Phone / Video Consultation'}
+
+Looking forward to our conversation! If you need to make any changes, feel free to reply right here.`;
+};
 
 const AppointmentMobileWhatsAppModal = ({
   isOpen,
@@ -22,37 +72,33 @@ const AppointmentMobileWhatsAppModal = ({
 
   const clientName = appointment.customerName || appointment.leadName || appointment.businessName || 'Valued Client';
   const rawPhone = appointment.customerPhone || appointment.leadPhone || appointment.phone || '';
-  const [phoneNumber, setPhoneNumber] = useState(rawPhone);
-  const [isEditingMessage, setIsEditingMessage] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const serviceName = appointment.serviceName || appointment.title || 'Strategy Consultation';
+  const hostName = user?.company_name || user?.name || 'LeadPulse';
+  const meetLink = appointment.meetLink || '';
 
-  // Formatted date and time strings
   const formattedDate = appointment.appointmentDate 
     ? new Date(appointment.appointmentDate).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' })
     : 'Upcoming Scheduled Date';
 
   const timeSlot = appointment.timeSlot || 'Scheduled Time';
-  const serviceName = appointment.serviceName || appointment.title || 'Strategy Consultation';
-  const hostName = user?.company_name || user?.name || 'LeadPulse';
-  const meetLink = appointment.meetLink || '';
 
-  // Default pretyped WhatsApp message template
-  const defaultMessage = `Hi ${clientName}! 👋
+  const [activePreset, setActivePreset] = useState<MessagePreset>('standard');
+  const [phoneNumber, setPhoneNumber] = useState(rawPhone);
+  const [customMessage, setCustomMessage] = useState('');
+  const [isEditingMessage, setIsEditingMessage] = useState(false);
+  const [copied, setCopied] = useState(false);
 
-Your appointment for ${serviceName} with ${hostName} has been confirmed!
-
-📅 Date: ${formattedDate}
-⏰ Time: ${timeSlot}
-💼 Topic: ${serviceName}${meetLink ? `\n📍 Meeting Link: ${meetLink}` : '\n📍 Mode: Direct Phone / Video Consultation'}
-
-Looking forward to our conversation! If you need to make any changes, feel free to reply right here.`;
-
-  const [customMessage, setCustomMessage] = useState(defaultMessage);
+  useEffect(() => {
+    if (appointment) {
+      setPhoneNumber(rawPhone);
+      setCustomMessage(generateCleanMessage(activePreset, clientName, serviceName, hostName, formattedDate, timeSlot, meetLink));
+    }
+  }, [appointment, user, activePreset, clientName, serviceName, hostName, formattedDate, timeSlot, meetLink, rawPhone]);
 
   const cleanPhone = phoneNumber.replace(/[^0-9]/g, '');
 
   const handleLaunchWhatsApp = () => {
-    const textToSend = customMessage.trim() || defaultMessage;
+    const textToSend = customMessage.trim() || generateCleanMessage(activePreset, clientName, serviceName, hostName, formattedDate, timeSlot, meetLink);
     const url = cleanPhone
       ? `https://wa.me/${cleanPhone}?text=${encodeURIComponent(textToSend)}`
       : `https://wa.me/?text=${encodeURIComponent(textToSend)}`;
@@ -60,14 +106,24 @@ Looking forward to our conversation! If you need to make any changes, feel free 
   };
 
   const handleCopyMessage = () => {
-    navigator.clipboard.writeText(customMessage.trim() || defaultMessage);
+    const textToCopy = customMessage.trim() || generateCleanMessage(activePreset, clientName, serviceName, hostName, formattedDate, timeSlot, meetLink);
+    navigator.clipboard.writeText(textToCopy);
     setCopied(true);
     setTimeout(() => setCopied(false), 2400);
   };
 
+  const handleResetToPreset = (preset: MessagePreset) => {
+    setActivePreset(preset);
+    setCustomMessage(generateCleanMessage(preset, clientName, serviceName, hostName, formattedDate, timeSlot, meetLink));
+  };
+
+  const handleInsertTag = (tagText: string) => {
+    setCustomMessage(prev => prev + ' ' + tagText);
+  };
+
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-3 sm:p-4 overflow-y-auto animate-in fade-in duration-150 font-sans">
-      <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-4xl shadow-2xl overflow-hidden flex flex-col max-h-[94vh] my-auto">
+      <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-5xl shadow-2xl overflow-hidden flex flex-col max-h-[95vh] my-auto">
         
         {/* Modal Top Header */}
         <div className="px-5 py-4 bg-gradient-to-r from-emerald-600 via-teal-600 to-indigo-700 text-white flex items-center justify-between">
@@ -85,7 +141,7 @@ Looking forward to our conversation! If you need to make any changes, feel free 
                 </span>
               </div>
               <p className="text-xs text-emerald-100">
-                Review appointment details and send pre-typed confirmation directly to {clientName} via WhatsApp.
+                Review appointment details, customize pre-typed message formatting, and dispatch cleanly to {clientName} via WhatsApp.
               </p>
             </div>
           </div>
@@ -99,11 +155,13 @@ Looking forward to our conversation! If you need to make any changes, feel free 
           </button>
         </div>
 
-        {/* Modal Body: Two Columns (Left: Appointment Details, Right: Smartphone Mobile Screen) */}
+        {/* Modal Body: Two Columns (Left: Details & Format Editor, Right: Smartphone Mobile Screen) */}
         <div className="p-5 sm:p-6 overflow-y-auto custom-scrollbar grid grid-cols-1 lg:grid-cols-12 gap-6 bg-[#FAF8F5]">
           
-          {/* LEFT COLUMN: APPOINTMENT DETAILS (Col 5) */}
-          <div className="lg:col-span-5 space-y-4">
+          {/* LEFT COLUMN: APPOINTMENT DETAILS & MESSAGE FORMAT EDITOR (Col 6) */}
+          <div className="lg:col-span-6 space-y-4">
+            
+            {/* Appointment Summary Card */}
             <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs space-y-3 font-delight">
               <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
@@ -125,7 +183,7 @@ Looking forward to our conversation! If you need to make any changes, feel free 
                 </div>
               </div>
 
-              <div className="space-y-2 pt-1 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 text-xs">
                 <div className="flex items-start gap-2.5 p-2.5 rounded-xl bg-slate-50 border border-slate-100">
                   <Calendar className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
                   <div>
@@ -142,9 +200,9 @@ Looking forward to our conversation! If you need to make any changes, feel free 
                   </div>
                 </div>
 
-                <div className="flex items-start gap-2.5 p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                <div className="flex items-start gap-2.5 p-2.5 rounded-xl bg-slate-50 border border-slate-100 sm:col-span-2">
                   <User className="w-4 h-4 text-teal-600 shrink-0 mt-0.5" />
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <div className="text-[10px] uppercase font-bold text-slate-400">Client / Attendee</div>
                     <div className="font-bold text-slate-800 truncate">{clientName}</div>
                     {appointment.customerEmail && (
@@ -157,7 +215,7 @@ Looking forward to our conversation! If you need to make any changes, feel free 
                 </div>
 
                 {meetLink && (
-                  <div className="flex items-start gap-2.5 p-2.5 rounded-xl bg-indigo-50/70 border border-indigo-200">
+                  <div className="flex items-start gap-2.5 p-2.5 rounded-xl bg-indigo-50/70 border border-indigo-200 sm:col-span-2">
                     <Video className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
                     <div className="min-w-0">
                       <div className="text-[10px] uppercase font-bold text-indigo-600">Video Room Link</div>
@@ -198,13 +256,138 @@ Looking forward to our conversation! If you need to make any changes, feel free 
                 />
               </div>
               <p className="text-[10px] text-slate-400">
-                Include country code (e.g. +91 for India, +1 for US) for direct 1-click dispatch.
+                Include country code for direct 1-click dispatch.
               </p>
             </div>
+
+            {/* Message Format & Content Editor */}
+            <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs space-y-3 font-delight">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                <div className="flex items-center gap-1.5">
+                  <SlidersHorizontal className="w-4 h-4 text-indigo-600" />
+                  <span className="text-xs font-bold text-slate-800">Edit Message Format</span>
+                </div>
+                <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                  Clean Format (No Icons)
+                </span>
+              </div>
+
+              {/* Preset Format Selectors */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                  Format Style
+                </label>
+                <div className="grid grid-cols-3 gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => handleResetToPreset('standard')}
+                    className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold text-center transition-all cursor-pointer border ${
+                      activePreset === 'standard'
+                        ? 'bg-indigo-50 border-indigo-300 text-indigo-700 shadow-xs'
+                        : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    Standard
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleResetToPreset('concise')}
+                    className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold text-center transition-all cursor-pointer border ${
+                      activePreset === 'concise'
+                        ? 'bg-indigo-50 border-indigo-300 text-indigo-700 shadow-xs'
+                        : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    Short &amp; Direct
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleResetToPreset('formal')}
+                    className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold text-center transition-all cursor-pointer border ${
+                      activePreset === 'formal'
+                        ? 'bg-indigo-50 border-indigo-300 text-indigo-700 shadow-xs'
+                        : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    Executive
+                  </button>
+                </div>
+              </div>
+
+              {/* Message Textarea */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                    Message Body
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => handleResetToPreset(activePreset)}
+                    className="text-[11px] font-semibold text-slate-500 hover:text-indigo-600 flex items-center gap-1 cursor-pointer transition-colors"
+                    title="Reset message to selected format style"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    <span>Reset</span>
+                  </button>
+                </div>
+                <textarea
+                  rows={6}
+                  value={customMessage}
+                  onChange={(e) => setCustomMessage(e.target.value)}
+                  placeholder="Enter WhatsApp pre-typed message..."
+                  className="w-full p-2.5 rounded-xl border border-slate-300 text-xs font-sans text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 leading-relaxed resize-y bg-slate-50/50 font-medium"
+                />
+              </div>
+
+              {/* Quick Field Insertion Chips */}
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5">
+                  Quick Insert Field
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => handleInsertTag(`Date: ${formattedDate}`)}
+                    className="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md text-[11px] font-medium border border-slate-200 flex items-center gap-1 cursor-pointer"
+                  >
+                    <Plus className="w-3 h-3 text-slate-500" />
+                    <span>Date</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleInsertTag(`Time: ${timeSlot}`)}
+                    className="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md text-[11px] font-medium border border-slate-200 flex items-center gap-1 cursor-pointer"
+                  >
+                    <Plus className="w-3 h-3 text-slate-500" />
+                    <span>Time</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleInsertTag(`Topic: ${serviceName}`)}
+                    className="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md text-[11px] font-medium border border-slate-200 flex items-center gap-1 cursor-pointer"
+                  >
+                    <Plus className="w-3 h-3 text-slate-500" />
+                    <span>Topic</span>
+                  </button>
+                  {meetLink && (
+                    <button
+                      type="button"
+                      onClick={() => handleInsertTag(`Meeting Link: ${meetLink}`)}
+                      className="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md text-[11px] font-medium border border-slate-200 flex items-center gap-1 cursor-pointer"
+                    >
+                      <Plus className="w-3 h-3 text-slate-500" />
+                      <span>Link</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+            </div>
+
           </div>
 
-          {/* RIGHT COLUMN: SMARTPHONE MOBILE-VIEW SCREEN (Col 7) */}
-          <div className="lg:col-span-7 flex flex-col items-center justify-center">
+          {/* RIGHT COLUMN: SMARTPHONE MOBILE-VIEW SCREEN (Col 6) */}
+          <div className="lg:col-span-6 flex flex-col items-center justify-center">
             
             {/* The Smartphone Frame Container */}
             <div className="w-full max-w-[340px] bg-slate-900 p-3 rounded-[44px] shadow-2xl border-4 border-slate-800 relative">
@@ -215,7 +398,7 @@ Looking forward to our conversation! If you need to make any changes, feel free 
               </div>
 
               {/* Smartphone Inner Screen Canvas */}
-              <div className="bg-[#ECE5DD] rounded-[34px] overflow-hidden flex flex-col h-[510px] border border-slate-700 relative text-slate-900 shadow-inner">
+              <div className="bg-[#ECE5DD] rounded-[34px] overflow-hidden flex flex-col h-[520px] border border-slate-700 relative text-slate-900 shadow-inner">
                 
                 {/* Mobile Top Status Bar */}
                 <div className="px-5 pt-3 pb-1 flex items-center justify-between text-[10px] font-bold text-slate-800 z-10 select-none bg-slate-900 text-white">
@@ -261,10 +444,10 @@ Looking forward to our conversation! If you need to make any changes, feel free 
                     
                     {isEditingMessage ? (
                       <textarea
-                        rows={8}
+                        rows={9}
                         value={customMessage}
                         onChange={(e) => setCustomMessage(e.target.value)}
-                        className="w-full bg-white/90 p-2 rounded-lg border border-emerald-300 text-[11px] font-sans outline-none focus:ring-1 focus:ring-emerald-500 resize-none"
+                        className="w-full bg-white/90 p-2 rounded-lg border border-emerald-300 text-[11px] font-sans outline-none focus:ring-1 focus:ring-emerald-500 resize-none leading-relaxed"
                       />
                     ) : (
                       <div className="whitespace-pre-wrap leading-relaxed font-sans text-slate-800">
@@ -332,7 +515,7 @@ Looking forward to our conversation! If you need to make any changes, feel free 
                   className="py-2 px-3 bg-white hover:bg-slate-50 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer transition-colors shadow-2xs"
                 >
                   <Edit3 className="w-3.5 h-3.5 text-indigo-600" />
-                  <span>{isEditingMessage ? 'Preview View' : 'Edit Text'}</span>
+                  <span>{isEditingMessage ? 'Preview in Phone' : 'Edit in Phone'}</span>
                 </button>
               </div>
             </div>
@@ -344,7 +527,7 @@ Looking forward to our conversation! If you need to make any changes, feel free 
         <div className="px-5 py-3.5 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs font-delight">
           <div className="flex items-center gap-1.5 text-slate-500">
             <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-            <span>LeadPulse Direct WhatsApp Dispatch with Pre-typed Scheduling Context</span>
+            <span>LeadPulse Direct WhatsApp Dispatch with Clean, Icon-Free Pre-typed Message</span>
           </div>
 
           <button
