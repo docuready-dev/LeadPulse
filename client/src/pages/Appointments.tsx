@@ -12,11 +12,14 @@ import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
 import BookingWidget from '../components/BookingWidget';
+import AppointmentMobileWhatsAppModal from '../components/AppointmentMobileWhatsAppModal';
 
 const Appointments = () => {
   const { user } = useStore();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'scheduler' | 'appointments' | 'pipeline' | 'setup'>('scheduler');
+  const [activeTab, setActiveTab] = useState<'scheduler' | 'appointments' | 'pipeline'>('scheduler');
+  const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
+  const [selectedAppointmentForModal, setSelectedAppointmentForModal] = useState<any | null>(null);
   const [leads, setLeads] = useState<any[]>([]);
   const [appointmentsList, setAppointmentsList] = useState<any[]>([]);
   const [copiedLink, setCopiedLink] = useState(false);
@@ -93,10 +96,10 @@ const Appointments = () => {
       <Sidebar />
 
       <div className="flex-1 flex flex-col h-full min-h-0 overflow-hidden">
-        <Header title="Google Calendar Booking Engine & Appointment Hub" />
+        <Header title="LeadPulse Calendar &amp; Appointments Hub" />
 
-        <main className="flex-1 min-h-0 overflow-y-auto p-6 sm:p-8 custom-scrollbar">
-          <div className="max-w-[1360px] mx-auto space-y-6 pb-24">
+        <main className="flex-1 min-h-0 overflow-y-auto p-6 sm:p-8 custom-scrollbar overscroll-y-contain">
+          <div className="max-w-[1360px] mx-auto space-y-6 pb-28">
           
           {toastMessage && (
             <div className="fixed top-6 right-6 z-50 bg-slate-900 text-white px-3.5 py-2 rounded-md shadow-xl border border-slate-800 text-xs font-delight font-medium flex items-center gap-2 animate-in fade-in">
@@ -112,15 +115,13 @@ const Appointments = () => {
                 <span className="text-[10px] font-bold uppercase tracking-wider font-delight">Calendar Engine</span>
                 <Calendar className="w-4 h-4 text-indigo-600" />
               </div>
-              <div className="text-base font-bold text-slate-900">Google Calendar</div>
+              <div className="text-base font-bold text-slate-900">LeadPulse Calendar</div>
               <div className="text-[11px] text-emerald-700 font-semibold mt-0.5 flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                 <span>
                   {calendarStatus?.syncMode === 'google_schedule' 
                     ? 'Google Schedule Linked' 
-                    : calendarStatus?.syncMode === 'service_account' && calendarStatus?.isConnected
-                    ? 'API Synced'
-                    : 'Smart Direct Mode (Active)'}
+                    : 'LeadPulse Active (Zero-Setup)'}
                 </span>
               </div>
             </div>
@@ -199,18 +200,6 @@ const Appointments = () => {
                 <Users className="w-3.5 h-3.5" />
                 <span>CRM Lead Invites</span>
               </button>
-
-              <button
-                onClick={() => setActiveTab('setup')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
-                  activeTab === 'setup'
-                    ? 'bg-slate-900 text-white shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                <Settings className="w-3.5 h-3.5" />
-                <span>Calendar Linking Guide</span>
-              </button>
             </div>
           </div>
 
@@ -224,9 +213,9 @@ const Appointments = () => {
             <div className="bg-white border border-slate-200 rounded-xl shadow-2xs overflow-hidden flex flex-col">
               <div className="p-4 border-b border-slate-200 bg-[#FAF8F5] flex items-center justify-between">
                 <div>
-                  <h3 className="font-bold text-sm text-slate-900 tracking-tight">Confirmed Google Calendar Sessions</h3>
+                  <h3 className="font-bold text-sm text-slate-900 tracking-tight">Confirmed LeadPulse Calendar Sessions</h3>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    Real meetings scheduled with prospects and synchronized to your Google Calendar.
+                    Real meetings scheduled with prospects and synchronized to your calendar. Click any session to preview and send via WhatsApp in Mobile View.
                   </p>
                 </div>
               </div>
@@ -244,12 +233,20 @@ const Appointments = () => {
                         <th className="py-2.5 px-4">Contact</th>
                         <th className="py-2.5 px-4">Session Date &amp; Slot</th>
                         <th className="py-2.5 px-4">Meeting Room</th>
+                        <th className="py-2.5 px-4 text-center">WhatsApp Mobile View</th>
                         <th className="py-2.5 px-4 text-right">Status</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {appointmentsList.map((app, idx) => (
-                        <tr key={app.id || idx} className="hover:bg-slate-50 transition-colors">
+                        <tr 
+                          key={app.id || idx} 
+                          onClick={() => {
+                            setSelectedAppointmentForModal(app);
+                            setShowWhatsAppModal(true);
+                          }}
+                          className="hover:bg-emerald-50/40 transition-colors cursor-pointer group"
+                        >
                           <td className="py-3 px-4 font-bold text-slate-900">
                             {app.customerName || app.businessName}
                             <div className="text-[10px] text-slate-400 font-normal">{app.businessName}</div>
@@ -262,7 +259,7 @@ const Appointments = () => {
                             <span className="font-bold">{app.timeSlot || 'Scheduled'}</span>
                             <div className="text-[10px] text-slate-400">{new Date(app.appointmentDate).toLocaleDateString()}</div>
                           </td>
-                          <td className="py-3 px-4">
+                          <td className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
                             {app.meetLink ? (
                               <a
                                 href={app.meetLink}
@@ -274,8 +271,21 @@ const Appointments = () => {
                                 <span>Join Google Meet</span>
                               </a>
                             ) : (
-                              <span className="text-[11px] text-slate-400 italic">Google Calendar Event</span>
+                              <span className="text-[11px] text-slate-400 italic">Scheduled Event</span>
                             )}
+                          </td>
+                          <td className="py-3 px-4 text-center" onClick={(e) => e.stopPropagation()}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedAppointmentForModal(app);
+                                setShowWhatsAppModal(true);
+                              }}
+                              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold transition-all shadow-2xs cursor-pointer group-hover:scale-105"
+                            >
+                              <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
+                              <span>Send WhatsApp</span>
+                            </button>
                           </td>
                           <td className="py-3 px-4 text-right">
                             <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
@@ -298,7 +308,7 @@ const Appointments = () => {
                 <div>
                   <h3 className="font-bold text-sm text-slate-900 tracking-tight">Active Pipeline Lead Dispatch</h3>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    1-Click invite prospects to book a Google Calendar session. Confirmed bookings automatically advance stage to Demo.
+                    1-Click invite prospects to book a LeadPulse Calendar session. Confirmed bookings automatically advance stage to Demo.
                   </p>
                 </div>
                 <button
@@ -341,9 +351,22 @@ const Appointments = () => {
                           <div className="flex items-center justify-end gap-2">
                             {lead.phone && (
                               <button
-                                onClick={() => handleSendWhatsAppInvite(lead)}
+                                onClick={() => {
+                                  setSelectedAppointmentForModal({
+                                    customerName: lead.firstName || lead.businessName,
+                                    customerEmail: lead.email,
+                                    customerPhone: lead.phone,
+                                    businessName: lead.businessName,
+                                    appointmentDate: new Date(Date.now() + 86400000).toISOString(),
+                                    timeSlot: '11:00 AM',
+                                    serviceName: '15-Min LeadPulse Walkthrough',
+                                    meetLink: 'https://meet.google.com/new',
+                                    notes: `LeadPulse walkthrough invitation for ${lead.businessName}`
+                                  });
+                                  setShowWhatsAppModal(true);
+                                }}
                                 className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
-                                title="Send booking link via WhatsApp"
+                                title="Send booking link via WhatsApp in Mobile View"
                               >
                                 <MessageCircle className="w-3.5 h-3.5 text-emerald-400" />
                                 <span>WhatsApp Invite</span>
@@ -379,124 +402,20 @@ const Appointments = () => {
             </div>
           )}
 
-          {/* TAB 4: GOOGLE CALENDAR LINKING GUIDE */}
-          {activeTab === 'setup' && (
-            <div className="bg-white border border-slate-200 rounded-xl p-6 space-y-6 shadow-2xs text-xs">
-              <div>
-                <h3 className="font-bold text-base text-slate-900 tracking-tight">Easy Google Calendar Linking Guide</h3>
-                <p className="text-slate-600 mt-1">
-                  Connect LeadPulse to your Google Calendar in seconds. Choose the method that best fits your workflow.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                
-                {/* Method 1: Zero Setup Smart Scheduler */}
-                <div className="border border-emerald-200 bg-emerald-50/40 rounded-xl p-4 space-y-3 flex flex-col justify-between">
-                  <div>
-                    <div className="inline-block px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[10px] uppercase tracking-wider mb-2">
-                      Active Now • 0 Setup
-                    </div>
-                    <h4 className="font-bold text-sm text-slate-900 flex items-center gap-1.5">
-                      <Sparkles className="w-4 h-4 text-emerald-600" />
-                      <span>Smart Direct Scheduler</span>
-                    </h4>
-                    <p className="text-slate-600 mt-2 text-[11px] leading-relaxed">
-                      Works out of the box with zero API keys or developer console setup.
-                    </p>
-                    <ul className="mt-3 space-y-1.5 text-[11px] text-slate-700 list-disc pl-4">
-                      <li>Automated Google Meet room generation</li>
-                      <li>1-Click &quot;Add to Google Calendar&quot; buttons</li>
-                      <li>Auto-advances CRM leads to &quot;Demo&quot;</li>
-                      <li>Instant email confirmations with .ics invites</li>
-                    </ul>
-                  </div>
-                  <button
-                    onClick={() => setActiveTab('scheduler')}
-                    className="w-full mt-3 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer"
-                  >
-                    Open Live Scheduler
-                  </button>
-                </div>
-
-                {/* Method 2: Google Appointment Schedule Link */}
-                <div className="border border-indigo-200 bg-indigo-50/40 rounded-xl p-4 space-y-3 flex flex-col justify-between">
-                  <div>
-                    <div className="inline-block px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800 font-bold text-[10px] uppercase tracking-wider mb-2">
-                      Recommended • 10 Seconds
-                    </div>
-                    <h4 className="font-bold text-sm text-slate-900 flex items-center gap-1.5">
-                      <Calendar className="w-4 h-4 text-indigo-600" />
-                      <span>Google Schedule URL</span>
-                    </h4>
-                    <p className="text-slate-600 mt-2 text-[11px] leading-relaxed">
-                      Link your official Google Calendar Appointment Schedule directly.
-                    </p>
-                    <ol className="mt-3 space-y-1.5 text-[11px] text-slate-700 list-decimal pl-4">
-                      <li>In Google Calendar, click <strong>+ Create &gt; Appointment Schedule</strong>.</li>
-                      <li>Copy your booking URL (ends in <code>/schedules/...</code>).</li>
-                      <li>Click <strong>Calendar Settings</strong> above and paste your link.</li>
-                      <li>Your official Google schedule embeds right into LeadPulse!</li>
-                    </ol>
-                  </div>
-                  <button
-                    onClick={() => {
-                      setActiveTab('scheduler');
-                      showToast('Open Calendar Settings in the top right to paste your link');
-                    }}
-                    className="w-full mt-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer"
-                  >
-                    Configure Schedule Link
-                  </button>
-                </div>
-
-                {/* Method 3: Live iCal Feed Sync */}
-                <div className="border border-slate-200 bg-[#FAF8F5] rounded-xl p-4 space-y-3 flex flex-col justify-between">
-                  <div>
-                    <div className="inline-block px-2 py-0.5 rounded-full bg-slate-200 text-slate-800 font-bold text-[10px] uppercase tracking-wider mb-2">
-                      Universal Sync • 1 Click
-                    </div>
-                    <h4 className="font-bold text-sm text-slate-900 flex items-center gap-1.5">
-                      <Clock className="w-4 h-4 text-slate-700" />
-                      <span>Google Calendar iCal Feed</span>
-                    </h4>
-                    <p className="text-slate-600 mt-2 text-[11px] leading-relaxed">
-                      Subscribe your Google Calendar app to all LeadPulse appointments.
-                    </p>
-                    <ol className="mt-3 space-y-1.5 text-[11px] text-slate-700 list-decimal pl-4">
-                      <li>Copy your personal feed URL from Calendar Settings.</li>
-                      <li>In Google Calendar, click <strong>+ Other calendars &gt; From URL</strong>.</li>
-                      <li>Paste the link and click <strong>Add calendar</strong>.</li>
-                      <li>All LeadPulse bookings appear on your phone &amp; laptop automatically!</li>
-                    </ol>
-                  </div>
-                  <div className="mt-3 p-2 bg-white rounded border border-slate-200 font-mono text-[10px] text-slate-600 truncate">
-                    {calendarStatus?.icalFeedUrl || `${apiBase}/api/booking/feed/${user?._id || 'default'}.ics`}
-                  </div>
-                </div>
-
-              </div>
-
-              {/* Advanced Developer Section (Collapsible Accordion) */}
-              <div className="border border-slate-200 rounded-xl p-4 bg-slate-50 space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Key className="w-4 h-4 text-slate-500" />
-                    <span className="font-bold text-xs text-slate-800">Advanced Option: Google Cloud Service Account (For Developers)</span>
-                  </div>
-                  <span className="text-[10px] text-slate-500 font-medium">Optional</span>
-                </div>
-                <p className="text-[11px] text-slate-600 leading-relaxed">
-                  If you require backend Google Calendar API SDK access: In Google Cloud Console, enable <strong>Google Calendar API</strong>, generate a <strong>Service Account Key (JSON)</strong>, and in Google Calendar settings, share your calendar with the service account email with <strong>&quot;Make changes to events&quot;</strong> permission.
-                </p>
-              </div>
-
-            </div>
-          )}
-
           </div>
         </main>
       </div>
+
+      {/* Mobile-View WhatsApp Confirmation Modal */}
+      <AppointmentMobileWhatsAppModal
+        isOpen={showWhatsAppModal}
+        onClose={() => {
+          setShowWhatsAppModal(false);
+          setSelectedAppointmentForModal(null);
+        }}
+        appointment={selectedAppointmentForModal}
+        user={user}
+      />
     </div>
   );
 };
