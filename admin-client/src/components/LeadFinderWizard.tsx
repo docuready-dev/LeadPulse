@@ -551,11 +551,11 @@ const LeadFinderWizard = ({ onHarvestStarted }: WizardProps) => {
                       {scope === 'deep' && <span className="w-5 h-5 bg-purple-600 text-white rounded-full flex items-center justify-center text-xs font-bold">✔</span>}
                     </div>
                     <p className="text-xs text-gray-500 mb-3">
-                      Exhaustive multi-tier crawl: deep-crawls official websites, phone validation, and decision-maker contact discovery.
+                      Exhaustive multi-tier crawl: deep-crawls official websites, phone/mobile validation, and strictly excludes listings without contact info.
                     </p>
                   </div>
                   <div className="text-[11px] text-purple-700 font-bold flex items-center gap-1 pt-2 border-t border-purple-200">
-                    <span>High-Resolution Data (2 Credits)</span>
+                    <span>2 Credits = 1 Contact (Mobile Guaranteed)</span>
                   </div>
                 </div>
 

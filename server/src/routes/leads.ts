@@ -332,12 +332,17 @@ router.post('/scrape', async (req, res) => {
     let userPlan = (userData?.plan || 'free').toLowerCase();
     let poolRefreshedAt = userData?.pool_refreshed_at || new Date().toISOString();
 
-    // STRICT CHECK: Reject immediately if user has exhausted all tokens
-    if (currentCredits < 1) {
+    const isDeep = scope === 'deep';
+    const costPerContact = isDeep ? 2 : 1;
+
+    // STRICT CHECK: Reject immediately if user has insufficient tokens for the chosen scope
+    if (currentCredits < costPerContact) {
       return res.status(403).json({
-        error: 'Insufficient tokens. You have exhausted all tokens in your Free Tier pool (0 / 15 remaining). Tokens auto-refresh every 4 days, or you can top up / upgrade to Basic or Pro.',
+        error: isDeep
+          ? `Insufficient tokens. Deep Harvest requires 2 tokens per contact (2 tokens = 1 contact). You have ${currentCredits} token(s) remaining. Switch to Quick Scan (1 token = 1 contact) or top up your pool.`
+          : 'Insufficient tokens. You have exhausted all tokens in your Free Tier pool (0 / 15 remaining). Tokens auto-refresh every 4 days, or you can top up / upgrade to Basic or Pro.',
         needsTopUp: true,
-        creditsRemaining: 0
+        creditsRemaining: currentCredits
       });
     }
 
@@ -353,12 +358,13 @@ router.post('/scrape', async (req, res) => {
     }
 
     const maxPerQuery = userPlan === 'free' ? 10 : 20;
-    // Cap query limit strictly by available credits (e.g. if 5 credits available, limit is 5)
-    let limit = Math.min(maxPerQuery, currentCredits);
-    let tokensUsed = limit;
+    // Cap query limit strictly by affordable contacts
+    const maxContactsAffordable = Math.floor(currentCredits / costPerContact);
+    let limit = Math.min(maxPerQuery, maxContactsAffordable);
+    let tokensUsed = limit * costPerContact;
     let creditsRemaining = Math.max(0, currentCredits - tokensUsed);
 
-    // Deduct 1 Token per Contact scraped (1 Token = 1 Contact)
+    // Deduct tokens upfront (Quick: 1 Token/Contact, Deep: 2 Tokens/Contact)
     try {
       await db.runTransaction(async (t) => {
         const doc = await t.get(userRef);
@@ -381,12 +387,13 @@ router.post('/scrape', async (req, res) => {
           }
         }
 
-        if (liveCredits < 1) {
+        if (liveCredits < costPerContact) {
           throw new Error("Insufficient credits");
         }
 
-        limit = Math.min(maxPerQuery, liveCredits);
-        tokensUsed = limit;
+        const maxAffordable = Math.floor(liveCredits / costPerContact);
+        limit = Math.min(maxPerQuery, maxAffordable);
+        tokensUsed = limit * costPerContact;
         creditsRemaining = Math.max(0, liveCredits - tokensUsed);
 
         t.update(userRef, { 
@@ -397,9 +404,11 @@ router.post('/scrape', async (req, res) => {
     } catch (txErr: any) {
       if (txErr.message === "Insufficient credits") {
         return res.status(403).json({ 
-          error: 'Insufficient tokens. You have exhausted all tokens in your Free Tier pool (0 / 15 remaining).', 
-          needsTopUp: true,
-          creditsRemaining: 0 
+          error: isDeep
+            ? `Insufficient tokens. Deep Harvest requires 2 tokens per contact (2 tokens = 1 contact). You have ${currentCredits} token(s) remaining.`
+            : 'Insufficient tokens. You have exhausted all tokens in your Free Tier pool (0 / 15 remaining).', 
+          needsTopUp: true, 
+          creditsRemaining: currentCredits 
         });
       }
       // If Firestore transaction fails due to offline/permission, proceed with local deduction
@@ -418,6 +427,8 @@ router.post('/scrape', async (req, res) => {
       location, 
       scope, 
       limit,
+      tokensReserved: tokensUsed,
+      costPerContact,
       serpApiKey: resolvedSerpKey
     });
     
@@ -426,6 +437,9 @@ router.post('/scrape', async (req, res) => {
       jobId,
       creditsRemaining,
       tokensUsed,
+      contactsTarget: limit,
+      costPerContact,
+      scope,
       plan: userPlan,
       poolRefreshedAt,
       limit

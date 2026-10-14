@@ -146,13 +146,24 @@ const LeadFinderWizard = ({ onHarvestStarted }: WizardProps) => {
   const maxPool = isFree ? '15' : (currentPlan === 'basic' ? '600' : 'Unlimited');
   const perQueryLimit = isFree ? 10 : 20;
   const isExhausted = credits < 1;
-  const batchContactsCount = Math.min(perQueryLimit, Math.max(0, credits));
+
+  // Cost Per Contact based on Scope:
+  // Quick: 1 Token = 1 Contact
+  // Deep: 2 Tokens = 1 Contact (strictly guarantees mobile/phone contact number)
+  const costPerContact = scope === 'deep' ? 2 : 1;
+  const quickContactsCount = Math.min(perQueryLimit, Math.max(0, credits));
+  const deepContactsCount = Math.min(perQueryLimit, Math.max(0, Math.floor(credits / 2)));
+  const deepTokensNeeded = deepContactsCount * 2;
+  const cannotAffordDeep = scope === 'deep' && credits < 2;
+
+  const batchContactsCount = scope === 'deep' ? deepContactsCount : quickContactsCount;
+  const batchTokensCount = batchContactsCount * costPerContact;
 
   const locationPresets = ['Mumbai', 'Bengaluru', 'Delhi NCR', 'Hyderabad', 'Pune', 'New York', 'London', 'Dubai'];
   const keywordPresets = ['SaaS & Software', 'Real Estate Agencies', 'Healthcare Clinics', 'Digital Marketing', 'Legal & Advisory', 'Hospitality'];
 
   const handleLaunchHarvest = async () => {
-    // 1 Token = 1 Contact scraped: block immediately if tokens exhausted
+    // Check if total token pool is exhausted
     if (credits < 1) {
       await alertDialog({
         title: 'Token Pool Exhausted',
@@ -161,6 +172,16 @@ const LeadFinderWizard = ({ onHarvestStarted }: WizardProps) => {
       });
       setUpgradeTab('topup');
       setUpgradeModalOpen(true);
+      return;
+    }
+
+    // Deep Harvest requires 2 tokens per contact (2 tokens = 1 contact)
+    if (scope === 'deep' && credits < 2) {
+      await alertDialog({
+        title: 'Insufficient Tokens for Deep Harvest',
+        message: 'Deep Harvest requires 2 tokens per contact (2 tokens = 1 contact) with verified phone/mobile numbers. You have 1 token remaining. Please switch to Quick Scan (1 token) or top up your pool.',
+        variant: 'warning'
+      });
       return;
     }
 
@@ -175,7 +196,8 @@ const LeadFinderWizard = ({ onHarvestStarted }: WizardProps) => {
       return;
     }
 
-    const expectedBatchLimit = Math.min(perQueryLimit, credits);
+    const expectedContacts = scope === 'deep' ? deepContactsCount : quickContactsCount;
+    const expectedTokens = expectedContacts * costPerContact;
 
     setIsSubmitting(true);
     setActiveJob({
@@ -183,10 +205,12 @@ const LeadFinderWizard = ({ onHarvestStarted }: WizardProps) => {
       keyword,
       location,
       scope,
-      limit: expectedBatchLimit,
+      limit: expectedContacts,
       status: 'queued',
       progress: 5,
-      stageMessage: `Initializing extraction pipeline for "${keyword}" in "${location}" (${expectedBatchLimit} contacts = ${expectedBatchLimit} tokens)...`,
+      stageMessage: scope === 'deep'
+        ? `Initializing Deep Harvest for "${keyword}" in "${location}" (${expectedContacts} verified contacts = ${expectedTokens} tokens at 2 tokens/contact)...`
+        : `Initializing extraction pipeline for "${keyword}" in "${location}" (${expectedContacts} contacts = ${expectedTokens} tokens)...`,
       leadsFound: 0
     });
 
@@ -268,8 +292,10 @@ const LeadFinderWizard = ({ onHarvestStarted }: WizardProps) => {
             )}
           </div>
 
-          <div className="text-xs font-delight px-2 py-0.5 rounded-sm bg-slate-100 text-slate-700 border border-slate-200 font-semibold">
-            1 Token = 1 Contact • Max {perQueryLimit} / search
+          <div className="text-xs font-delight px-2 py-0.5 rounded-sm bg-slate-100 text-slate-700 border border-slate-200 font-semibold flex items-center gap-1.5">
+            <span>Quick: 1 Token = 1 Contact</span>
+            <span className="text-slate-300">•</span>
+            <span className="text-purple-700 font-bold">Deep: 2 Tokens = 1 Contact (Mobile Guaranteed)</span>
           </div>
 
           {/* SerpApi Engine Connection Pill */}
@@ -390,7 +416,9 @@ const LeadFinderWizard = ({ onHarvestStarted }: WizardProps) => {
               </div>
               <div className="bg-white p-2 rounded-md border border-slate-200">
                 <div className="text-[9px] text-slate-400 uppercase">Scope</div>
-                <div className="font-bold text-slate-700">{activeJob.scope}</div>
+                <div className="font-bold text-purple-900 truncate">
+                  {activeJob.scope === 'deep' ? 'Deep Harvest (2 tok)' : 'Quick Scan (1 tok)'}
+                </div>
               </div>
               <div className="bg-white p-2 rounded-md border border-slate-200">
                 <div className="text-[9px] text-slate-400 uppercase">Found</div>
@@ -590,40 +618,53 @@ const LeadFinderWizard = ({ onHarvestStarted }: WizardProps) => {
                     Primary public business profile, verified phone, address, and ratings.
                   </p>
                   <div className={`text-[10px] font-delight font-semibold pt-2 mt-2 border-t border-slate-200 ${isExhausted ? 'text-rose-600' : 'text-slate-700'}`}>
-                    {isExhausted ? '0 Tokens Available (Pool Exhausted)' : `1 Token = 1 Contact (${batchContactsCount} Tokens for ${batchContactsCount} Contacts)`}
+                    {isExhausted ? '0 Tokens Available (Pool Exhausted)' : `1 Token = 1 Contact (${quickContactsCount} Tokens for ${quickContactsCount} Contacts)`}
                   </div>
                 </div>
 
                 <div 
                   onClick={() => setScope('deep')}
-                  className={`p-3.5 rounded-md border transition-all cursor-pointer ${
+                  className={`p-3.5 rounded-md border transition-all cursor-pointer relative ${
                     scope === 'deep' 
-                      ? 'border-slate-900 bg-slate-50/70 shadow-xs' 
+                      ? 'border-purple-900 bg-purple-50/60 shadow-xs ring-1 ring-purple-900/20' 
                       : 'border-slate-200 bg-white hover:border-slate-300'
                   }`}
                 >
                   <div className="flex items-center justify-between mb-1.5">
-                    <span className="font-bold text-xs text-slate-900 tracking-tight">Deep Scan</span>
-                    {scope === 'deep' && <span className="w-2 h-2 rounded-xs bg-slate-900"></span>}
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-bold text-xs text-slate-900 tracking-tight">Deep Harvest</span>
+                      <span className="px-1.5 py-0.2 rounded text-[9px] font-extrabold bg-purple-100 text-purple-800 border border-purple-200 uppercase">
+                        2 Tokens = 1 Contact
+                      </span>
+                    </div>
+                    {scope === 'deep' && <span className="w-2 h-2 rounded-xs bg-purple-900"></span>}
                   </div>
                   <p className="text-[11px] text-slate-500 leading-relaxed">
-                    Multi-page website scan, domain verification, and rich metadata.
+                    Exhaustive crawl with strict contact verification. Excludes listings without mobile numbers so you only pay for actionable prospects.
                   </p>
-                  <div className={`text-[10px] font-delight font-semibold pt-2 mt-2 border-t border-slate-200 ${isExhausted ? 'text-rose-600' : 'text-indigo-700'}`}>
-                    {isExhausted ? '0 Tokens Available (Pool Exhausted)' : `1 Token = 1 Contact (${batchContactsCount} Tokens for ${batchContactsCount} Contacts)`}
+                  <div className={`text-[10px] font-delight font-semibold pt-2 mt-2 border-t border-slate-200 ${isExhausted || cannotAffordDeep ? 'text-amber-700' : 'text-purple-700'}`}>
+                    {isExhausted 
+                      ? '0 Tokens Available (Pool Exhausted)' 
+                      : cannotAffordDeep
+                        ? 'Requires 2 Tokens (1 available - switch to Quick)'
+                        : `2 Tokens = 1 Contact (${deepTokensNeeded} Tokens for ${deepContactsCount} Contacts • Guaranteed Mobile)`}
                   </div>
                 </div>
               </div>
 
               {/* Execution Summary Strip */}
               <div className={`p-3 rounded-md border flex items-center justify-between text-xs font-delight font-medium ${
-                isExhausted ? 'bg-rose-50/70 border-rose-200 text-rose-800' : 'bg-slate-50 border-slate-200 text-slate-700'
+                isExhausted || cannotAffordDeep ? 'bg-amber-50/70 border-amber-200 text-amber-800' : 'bg-slate-50 border-slate-200 text-slate-700'
               }`}>
                 <span className="truncate">{keyword || 'Selected Category'} in {location || 'Target Territory'}</span>
                 <span className="font-bold">
                   {isExhausted 
                     ? '0 Tokens Available • Pool Exhausted' 
-                    : `${batchContactsCount} Contacts • ${batchContactsCount} Tokens Used`}
+                    : cannotAffordDeep
+                      ? '1 Token Left (Insufficient for Deep • Switch to Quick Scan)'
+                      : scope === 'deep'
+                        ? `${batchContactsCount} Contacts • ${batchTokensCount} Tokens (2 Tokens/Contact • Guaranteed Mobile)`
+                        : `${batchContactsCount} Contacts • ${batchTokensCount} Tokens (1 Token/Contact)`}
                 </span>
               </div>
 
@@ -641,11 +682,13 @@ const LeadFinderWizard = ({ onHarvestStarted }: WizardProps) => {
                 <button 
                   type="button"
                   onClick={handleLaunchHarvest}
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || cannotAffordDeep}
                   className={`px-5 py-2 rounded-md text-xs font-semibold transition-all flex items-center gap-2 cursor-pointer shadow-xs ${
-                    isExhausted 
+                    isExhausted || cannotAffordDeep
                       ? 'bg-amber-600 hover:bg-amber-700 text-white' 
-                      : 'bg-slate-900 hover:bg-black text-white disabled:opacity-50'
+                      : scope === 'deep'
+                        ? 'bg-purple-900 hover:bg-purple-950 text-white disabled:opacity-50'
+                        : 'bg-slate-900 hover:bg-black text-white disabled:opacity-50'
                   }`}
                 >
                   {isSubmitting ? (
@@ -658,10 +701,19 @@ const LeadFinderWizard = ({ onHarvestStarted }: WizardProps) => {
                       <AlertCircle className="w-3.5 h-3.5 text-white" />
                       <span>Tokens Exhausted (0/{maxPool}) • Top Up</span>
                     </>
+                  ) : cannotAffordDeep ? (
+                    <>
+                      <AlertCircle className="w-3.5 h-3.5 text-white" />
+                      <span>Need 2 Tokens for Deep (Switch to Quick)</span>
+                    </>
                   ) : (
                     <>
                       <Sparkles className="w-3.5 h-3.5" />
-                      <span>Dispatch Task ({batchContactsCount} Tokens)</span>
+                      <span>
+                        {scope === 'deep' 
+                          ? `Dispatch Deep Harvest (${batchTokensCount} Tokens for ${batchContactsCount} Contacts)`
+                          : `Dispatch Quick Scan (${batchTokensCount} Tokens for ${batchContactsCount} Contacts)`}
+                      </span>
                     </>
                   )}
                 </button>

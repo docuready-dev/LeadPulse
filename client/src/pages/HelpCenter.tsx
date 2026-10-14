@@ -1,4 +1,4 @@
-﻿import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
@@ -595,7 +595,7 @@ const newCredits = Math.max(0, availableCredits - tokensUsed);`
         faqs: [
           {
             q: 'How are tokens calculated when I scrape leads in Lead Finder?',
-            a: '1 Token = 1 Contact. If your search scrapes and returns 10 verified contacts, exactly 10 tokens are deducted from your pool. Empty searches deduct 0 tokens.'
+            a: 'Quick Scan uses 1 Token = 1 Contact. Deep Harvest uses 2 Tokens = 1 Contact and strictly guarantees phone/mobile numbers (listings without contact numbers are excluded). If fewer contacts are returned, unused tokens are refunded to your pool. Empty searches deduct 0 tokens.'
           },
           {
             q: 'How many tokens are included in the Free tier?',

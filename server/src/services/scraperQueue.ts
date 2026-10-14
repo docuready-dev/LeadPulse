@@ -11,6 +11,8 @@ export interface ScrapeJob {
   location: string;
   scope?: 'quick' | 'deep';
   limit?: number;
+  tokensReserved?: number;
+  costPerContact?: number;
   serpApiKey?: string;
 }
 
@@ -90,6 +92,10 @@ class InMemScraperQueue {
   private jobStatuses = new Map<string, ScrapeJobStatus>();
 
   async add(job: ScrapeJob) {
+    const isDeep = job.scope === 'deep';
+    const costPerContact = job.costPerContact ?? (isDeep ? 2 : 1);
+    const tokensReserved = job.tokensReserved ?? ((job.limit || 10) * costPerContact);
+
     this.jobStatuses.set(job.id, {
       id: job.id,
       userId: job.userId,
@@ -99,7 +105,9 @@ class InMemScraperQueue {
       limit: job.limit || 10,
       status: 'queued',
       progress: 5,
-      stageMessage: 'Job queued in extraction pipeline...',
+      stageMessage: isDeep
+        ? `Deep Harvest queued: searching Google Maps for verified business contacts with mobile numbers (2 tokens/contact)...`
+        : 'Job queued in extraction pipeline (1 token/contact)...',
       leadsFound: 0,
       startedAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
@@ -175,15 +183,19 @@ class InMemScraperQueue {
     let browser: any;
     const maxItems = Math.min(job.limit || 10, 20);
     const isDeep = job.scope === 'deep';
+    const costPerContact = job.costPerContact ?? (isDeep ? 2 : 1);
+    const tokensReserved = job.tokensReserved ?? (maxItems * costPerContact);
 
     this.updateStatus(job.id, {
       status: 'in_progress',
       progress: 15,
-      stageMessage: 'Launching headless Chromium extraction worker...'
+      stageMessage: isDeep
+        ? 'Launching high-resolution extraction worker with contact filtering...'
+        : 'Launching headless Chromium extraction worker...'
     });
 
     try {
-      console.log(`[Scraper] Starting job ${job.id} for "${job.keyword}" in "${job.location}" (Scope: ${job.scope || 'quick'}, Max: ${maxItems})...`);
+      console.log(`[Scraper] Starting job ${job.id} for "${job.keyword}" in "${job.location}" (Scope: ${job.scope || 'quick'}, Max: ${maxItems}, Reserved: ${tokensReserved} tokens)...`);
 
       const executablePath = getBrowserExecutablePath();
       console.log(`[Scraper] Resolved browser executable path: ${executablePath || 'Bundled Chrome'}`);
@@ -206,7 +218,9 @@ class InMemScraperQueue {
       if (resolvedSerpKey) {
         this.updateStatus(job.id, {
           progress: 35,
-          stageMessage: `Querying SerpApi Google Maps local engine for "${job.keyword}" in "${job.location}"...`
+          stageMessage: isDeep
+            ? `Deep Harvest: Querying SerpApi for listings with verified mobile/phone numbers in "${job.location}"...`
+            : `Querying SerpApi Google Maps local engine for "${job.keyword}" in "${job.location}"...`
         });
 
         try {
@@ -225,6 +239,17 @@ class InMemScraperQueue {
               const title = (item.title || '').trim();
               if (!title) continue;
 
+              const phone = (item.phone || '').trim();
+
+              // Deep Harvest Rule: Exclude leads without any contact infos like mobile/phone number!
+              if (isDeep) {
+                const cleanPhone = phone.replace(/\D/g, '');
+                if (cleanPhone.length < 7) {
+                  // No valid mobile/phone number found, skip this listing in Deep Harvest
+                  continue;
+                }
+              }
+
               let website = (item.website || '').trim();
               if (website.includes('google.com') || website.includes('goo.gl')) {
                 website = '';
@@ -241,7 +266,7 @@ class InMemScraperQueue {
               extractedItems.push({
                 title,
                 website,
-                phone: (item.phone || '').trim(),
+                phone,
                 rating,
                 category: item.type || (Array.isArray(item.types) ? item.types[0] : '') || job.keyword
               });
@@ -333,7 +358,7 @@ class InMemScraperQueue {
         }
 
         // Extract authentic items directly from Google Maps cards
-        extractedItems = await page.evaluate((limit: number) => {
+        extractedItems = await page.evaluate((limit: number, deep: boolean) => {
           const cards = document.querySelectorAll('.Nv2PK');
           const items: Array<{
             title: string;
@@ -380,6 +405,15 @@ class InMemScraperQueue {
               if (validPhone) phone = validPhone.trim();
             }
 
+            // Deep Harvest Rule: Exclude leads without any contact infos like mobile/phone number!
+            if (deep) {
+              const cleanDigits = phone.replace(/\D/g, '');
+              if (cleanDigits.length < 7) {
+                // In Deep Harvest, skip any listing that lacks a valid contact phone/mobile number
+                continue;
+              }
+            }
+
             // Authentic Rating Extraction
             let rating = 0;
             const ratingEl = card.querySelector('.MW4etd');
@@ -411,7 +445,7 @@ class InMemScraperQueue {
           }
 
           return items;
-        }, maxItems).catch(() => []);
+        }, maxItems, isDeep).catch(() => []);
 
         await browser.close();
         browser = null;
@@ -426,7 +460,9 @@ class InMemScraperQueue {
 
       this.updateStatus(job.id, {
         progress: 70,
-        stageMessage: `Concurrently crawling authentic websites for verified emails...`
+        stageMessage: isDeep
+          ? `Deep Harvest: Verifying mobile contact records & checking website emails...`
+          : `Concurrently crawling authentic websites for verified emails...`
       });
 
       // Prepare authentic lead models
@@ -479,12 +515,20 @@ class InMemScraperQueue {
               location: job.location,
               scope: job.scope || 'quick',
               status: 'New',
-              tags: [job.keyword, job.location, isDeep ? 'Deep Multi-Page' : 'Quick Scan']
+              tags: [job.keyword, job.location, isDeep ? 'Deep Harvest' : 'Quick Scan']
             };
           })
         );
 
         finalLeads = processedItems;
+      }
+
+      // Deep Harvest Guarantee: Strictly exclude any leads without contact infos like mobile/phone number!
+      if (isDeep) {
+        finalLeads = finalLeads.filter(lead => {
+          const cleanPhone = (lead.phone || '').replace(/\D/g, '');
+          return cleanPhone.length >= 7;
+        });
       }
 
       // Query existing leads from both Firestore and local persistent store for deduplication
@@ -539,7 +583,7 @@ class InMemScraperQueue {
             status: lead.status,
             tags: lead.tags,
             saved: true,
-            source: 'Harvest Engine',
+            source: isDeep ? 'Deep Harvest Engine' : 'Quick Harvest Engine',
             createdAt: new Date(Date.now() - index * 1000).toISOString(),
             updatedAt: new Date().toISOString()
           });
@@ -570,15 +614,19 @@ class InMemScraperQueue {
         }
       }
 
-      // Enforce 1 Token = 1 Contact: if fewer contacts were added than reserved (maxItems), refund unused tokens
+      // Enforce Contact Accounting:
+      // Quick: 1 Token = 1 Contact
+      // Deep: 2 Tokens = 1 Contact (Guaranteed Mobile/Phone)
+      // If fewer contacts were added than reserved, refund unused tokens at costPerContact rate
+      const actualTokensUsed = addedCount * costPerContact;
+      const tokensToRefund = Math.max(0, tokensReserved - actualTokensUsed);
       let latestCredits: number | undefined = undefined;
 
       const localUser = userStore.getUserById(job.userId);
       if (localUser) {
         let currentCreds = localUser.lead_credits ?? 0;
-        const unusedTokens = Math.max(0, maxItems - addedCount);
-        if (unusedTokens > 0) {
-          currentCreds += unusedTokens;
+        if (tokensToRefund > 0) {
+          currentCreds += tokensToRefund;
         }
         latestCredits = currentCreds;
         userStore.updateUser(job.userId, { lead_credits: currentCreds });
@@ -590,9 +638,8 @@ class InMemScraperQueue {
         if (userSnap.exists) {
           const uData = userSnap.data() || {};
           let currentCreds = uData.lead_credits ?? 0;
-          const unusedTokens = Math.max(0, maxItems - addedCount);
-          if (unusedTokens > 0) {
-            currentCreds += unusedTokens;
+          if (tokensToRefund > 0) {
+            currentCreds += tokensToRefund;
             await userRef.update({ lead_credits: currentCreds });
           }
           latestCredits = currentCreds;
@@ -605,11 +652,15 @@ class InMemScraperQueue {
         status: 'completed',
         progress: 100,
         leadsFound: addedCount,
-        tokensUsed: addedCount,
+        tokensUsed: actualTokensUsed,
         creditsRemaining: latestCredits,
-        stageMessage: addedCount > 0
-          ? `Harvest Complete: ${addedCount} authentic contacts extracted (${addedCount} tokens used) & synchronized into your pipeline!`
-          : 'Harvest Complete: 0 new unique contacts found for this query. All reserved tokens have been refunded.'
+        stageMessage: isDeep
+          ? (addedCount > 0
+              ? `Deep Harvest Complete: ${addedCount} contact-verified leads saved (${actualTokensUsed} tokens used at 2 tokens/contact). Unverified listings without mobile numbers were excluded.`
+              : 'Deep Harvest Complete: 0 contacts with verified mobile numbers found for this query. All reserved tokens have been refunded.')
+          : (addedCount > 0
+              ? `Harvest Complete: ${addedCount} authentic contacts extracted (${actualTokensUsed} tokens used) & synchronized into your pipeline!`
+              : 'Harvest Complete: 0 new unique contacts found for this query. All reserved tokens have been refunded.')
       });
 
     } catch (err: any) {
@@ -621,7 +672,7 @@ class InMemScraperQueue {
       // Refund reserved tokens on total job failure
       const localUser = userStore.getUserById(job.userId);
       if (localUser) {
-        const currentCreds = (localUser.lead_credits ?? 0) + maxItems;
+        const currentCreds = (localUser.lead_credits ?? 0) + tokensReserved;
         userStore.updateUser(job.userId, { lead_credits: currentCreds });
       }
 
@@ -629,7 +680,7 @@ class InMemScraperQueue {
         const userRef = db.collection('users').doc(job.userId);
         const userSnap = await userRef.get();
         if (userSnap.exists) {
-          const currentCreds = (userSnap.data()?.lead_credits ?? 0) + maxItems;
+          const currentCreds = (userSnap.data()?.lead_credits ?? 0) + tokensReserved;
           await userRef.update({ lead_credits: currentCreds });
         }
       } catch {}

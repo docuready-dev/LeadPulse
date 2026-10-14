@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useStore } from '../store/useStore';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
@@ -545,7 +545,7 @@ const Dashboard = () => {
               <div className="text-[11px] mt-1.5 flex items-center gap-1.5 font-delight font-medium text-[#6E675F]">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#C85A32]"></span>
                 <span className="text-[#191716] font-semibold uppercase">Tier: {user?.plan || 'Free'}</span>
-                <span>• 1 Token = 1 Contact</span>
+                <span>• Quick: 1 Tok | Deep: 2 Tok</span>
               </div>
             </div>
           </div>
@@ -841,7 +841,7 @@ const Dashboard = () => {
                 />
               </div>
               <div className="flex items-center justify-between text-[11px] font-delight text-[#6E675F]">
-                <span>Rule: 1 Token = 1 Scraped Contact</span>
+                <span>Rule: Quick (1 Tok = 1 Lead) • Deep (2 Tok = 1 Lead + Mobile)</span>
                 <span className="font-semibold text-[#191716]">{tokenPercent}% Available</span>
               </div>
             </div>
@@ -852,7 +852,7 @@ const Dashboard = () => {
                 <span>4-Day Rolling Pool Replenishment</span>
               </div>
               <p className="text-[10px] text-[#6E675F] leading-relaxed">
-                Scraping 10 verified contacts deducts 10 tokens. Need higher volume?{' '}
+                Quick Scan uses 1 token/contact. Deep Harvest uses 2 tokens/contact and strictly excludes listings without mobile numbers. Need higher volume?{' '}
                 {isProTier ? 'Top up instant overage tokens anytime.' : 'Upgrade your workspace tier or top up.'}
               </p>
             </div>
