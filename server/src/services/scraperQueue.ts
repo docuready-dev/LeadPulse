@@ -9,6 +9,7 @@ export interface ScrapeJob {
   location: string;
   scope?: 'quick' | 'deep';
   limit?: number;
+  serpApiKey?: string;
 }
 
 export interface ScrapeJobStatus {
@@ -187,13 +188,72 @@ class InMemScraperQueue {
 
       this.updateStatus(job.id, {
         progress: 30,
-        stageMessage: `Connecting to Google Maps & local geo-index for "${job.keyword}" in "${job.location}"...`
+        stageMessage: `Connecting to Google Maps extraction pipeline for "${job.keyword}" in "${job.location}"...`
       });
 
-      let extractedItems: Array<{ title: string; url: string | null }> = [];
+      let extractedItems: Array<{
+        title: string;
+        website: string;
+        phone: string;
+        rating: number;
+        category: string;
+      }> = [];
 
-      try {
-        const puppeteer = require('puppeteer');
+      const resolvedSerpKey = (job.serpApiKey || process.env.SERPAPI_KEY || '').trim();
+
+      if (resolvedSerpKey) {
+        this.updateStatus(job.id, {
+          progress: 35,
+          stageMessage: `Querying SerpApi Google Maps local engine for "${job.keyword}" in "${job.location}"...`
+        });
+
+        try {
+          const serpUrl = `https://serpapi.com/search.json?engine=google_maps&q=${encodeURIComponent(`${job.keyword} in ${job.location}`)}&api_key=${resolvedSerpKey}&hl=en`;
+          const serpResp = await fetch(serpUrl);
+          const serpData: any = await serpResp.json();
+
+          if (serpData.error) {
+            console.warn(`[SerpApi Engine] Search error:`, serpData.error);
+          } else {
+            const localResults = serpData.local_results || [];
+            console.log(`[SerpApi Engine] Retrieved ${localResults.length} local results from Google Maps.`);
+
+            for (let i = 0; i < localResults.length && extractedItems.length < maxItems; i++) {
+              const item = localResults[i];
+              const title = (item.title || '').trim();
+              if (!title) continue;
+
+              let website = (item.website || '').trim();
+              if (website.includes('google.com') || website.includes('goo.gl')) {
+                website = '';
+              }
+
+              let rating = 0;
+              if (typeof item.rating === 'number') {
+                rating = item.rating;
+              } else if (item.rating) {
+                const parsed = parseFloat(String(item.rating));
+                if (!isNaN(parsed)) rating = parsed;
+              }
+
+              extractedItems.push({
+                title,
+                website,
+                phone: (item.phone || '').trim(),
+                rating,
+                category: item.type || (Array.isArray(item.types) ? item.types[0] : '') || job.keyword
+              });
+            }
+          }
+        } catch (serpErr) {
+          console.warn(`[SerpApi Engine] Search request failed, falling back to local extractor:`, serpErr);
+        }
+      }
+
+      // Fallback to headless browser extraction if SerpApi wasn't used or yielded 0 items
+      if (extractedItems.length === 0) {
+        try {
+          const puppeteer = require('puppeteer');
         const activeProxy = proxyPool.getNextProxy();
         const launchArgs = [
           '--no-sandbox', 
@@ -360,6 +420,7 @@ class InMemScraperQueue {
           browser = null;
         }
       }
+    }
 
       this.updateStatus(job.id, {
         progress: 70,

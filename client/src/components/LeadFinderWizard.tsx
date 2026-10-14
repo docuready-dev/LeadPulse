@@ -9,6 +9,8 @@ import {
   RefreshCw, Check, Layers
 } from 'lucide-react';
 
+import SerpApiConnectModal from './SerpApiConnectModal';
+
 interface WizardProps {
   onHarvestStarted: () => void;
 }
@@ -36,6 +38,24 @@ const LeadFinderWizard = ({ onHarvestStarted }: WizardProps) => {
   const [scope, setScope] = useState<'quick' | 'deep'>('quick');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
+
+  // SerpApi Connection Modal & Status State
+  const [isSerpModalOpen, setIsSerpModalOpen] = useState(false);
+  const [serpApiStatus, setSerpApiStatus] = useState<{ isConnected: boolean; account?: any } | null>(null);
+
+  const fetchSerpStatus = async () => {
+    if (!user?._id) return;
+    try {
+      const res = await axios.get('http://localhost:3001/api/leads/serpapi/status', {
+        headers: { userid: user._id }
+      });
+      setSerpApiStatus(res.data);
+    } catch {}
+  };
+
+  useEffect(() => {
+    fetchSerpStatus();
+  }, [user?._id]);
 
   // Real-Time Progress Tracker State
   const [activeJob, setActiveJob] = useState<ActiveJobInfo | null>(null);
@@ -138,6 +158,17 @@ const LeadFinderWizard = ({ onHarvestStarted }: WizardProps) => {
       return;
     }
 
+    // Require SerpApi connection
+    if (!serpApiStatus?.isConnected) {
+      await alertDialog({
+        title: 'SerpApi Engine Required',
+        message: 'To harvest live Google Maps business listings, please connect your SerpApi account (free tier includes 100 free searches/month).',
+        variant: 'info'
+      });
+      setIsSerpModalOpen(true);
+      return;
+    }
+
     const expectedBatchLimit = Math.min(perQueryLimit, credits);
 
     setIsSubmitting(true);
@@ -175,6 +206,10 @@ const LeadFinderWizard = ({ onHarvestStarted }: WizardProps) => {
     } catch (err: any) {
       setIsSubmitting(false);
       setActiveJob(null);
+      if (err.response?.data?.needsSerpApi) {
+        setIsSerpModalOpen(true);
+        return;
+      }
       if (err.response?.data?.needsTopUp) {
         setUpgradeTab('plans');
         setUpgradeModalOpen(true);
@@ -216,6 +251,36 @@ const LeadFinderWizard = ({ onHarvestStarted }: WizardProps) => {
           <div className="text-xs font-delight px-2 py-0.5 rounded-sm bg-slate-100 text-slate-700 border border-slate-200 font-semibold">
             1 Token = 1 Contact • Max {perQueryLimit} / search
           </div>
+
+          {/* SerpApi Engine Connection Pill */}
+          {serpApiStatus?.isConnected ? (
+            <button
+              type="button"
+              onClick={() => setIsSerpModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200/90 transition-colors cursor-pointer"
+              title="Click to view SerpApi engine settings"
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span>SerpApi: Connected</span>
+              {/* Mention SerpApi tier only for Basic and Pro LeadPulse subscribers */}
+              {!isFree && (
+                <span className="text-[10px] text-emerald-700 font-bold bg-emerald-100/70 px-1.5 py-0.2 rounded-md">
+                  {serpApiStatus.account?.plan_name || 'Free'} Tier ({serpApiStatus.account?.plan_searches_left ?? 100} left)
+                </span>
+              )}
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setIsSerpModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200/90 transition-colors cursor-pointer"
+              title="SerpApi engine not connected. Click to link."
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+              <span>SerpApi: Disconnected</span>
+              <span className="underline font-bold ml-0.5">+ Connect</span>
+            </button>
+          )}
 
           {isFree && (
             <div className="flex items-center gap-1 text-xs text-slate-500 font-delight font-normal">
@@ -571,6 +636,14 @@ const LeadFinderWizard = ({ onHarvestStarted }: WizardProps) => {
 
         </div>
       )}
+
+      {/* SerpApi Connection Modal */}
+      <SerpApiConnectModal
+        isOpen={isSerpModalOpen}
+        onClose={() => setIsSerpModalOpen(false)}
+        user={user}
+        onConnected={() => fetchSerpStatus()}
+      />
     </div>
   );
 };

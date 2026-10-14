@@ -6,10 +6,11 @@ import axios from 'axios';
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
 import LeadFinderWizard from '../components/LeadFinderWizard';
+import SerpApiConnectModal from '../components/SerpApiConnectModal';
 import { 
   Building2, Phone, MapPin, Star, Globe, 
   ExternalLink, ArrowRight, Search, Users2, Check,
-  Edit3, X, Mail, Sparkles
+  Edit3, X, Mail, Sparkles, Compass
 } from 'lucide-react';
 
 const LeadFinder = () => {
@@ -18,6 +19,26 @@ const LeadFinder = () => {
   const [leads, setLeads] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [filterQuery, setFilterQuery] = useState('');
+
+  // SerpApi Engine State
+  const [isSerpModalOpen, setIsSerpModalOpen] = useState(false);
+  const [serpApiStatus, setSerpApiStatus] = useState<{ isConnected: boolean; account?: any } | null>(null);
+
+  const isFree = (user?.plan || 'free').toLowerCase() === 'free';
+
+  const fetchSerpStatus = async () => {
+    if (!user?._id) return;
+    try {
+      const res = await axios.get('http://localhost:3001/api/leads/serpapi/status', {
+        headers: { userid: user._id }
+      });
+      setSerpApiStatus(res.data);
+    } catch {}
+  };
+
+  useEffect(() => {
+    fetchSerpStatus();
+  }, [user?._id]);
 
   // Integration Sync & Enrich state
   const [isSyncDropdownOpen, setIsSyncDropdownOpen] = useState(false);
@@ -158,13 +179,36 @@ const LeadFinder = () => {
                 </p>
               </div>
 
-              <button 
-                onClick={() => navigate('/audience')}
-                className="px-3.5 py-2 rounded-md bg-white hover:bg-slate-50 border border-slate-200 text-xs font-medium text-slate-800 flex items-center gap-2 shadow-2xs transition-colors cursor-pointer"
-              >
-                <Users2 className="w-4 h-4 text-blue-600" />
-                <span>Audience &amp; Contacts Hub &rarr;</span>
-              </button>
+              <div className="flex items-center gap-2.5">
+                <button 
+                  type="button"
+                  onClick={() => setIsSerpModalOpen(true)}
+                  className={`px-3 py-2 rounded-md border text-xs font-medium flex items-center gap-2 shadow-2xs transition-colors cursor-pointer ${
+                    serpApiStatus?.isConnected
+                      ? 'bg-emerald-50 hover:bg-emerald-100/80 border-emerald-200 text-emerald-800'
+                      : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-800'
+                  }`}
+                  title="SerpApi Google Maps extraction engine settings"
+                >
+                  <Compass className={`w-4 h-4 ${serpApiStatus?.isConnected ? 'text-emerald-600' : 'text-slate-600'}`} />
+                  <span>
+                    {serpApiStatus?.isConnected ? 'SerpApi Engine: Active' : 'Connect SerpApi'}
+                  </span>
+                  {serpApiStatus?.isConnected && !isFree && (
+                    <span className="text-[10px] uppercase font-bold px-1.5 py-0.2 bg-emerald-200/70 text-emerald-900 rounded">
+                      {serpApiStatus.account?.plan_name || 'Free'} Tier
+                    </span>
+                  )}
+                </button>
+
+                <button 
+                  onClick={() => navigate('/audience')}
+                  className="px-3.5 py-2 rounded-md bg-white hover:bg-slate-50 border border-slate-200 text-xs font-medium text-slate-800 flex items-center gap-2 shadow-2xs transition-colors cursor-pointer"
+                >
+                  <Users2 className="w-4 h-4 text-blue-600" />
+                  <span>Audience &amp; Contacts Hub &rarr;</span>
+                </button>
+              </div>
             </div>
 
             {/* Extraction Wizard */}
@@ -528,6 +572,13 @@ const LeadFinder = () => {
         </div>
       )}
 
+      {/* SerpApi Engine Connection Modal */}
+      <SerpApiConnectModal
+        isOpen={isSerpModalOpen}
+        onClose={() => setIsSerpModalOpen(false)}
+        user={user}
+        onConnected={() => fetchSerpStatus()}
+      />
     </div>
   );
 };

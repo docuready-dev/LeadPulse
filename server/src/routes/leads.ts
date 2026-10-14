@@ -91,6 +91,162 @@ router.post('/form-submit/:userId', async (req, res) => {
   }
 });
 
+// ============================================================================
+// SERPAPI ENGINE INTEGRATION & TIER STATUS
+// ============================================================================
+export const memorySerpApiStore = new Map<string, any>();
+
+// Check SerpApi engine connection and live quota
+router.get('/serpapi/status', async (req, res) => {
+  const userId = req.headers.userid as string;
+  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+  try {
+    let serpInfo = memorySerpApiStore.get(userId);
+    let apiKey = serpInfo?.apiKey;
+
+    if (!apiKey) {
+      try {
+        const userDoc = await db.collection('users').doc(userId).get();
+        if (userDoc.exists) {
+          const udata = userDoc.data() || {};
+          apiKey = udata.serpapi_key;
+          if (apiKey) {
+            serpInfo = {
+              apiKey,
+              plan_id: udata.serpapi_plan || 'free',
+              plan_name: udata.serpapi_plan_name || 'Free',
+              searches_per_month: udata.serpapi_searches_per_month || 100,
+              plan_searches_left: udata.serpapi_searches_left ?? 100,
+              this_month_usage: udata.serpapi_this_month_usage || 0
+            };
+            memorySerpApiStore.set(userId, serpInfo);
+          }
+        }
+      } catch (dbErr) {
+        // Continue with memory store
+      }
+    }
+
+    if (!apiKey) {
+      return res.json({
+        isConnected: false,
+        account: null
+      });
+    }
+
+    // Attempt live usage refresh from SerpApi account API
+    try {
+      const resp = await fetch(`https://serpapi.com/account?api_key=${apiKey}`);
+      const data: any = await resp.json();
+      if (data && !data.error && data.plan_id) {
+        const updated = {
+          apiKey,
+          plan_id: data.plan_id || 'free',
+          plan_name: data.plan_name || 'Free',
+          searches_per_month: data.searches_per_month || 100,
+          plan_searches_left: data.plan_searches_left ?? (data.total_searches_left ?? 100),
+          this_month_usage: data.this_month_usage ?? 0,
+          account_email: data.account_email || ''
+        };
+        memorySerpApiStore.set(userId, updated);
+        return res.json({
+          isConnected: true,
+          account: updated
+        });
+      }
+    } catch (apiErr) {
+      // Continue with cached details
+    }
+
+    res.json({
+      isConnected: true,
+      account: serpInfo
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to check SerpApi status' });
+  }
+});
+
+// Verify & connect user SerpApi key
+router.post('/serpapi/connect', async (req, res) => {
+  const userId = req.headers.userid as string;
+  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+  const { apiKey } = req.body;
+  const cleanKey = (apiKey || '').trim();
+
+  if (!cleanKey) {
+    return res.status(400).json({ success: false, error: 'SerpApi API key is required.' });
+  }
+
+  try {
+    const resp = await fetch(`https://serpapi.com/account?api_key=${cleanKey}`);
+    const data: any = await resp.json();
+
+    if (data.error || !data.plan_id) {
+      return res.status(400).json({
+        success: false,
+        error: data.error || 'Invalid SerpApi API key. Please check your key at https://serpapi.com/manage-api-key'
+      });
+    }
+
+    const accountRecord = {
+      apiKey: cleanKey,
+      plan_id: data.plan_id || 'free',
+      plan_name: data.plan_name || 'Free',
+      searches_per_month: data.searches_per_month || 100,
+      plan_searches_left: data.plan_searches_left ?? (data.total_searches_left ?? 100),
+      this_month_usage: data.this_month_usage ?? 0,
+      account_email: data.account_email || ''
+    };
+
+    memorySerpApiStore.set(userId, accountRecord);
+
+    await db.collection('users').doc(userId).update({
+      serpapi_key: cleanKey,
+      serpapi_connected: true,
+      serpapi_plan: accountRecord.plan_id,
+      serpapi_plan_name: accountRecord.plan_name,
+      serpapi_searches_left: accountRecord.plan_searches_left,
+      serpapi_searches_per_month: accountRecord.searches_per_month,
+      serpapi_this_month_usage: accountRecord.this_month_usage,
+      serpapi_updated_at: new Date().toISOString()
+    }).catch(err => {
+      console.warn('[Leads] Could not persist SerpApi info to Firestore:', err);
+    });
+
+    res.json({
+      success: true,
+      message: 'SerpApi engine connected and verified successfully!',
+      account: accountRecord
+    });
+  } catch (err: any) {
+    console.error('[Leads] SerpApi connection error:', err);
+    res.status(500).json({ success: false, error: err.message || 'Failed to connect to SerpApi' });
+  }
+});
+
+// Disconnect SerpApi key
+router.delete('/serpapi/disconnect', async (req, res) => {
+  const userId = req.headers.userid as string;
+  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+  memorySerpApiStore.delete(userId);
+
+  try {
+    await db.collection('users').doc(userId).update({
+      serpapi_key: null,
+      serpapi_connected: false,
+      serpapi_plan: null,
+      serpapi_plan_name: null,
+      serpapi_searches_left: null
+    });
+  } catch {}
+
+  res.json({ success: true, message: 'SerpApi engine disconnected.' });
+});
+
 router.post('/scrape', async (req, res) => {
   const userId = req.headers.userid as string;
   const { keyword, location, scope = 'quick' } = req.body;
@@ -99,55 +255,88 @@ router.post('/scrape', async (req, res) => {
 
   try {
     const userRef = db.collection('users').doc(userId);
-    const preSnap = await userRef.get();
-    if (!preSnap.exists) return res.status(404).json({ error: 'User not found' });
+    let preSnap: any = null;
+    let userData: any = null;
+
+    try {
+      preSnap = await userRef.get();
+      if (preSnap && preSnap.exists) {
+        userData = preSnap.data();
+      }
+    } catch (dbErr) {
+      console.warn('[Leads] Could not fetch user doc from Firestore:', dbErr);
+    }
+
+    // Check SerpApi engine requirement
+    const userSerpInfo = memorySerpApiStore.get(userId);
+    const resolvedSerpKey = userSerpInfo?.apiKey || userData?.serpapi_key || process.env.SERPAPI_KEY || '';
+
+    if (!resolvedSerpKey) {
+      return res.status(400).json({
+        error: 'SerpApi connection required for lead harvesting. Please connect your SerpApi account.',
+        needsSerpApi: true
+      });
+    }
 
     // Normalize Free tier pool (15 tokens max, 1 token = 1 contact) before transaction
-    await syncUserPoolCredits(userId, preSnap.data() || {});
+    if (userData) {
+      await syncUserPoolCredits(userId, userData).catch(() => {});
+    }
 
-    let creditsRemaining = 0;
-    let userPlan = 'free';
-    let poolRefreshedAt = new Date().toISOString();
-    let limit = 10;
+    let creditsRemaining = userData?.lead_credits ?? 15;
+    let userPlan = (userData?.plan || 'free').toLowerCase();
+    let poolRefreshedAt = userData?.pool_refreshed_at || new Date().toISOString();
+    let limit = userPlan === 'free' ? 10 : 20;
     let tokensUsed = 0;
 
     // Deduct 1 Token per Contact scraped (1 Token = 1 Contact)
-    await db.runTransaction(async (t) => {
-      const doc = await t.get(userRef);
-      if (!doc.exists) throw new Error("User not found");
-      const data = doc.data()!;
-      userPlan = (data.plan || 'free').toLowerCase();
-      poolRefreshedAt = data.pool_refreshed_at || new Date().toISOString();
+    try {
+      await db.runTransaction(async (t) => {
+        const doc = await t.get(userRef);
+        if (!doc.exists) return;
+        const data = doc.data()!;
+        userPlan = (data.plan || 'free').toLowerCase();
+        poolRefreshedAt = data.pool_refreshed_at || new Date().toISOString();
 
-      let currentCredits = data.lead_credits ?? 15;
+        let currentCredits = data.lead_credits ?? 15;
 
-      // Check 4-day auto-refresh & free-tier 15-token cap
-      if (userPlan === 'free') {
-        const fourDaysMs = 4 * 24 * 60 * 60 * 1000;
-        const lastRefresh = data.pool_refreshed_at ? new Date(data.pool_refreshed_at).getTime() : 0;
-        if (!data.pool_refreshed_at || Date.now() - lastRefresh >= fourDaysMs) {
-          currentCredits = 15;
-          poolRefreshedAt = new Date().toISOString();
-        } else if (!data.has_topup && currentCredits > 15) {
-          currentCredits = 15;
+        // Check 4-day auto-refresh & free-tier 15-token cap
+        if (userPlan === 'free') {
+          const fourDaysMs = 4 * 24 * 60 * 60 * 1000;
+          const lastRefresh = data.pool_refreshed_at ? new Date(data.pool_refreshed_at).getTime() : 0;
+          if (!data.pool_refreshed_at || Date.now() - lastRefresh >= fourDaysMs) {
+            currentCredits = 15;
+            poolRefreshedAt = new Date().toISOString();
+          } else if (!data.has_topup && currentCredits > 15) {
+            currentCredits = 15;
+          }
         }
-      }
 
-      if (currentCredits < 1) {
-        throw new Error("Insufficient credits");
-      }
+        if (currentCredits < 1) {
+          throw new Error("Insufficient credits");
+        }
 
-      // Max contacts per query: 10 on Free tier, 20 on Basic/Pro, capped by available tokens (1 Token = 1 Contact)
-      const maxPerQuery = userPlan === 'free' ? 10 : 20;
-      limit = Math.min(maxPerQuery, currentCredits);
-      tokensUsed = limit; // 1 token = 1 contact scraped
-      creditsRemaining = currentCredits - tokensUsed;
+        // Max contacts per query: 10 on Free tier, 20 on Basic/Pro, capped by available tokens (1 Token = 1 Contact)
+        const maxPerQuery = userPlan === 'free' ? 10 : 20;
+        limit = Math.min(maxPerQuery, currentCredits);
+        tokensUsed = limit; // 1 token = 1 contact scraped
+        creditsRemaining = currentCredits - tokensUsed;
 
-      t.update(userRef, { 
-        lead_credits: creditsRemaining,
-        pool_refreshed_at: poolRefreshedAt
+        t.update(userRef, { 
+          lead_credits: creditsRemaining,
+          pool_refreshed_at: poolRefreshedAt
+        });
       });
-    });
+    } catch (txErr: any) {
+      if (txErr.message === "Insufficient credits") {
+        return res.status(403).json({ error: 'Insufficient credits', needsTopUp: true });
+      }
+      // If Firestore transaction fails due to offline/permission, proceed with default quota
+      const maxPerQuery = userPlan === 'free' ? 10 : 20;
+      limit = Math.min(maxPerQuery, creditsRemaining > 0 ? creditsRemaining : maxPerQuery);
+      tokensUsed = limit;
+      creditsRemaining = Math.max(0, creditsRemaining - tokensUsed);
+    }
     
     const jobId = `job_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
 
@@ -157,7 +346,8 @@ router.post('/scrape', async (req, res) => {
       keyword, 
       location, 
       scope, 
-      limit 
+      limit,
+      serpApiKey: resolvedSerpKey
     });
     
     res.json({ 
