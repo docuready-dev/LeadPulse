@@ -1,10 +1,10 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { alertDialog } from './AppConfirmModal';
 import { 
-  X, ShieldCheck, Check, 
-  Loader2, Sparkles, Send, CheckCircle2, AlertCircle, Eye, EyeOff,
-  Globe, Server, Lock, Unlink
+  X, Check, 
+  Loader2, CheckCircle2, AlertCircle, Eye, EyeOff,
+  Server, Lock, Unlink, Send, ShieldCheck, Mail
 } from 'lucide-react';
 
 interface EmailProviderModalProps {
@@ -14,110 +14,23 @@ interface EmailProviderModalProps {
   onSaved?: () => void;
 }
 
-export type MailProviderType = 'leadpulse_cloud' | 'gmail' | 'brevo' | 'outlook' | 'yahoo' | 'zoho' | 'icloud' | 'custom' | 'resend';
-
 const EmailProviderModal = ({ isOpen, onClose, user, onSaved }: EmailProviderModalProps) => {
   if (!isOpen) return null;
 
-  const [provider, setProvider] = useState<MailProviderType>('leadpulse_cloud');
-  
-  // Credentials & Settings
-  const [emailAccount, setEmailAccount] = useState(user?.email || '');
-  const [replyTo, setReplyTo] = useState(user?.email || '');
-  const [accountPassword, setAccountPassword] = useState('');
-  const [fromName, setFromName] = useState(user?.name || 'LeadPulse Growth Director');
-  const [showPassword, setShowPassword] = useState(false);
-
-  // 4-box segmented App Password state for Google (4 blocks of 4 chars = 16 chars)
-  const [appPasswordBlocks, setAppPasswordBlocks] = useState<[string, string, string, string]>(['', '', '', '']);
-  const [useSegmentedInput, setUseSegmentedInput] = useState(true);
-  const block0Ref = useRef<HTMLInputElement>(null);
-  const block1Ref = useRef<HTMLInputElement>(null);
-  const block2Ref = useRef<HTMLInputElement>(null);
-  const block3Ref = useRef<HTMLInputElement>(null);
-  const blockRefs = [block0Ref, block1Ref, block2Ref, block3Ref];
-
-  const syncBlocksFromPassword = (raw: string) => {
-    const clean = raw.replace(/\s+/g, '').slice(0, 16);
-    setAppPasswordBlocks([
-      clean.slice(0, 4),
-      clean.slice(4, 8),
-      clean.slice(8, 12),
-      clean.slice(12, 16)
-    ]);
-  };
-
-  const handleBlockChange = (index: number, val: string) => {
-    const clean = val.replace(/[^a-zA-Z0-9]/g, '');
-    if (clean.length > 4) {
-      const full = (
-        appPasswordBlocks.slice(0, index).join('') +
-        clean +
-        appPasswordBlocks.slice(index + 1).join('')
-      ).slice(0, 16);
-      syncBlocksFromPassword(full);
-      setAccountPassword(full);
-      const nextIdx = Math.min(Math.floor((full.length - 1) / 4) + 1, 3);
-      blockRefs[nextIdx].current?.focus();
-      return;
-    }
-
-    const cleanVal = clean.slice(0, 4);
-    const updated = [...appPasswordBlocks] as [string, string, string, string];
-    updated[index] = cleanVal;
-    setAppPasswordBlocks(updated);
-    const combined = updated.join('');
-    setAccountPassword(combined);
-
-    // Auto-advance to next box if 4 chars reached
-    if (cleanVal.length === 4 && index < 3) {
-      blockRefs[index + 1].current?.focus();
-    }
-  };
-
-  const handleBlockKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
-    if (e.key === 'Backspace' && appPasswordBlocks[index] === '' && index > 0) {
-      e.preventDefault();
-      blockRefs[index - 1].current?.focus();
-    } else if (e.key === 'ArrowLeft' && e.currentTarget.selectionStart === 0 && index > 0) {
-      e.preventDefault();
-      blockRefs[index - 1].current?.focus();
-    } else if (e.key === 'ArrowRight' && e.currentTarget.selectionStart === appPasswordBlocks[index].length && index < 3) {
-      e.preventDefault();
-      blockRefs[index + 1].current?.focus();
-    }
-  };
-
-  const handleBlockPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
-    e.preventDefault();
-    const pasted = e.clipboardData.getData('text') || '';
-    const clean = pasted.replace(/[^a-zA-Z0-9]/g, '').slice(0, 16);
-    if (!clean) return;
-
-    syncBlocksFromPassword(clean);
-    setAccountPassword(clean);
-
-    const nextIdx = Math.min(Math.floor((clean.length - 1) / 4) + 1, 3);
-    blockRefs[nextIdx].current?.focus();
-  };
-
-  useEffect(() => {
-    if (provider === 'gmail' && accountPassword) {
-      syncBlocksFromPassword(accountPassword);
-    }
-  }, [provider]);
-
-  // Custom SMTP settings
+  // Form Fields for Standard SMTP Outbox
   const [smtpHost, setSmtpHost] = useState('');
   const [smtpPort, setSmtpPort] = useState('587');
   const [smtpSecure, setSmtpSecure] = useState(false);
+  const [smtpUser, setSmtpUser] = useState('');
+  const [smtpPass, setSmtpPass] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [fromName, setFromName] = useState(user?.name || '');
+  const [fromEmail, setFromEmail] = useState(user?.email || '');
+  const [replyTo, setReplyTo] = useState(user?.email || '');
 
-  // Resend API
-  const [resendApiKey, setResendApiKey] = useState('');
-
-  // Verification & test states
+  // Verification & Test Ping
   const [sendTestEmail, setSendTestEmail] = useState(true);
-  const [testRecipient, setTestRecipient] = useState(user?.email || 'ashleyghose64@gmail.com');
+  const [testRecipient, setTestRecipient] = useState(user?.email || '');
   const [isVerifying, setIsVerifying] = useState(false);
   const [verificationSuccess, setVerificationSuccess] = useState<string | null>(null);
   const [verificationError, setVerificationError] = useState<string | null>(null);
@@ -137,16 +50,21 @@ const EmailProviderModal = ({ isOpen, onClose, user, onSaved }: EmailProviderMod
           headers: { userid: user._id }
         });
         if (res.data?.isConnected && res.data.mailbox) {
-          setConnectedMailbox(res.data.mailbox);
-          setProvider(res.data.mailbox.provider || 'leadpulse_cloud');
-          setEmailAccount(res.data.mailbox.user || user?.email || '');
-          setReplyTo(res.data.mailbox.replyTo || res.data.mailbox.user || user?.email || '');
-          setFromName(res.data.mailbox.fromName || user?.name || '');
-          if (res.data.mailbox.host) setSmtpHost(res.data.mailbox.host);
-          if (res.data.mailbox.port) setSmtpPort(String(res.data.mailbox.port));
+          const mb = res.data.mailbox;
+          setConnectedMailbox(mb);
+          setSmtpHost(mb.host || '');
+          setSmtpPort(String(mb.port || '587'));
+          setSmtpSecure(Boolean(mb.secure));
+          setSmtpUser(mb.user || '');
+          setFromName(mb.fromName || user?.name || '');
+          setFromEmail(mb.fromEmail || mb.user || user?.email || '');
+          setReplyTo(mb.replyTo || mb.fromEmail || mb.user || user?.email || '');
+        } else {
+          setConnectedMailbox(null);
         }
       } catch (err) {
         console.error('Failed to load mailbox status:', err);
+        setConnectedMailbox(null);
       } finally {
         setIsLoadingStatus(false);
       }
@@ -154,110 +72,63 @@ const EmailProviderModal = ({ isOpen, onClose, user, onSaved }: EmailProviderMod
     fetchStatus();
   }, [user?._id]);
 
-  // Automatic provider detection based on email domain (Mail App behavior)
-  const handleEmailChange = (val: string) => {
-    setEmailAccount(val);
-    const domain = val.toLowerCase().split('@')[1] || '';
-    if (domain.includes('gmail.com') || domain.includes('googlemail.com')) {
-      setProvider('gmail');
-    } else if (domain.includes('outlook.com') || domain.includes('hotmail.com') || domain.includes('live.com') || domain.includes('office365.com')) {
-      setProvider('outlook');
-    } else if (domain.includes('yahoo.com') || domain.includes('ymail.com')) {
-      setProvider('yahoo');
-    } else if (domain.includes('zoho.com') || domain.includes('zohomail.com')) {
-      setProvider('zoho');
-    } else if (domain.includes('icloud.com') || domain.includes('me.com') || domain.includes('mac.com')) {
-      setProvider('icloud');
-    } else if (domain.includes('brevo.com') || domain.includes('sendinblue.com')) {
-      setProvider('brevo');
-    }
+  // Handle port quick presets
+  const handlePortSelect = (portNum: string, secureVal: boolean) => {
+    setSmtpPort(portNum);
+    setSmtpSecure(secureVal);
   };
 
   const handleVerifyAndConnect = async () => {
+    const cleanHost = smtpHost.trim();
+    const cleanUser = smtpUser.trim();
+    const cleanPass = smtpPass.trim();
+
+    if (!cleanHost) {
+      setVerificationError('Please enter your SMTP server host (e.g. mail.yourdomain.com).');
+      return;
+    }
+    if (!cleanUser) {
+      setVerificationError('Please enter your SMTP username or account email.');
+      return;
+    }
+    if (!cleanPass && !connectedMailbox) {
+      setVerificationError('Please enter your SMTP password.');
+      return;
+    }
+
     setIsVerifying(true);
     setVerificationSuccess(null);
     setVerificationError(null);
 
-    // 1. LeadPulse Cloud Outbox Relay (Default & Zero Setup)
-    if (provider === 'leadpulse_cloud') {
-      try {
-        const payload: any = {
-          provider: 'leadpulse_cloud',
-          fromName: fromName.trim() || user?.name || 'LeadPulse Growth Director',
-          fromEmail: 'outreach@leadpulse.io',
-          replyTo: (replyTo || emailAccount || user?.email || '').trim(),
-          sendTestPing: sendTestEmail,
-          testRecipient: testRecipient.trim() || replyTo.trim() || user?.email
-        };
-
-        const res = await axios.post('http://localhost:3001/api/outreach/verify-mailbox', payload, {
-          headers: { userid: user?._id }
-        });
-
-        if (res.data.success) {
-          setVerificationSuccess(res.data.message || 'LeadPulse Cloud Outbox activated successfully!');
-          setConnectedMailbox(res.data.mailbox);
-          if (onSaved) onSaved();
-        } else {
-          setVerificationError(res.data.error || 'Failed to activate Cloud Outbox.');
-        }
-      } catch (err: any) {
-        setVerificationError(err.response?.data?.error || err.message || 'Cloud Outbox activation failed.');
-      } finally {
-        setIsVerifying(false);
-      }
-      return;
-    }
-
-    // 2. Custom SMTP or Third-Party Provider
-    const cleanPass = accountPassword.replace(/\s+/g, '').trim();
-
-    if (provider === 'gmail' && cleanPass.length !== 16) {
-      setIsVerifying(false);
-      setVerificationError(
-        `Google App Password must be exactly 16 characters (4 boxes of 4 characters each). You currently have ${cleanPass.length} character${cleanPass.length === 1 ? '' : 's'} entered.`
-      );
-      return;
-    }
-
     try {
-      const payload: any = {
-        provider,
-        user: emailAccount.trim(),
-        pass: cleanPass,
-        fromName: fromName.trim() || 'LeadPulse Growth Director',
-        fromEmail: emailAccount.trim(),
-        replyTo: replyTo.trim() || emailAccount.trim(),
+      const payload = {
+        host: cleanHost,
+        port: parseInt(smtpPort) || 587,
+        secure: smtpSecure,
+        user: cleanUser,
+        pass: cleanPass || (connectedMailbox?.hasPassword ? undefined : ''),
+        fromName: fromName.trim() || user?.name || 'Outreach Specialist',
+        fromEmail: (fromEmail || cleanUser).trim(),
+        replyTo: (replyTo || fromEmail || cleanUser).trim(),
         sendTestPing: sendTestEmail,
-        testRecipient: testRecipient.trim() || emailAccount.trim()
+        testRecipient: testRecipient.trim() || cleanUser
       };
-
-      if (provider === 'custom') {
-        payload.host = smtpHost.trim();
-        payload.port = parseInt(smtpPort) || 587;
-        payload.secure = smtpSecure;
-      } else if (provider === 'resend') {
-        payload.resendApiKey = resendApiKey.trim();
-      }
 
       const res = await axios.post('http://localhost:3001/api/outreach/verify-mailbox', payload, {
         headers: { userid: user?._id }
       });
 
       if (res.data.success) {
-        setVerificationSuccess(res.data.message || 'Mailbox verified and connected successfully!');
+        setVerificationSuccess(res.data.message || 'SMTP outbox verified and connected successfully!');
         setConnectedMailbox(res.data.mailbox);
+        setSmtpPass('');
         if (onSaved) onSaved();
       } else {
-        setVerificationError(res.data.error || 'Failed to verify mailbox.');
+        setVerificationError(res.data.error || 'Failed to verify SMTP connection.');
       }
     } catch (err: any) {
-      if (err.response?.status === 502 || err.message?.includes('502')) {
-        setVerificationError('Cloud server is currently redeploying or experienced a gateway timeout (502 Bad Gateway). Please wait 15-20 seconds for the service to finish starting up, then try clicking Verify again.');
-      } else {
-        const errMsg = err.response?.data?.error || err.message || 'SMTP connection verification failed.';
-        setVerificationError(errMsg);
-      }
+      const errMsg = err.response?.data?.error || err.message || 'SMTP connection verification failed.';
+      setVerificationError(errMsg);
     } finally {
       setIsVerifying(false);
     }
@@ -270,13 +141,13 @@ const EmailProviderModal = ({ isOpen, onClose, user, onSaved }: EmailProviderMod
         headers: { userid: user?._id }
       });
       setConnectedMailbox(null);
-      setAccountPassword('');
+      setSmtpPass('');
       setVerificationSuccess(null);
       setVerificationError(null);
       if (onSaved) onSaved();
       await alertDialog({
-        title: 'Mailbox Disconnected',
-        message: 'Your sending mailbox has been unlinked. You can connect another email account whenever you are ready.',
+        title: 'SMTP Outbox Disconnected',
+        message: 'Your sending mailbox has been unlinked. Live outreach dispatches will require an active SMTP outbox or direct webmail sending.',
         variant: 'info'
       });
     } catch (err: any) {
@@ -291,7 +162,7 @@ const EmailProviderModal = ({ isOpen, onClose, user, onSaved }: EmailProviderMod
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50 p-3 sm:p-4 overflow-y-auto animate-in fade-in duration-150">
+    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center z-50 p-3 sm:p-4 overflow-y-auto animate-in fade-in duration-150">
       <div className="bg-white border border-slate-200/90 rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] my-auto">
         
         {/* Header */}
@@ -299,39 +170,40 @@ const EmailProviderModal = ({ isOpen, onClose, user, onSaved }: EmailProviderMod
           <div>
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 backdrop-blur-xs border border-white/20 text-white font-delight text-[11px] font-bold mb-2">
               <Server className="w-3.5 h-3.5" />
-              <span>Mail App Architecture (Send-Only Outbox)</span>
+              <span>Standard SMTP Outbox</span>
             </div>
             <h2 className="text-xl font-bold tracking-tight text-white font-delight">
-              Connect Sending Mailbox
+              Outbox Mail Settings
             </h2>
             <p className="text-xs text-indigo-100 mt-1 max-w-md leading-relaxed font-delight">
-              Connect any email account to dispatch live outreach. Dedicated outbox connection with zero inbox syncing or reading.
+              Connect any standard SMTP server to dispatch live outreach emails. Dedicated outbound socket connection with zero inbox syncing or reading.
             </p>
           </div>
 
           <button 
             onClick={onClose}
             className="w-8 h-8 rounded-xl bg-white/15 hover:bg-white/25 border border-white/20 flex items-center justify-center text-white transition-colors cursor-pointer"
+            title="Close"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Active Mailbox Banner if Connected */}
-        {connectedMailbox && (
-          <div className="px-5 py-3 bg-emerald-50/70 border-b border-emerald-200/80 flex items-center justify-between gap-3 font-delight">
+        {/* Active Outbox Banner if Connected */}
+        {connectedMailbox ? (
+          <div className="px-5 py-3.5 bg-emerald-50/80 border-b border-emerald-200/90 flex items-center justify-between gap-3 font-delight">
             <div className="flex items-center gap-2.5 min-w-0">
               <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
               <div className="min-w-0">
                 <div className="text-xs font-bold text-emerald-950 truncate flex items-center gap-1.5">
-                  <span>Connected:</span>
+                  <span>Outbox Active:</span>
                   <span className="font-semibold text-emerald-800">{connectedMailbox.fromEmail || connectedMailbox.user}</span>
-                  <span className="text-[10px] uppercase font-bold px-1.5 py-0.2 bg-emerald-200/60 text-emerald-900 rounded-md">
-                    {connectedMailbox.provider}
+                  <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 bg-emerald-200/70 text-emerald-900 rounded-md">
+                    {connectedMailbox.host}:{connectedMailbox.port}
                   </span>
                 </div>
                 <div className="text-[11px] text-emerald-700 font-medium">
-                  Verified & Ready to deliver real outreach emails
+                  Verified socket connection ready for automated dispatch
                 </div>
               </div>
             </div>
@@ -346,507 +218,262 @@ const EmailProviderModal = ({ isOpen, onClose, user, onSaved }: EmailProviderMod
               <span>Disconnect</span>
             </button>
           </div>
+        ) : (
+          <div className="px-5 py-3 bg-amber-50/70 border-b border-amber-200/80 flex items-center gap-2 text-xs font-delight text-amber-900">
+            <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+            <span>
+              <strong>No SMTP outbox configured.</strong> Add your standard SMTP credentials below to enable live email delivery.
+            </span>
+          </div>
         )}
 
         {/* Body Form */}
         <div className="p-5 overflow-y-auto custom-scrollbar space-y-4">
-          
-          {/* Provider Selection Tiles */}
-          <div>
-            <label className="block text-[11px] font-delight font-bold text-slate-500 uppercase tracking-wider mb-2">
-              Select Email Service
-            </label>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {[
-                { id: 'leadpulse_cloud', label: 'LeadPulse Cloud', sub: 'Zero-Setup Relay', highlight: 'Recommended (Instant)' },
-                { id: 'brevo', label: 'Brevo Free', sub: 'Single Free Platform', highlight: '300/Day Free' },
-                { id: 'resend', label: 'Resend API', sub: 'Cloud REST API', highlight: 'Developer API' },
-                { id: 'custom', label: 'Custom SMTP', sub: 'Any Domain Host', highlight: 'Standard SMTP' },
-                { id: 'gmail', label: 'Gmail', sub: 'App Password', highlight: 'Personal SMTP' },
-                { id: 'outlook', label: 'Outlook', sub: 'Office 365 / Hotmail', highlight: 'Microsoft' },
-                { id: 'yahoo', label: 'Yahoo Mail', sub: 'App Password', highlight: 'Yahoo SMTP' },
-                { id: 'zoho', label: 'Zoho Mail', sub: 'App Password', highlight: 'Business Email' }
-              ].map((p) => {
-                const active = provider === p.id;
-                return (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => setProvider(p.id as MailProviderType)}
-                    className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer font-delight flex flex-col justify-between ${
-                      active
-                        ? 'border-indigo-600 bg-indigo-50/40 text-indigo-950 ring-2 ring-indigo-500/20 shadow-xs'
-                        : 'border-slate-200 bg-white hover:border-indigo-200 text-slate-700 hover:bg-slate-50/50'
-                    }`}
-                  >
-                    <div>
-                      <div className="text-xs font-bold truncate flex items-center justify-between">
-                        <span>{p.label}</span>
-                        {active && <Check className="w-3.5 h-3.5 text-indigo-600" />}
-                      </div>
-                      <div className="text-[10px] text-slate-400 truncate mt-0.5">{p.sub}</div>
-                    </div>
-                    <span className="text-[9px] font-semibold text-indigo-600 bg-indigo-50/80 px-1.5 py-0.2 rounded-md mt-1.5 self-start">
-                      {p.highlight}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
 
-          {/* Provider Specific Helper Box */}
-          <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/90 text-xs font-delight leading-relaxed space-y-1.5">
-            {provider === 'leadpulse_cloud' && (
-              <>
-                <div className="flex items-center gap-1.5 text-slate-900 font-bold">
-                  <Sparkles className="w-4 h-4 text-emerald-600" />
-                  <span>LeadPulse Managed Cloud Outbox (Zero Setup Required)</span>
-                </div>
-                <p className="text-slate-600 text-[11px]">
-                  Direct outbound outreach engine running over secure HTTPS (Port 443). No email passwords, no Google 2FA, and zero connection timeouts.
-                </p>
-                <div className="mt-2 p-2.5 bg-emerald-50/70 border border-emerald-200/80 rounded-lg text-[11px] text-emerald-950">
-                  <strong>How Replies Work:</strong> Outbound emails send through LeadPulse's authenticated domain, but include your personal email in the <code className="bg-emerald-100/70 px-1 py-0.5 rounded font-mono font-bold">Reply-To</code> header. When prospects hit "Reply", responses land straight in your personal inbox!
-                </div>
-              </>
-            )}
-            {provider === 'gmail' && (
-              <>
-                <div className="flex items-center gap-1.5 text-slate-900 font-bold">
-                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                  <span>Gmail &amp; Google Workspace Setup Guide</span>
-                </div>
-                <p className="text-slate-600 text-[11px]">
-                  Google requires a 16-character <strong>App Password</strong> instead of your personal login password.
-                </p>
-                <div className="pt-1">
-                  <a 
-                    href="https://myaccount.google.com/apppasswords" 
-                    target="_blank" 
-                    rel="noreferrer" 
-                    className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 hover:text-indigo-800 underline"
-                  >
-                    <span>Generate Google App Password</span>
-                    <span>&rarr;</span>
-                  </a>
-                </div>
-              </>
-            )}
-
-            {provider === 'brevo' && (
-              <>
-                <div className="flex items-center gap-1.5 text-slate-900 font-bold">
-                  <Sparkles className="w-4 h-4 text-emerald-600" />
-                  <span>Single Most Trustful &amp; Free Platform (300 Free Emails / Day)</span>
-                </div>
-                <p className="text-slate-600 text-[11px]">
-                  Brevo gives you 300 free delivered emails every day forever (9,000/mo) with zero credit card required.
-                </p>
-                <div className="pt-1">
-                  <a 
-                    href="https://app.brevo.com/settings/keys/smtp" 
-                    target="_blank" 
-                    rel="noreferrer" 
-                    className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 hover:text-indigo-800 underline"
-                  >
-                    <span>Get Free Brevo SMTP Key (app.brevo.com)</span>
-                    <span>&rarr;</span>
-                  </a>
-                </div>
-              </>
-            )}
-
-            {provider === 'outlook' && (
-              <>
-                <div className="flex items-center gap-1.5 text-slate-900 font-bold">
-                  <Globe className="w-4 h-4 text-blue-600" />
-                  <span>Microsoft Outlook &amp; Office 365 Setup</span>
-                </div>
-                <p className="text-slate-600 text-[11px]">
-                  Enter your Outlook/Hotmail/Office 365 email and password. If 2-Step Verification is enabled, generate an App Password in your Microsoft Account Security settings.
-                </p>
-              </>
-            )}
-
-            {provider === 'yahoo' && (
-              <>
-                <div className="flex items-center gap-1.5 text-slate-900 font-bold">
-                  <Lock className="w-4 h-4 text-purple-600" />
-                  <span>Yahoo Mail App Password Setup</span>
-                </div>
-                <p className="text-slate-600 text-[11px]">
-                  Yahoo requires an App Password. Generate one in Yahoo Account Security &rarr; Manage App Passwords.
-                </p>
-              </>
-            )}
-
-            {provider === 'zoho' && (
-              <>
-                <div className="flex items-center gap-1.5 text-slate-900 font-bold">
-                  <Server className="w-4 h-4 text-emerald-600" />
-                  <span>Zoho Mail App Password Setup</span>
-                </div>
-                <p className="text-slate-600 text-[11px]">
-                  Generate an Application-Specific Password in Zoho Accounts &rarr; Security &rarr; App Passwords.
-                </p>
-              </>
-            )}
-
-            {provider === 'icloud' && (
-              <>
-                <div className="flex items-center gap-1.5 text-slate-900 font-bold">
-                  <Lock className="w-4 h-4 text-slate-800" />
-                  <span>Apple iCloud Mail Setup</span>
-                </div>
-                <p className="text-slate-600 text-[11px]">
-                  Generate an App-Specific Password at appleid.apple.com under Sign-In and Security.
-                </p>
-              </>
-            )}
-
-            {provider === 'custom' && (
-              <>
-                <div className="flex items-center gap-1.5 text-slate-900 font-bold">
-                  <Server className="w-4 h-4 text-slate-800" />
-                  <span>Custom Business SMTP Gateway</span>
-                </div>
-                <p className="text-slate-600 text-[11px]">
-                  Connect your company's private mail server or custom hosting email (cPanel, Namecheap, Hostinger, GoDaddy).
-                </p>
-              </>
-            )}
-
-            {provider === 'resend' && (
-              <>
-                <div className="flex items-center gap-1.5 text-slate-900 font-bold">
-                  <Sparkles className="w-4 h-4 text-indigo-600" />
-                  <span>Resend Cloud REST API</span>
-                </div>
-                <p className="text-slate-600 text-[11px]">
-                  Modern developer API delivering over HTTPS on port 443. Enter your API key from resend.com.
-                </p>
-              </>
-            )}
-          </div>
-
-          {/* Core Credentials Fields */}
-          <div className="space-y-3">
-            <div>
-              <label className="block text-xs font-delight font-bold text-slate-700 mb-1">
-                Sender Display Name
+          {/* Form Fields: Host & Port */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-bold font-delight text-slate-700 mb-1">
+                SMTP Server / Host <span className="text-rose-500">*</span>
               </label>
-              <input 
-                type="text"
-                value={fromName}
-                onChange={(e) => setFromName(e.target.value)}
-                placeholder="Ashley Ghose | LeadPulse"
-                className="w-full h-9 px-3 bg-white border border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 rounded-xl text-xs font-delight font-medium text-slate-900 outline-none transition-all"
-              />
-            </div>
-
-            {provider === 'leadpulse_cloud' ? (
-              <div className="space-y-3 pt-1">
-                <div>
-                  <label className="block text-xs font-delight font-bold text-slate-700 mb-1">
-                    Direct Reply-To Email Address
-                  </label>
-                  <input 
-                    type="email"
-                    value={replyTo}
-                    onChange={(e) => setReplyTo(e.target.value)}
-                    placeholder="yourname@gmail.com or contact@yourcompany.com"
-                    className="w-full h-9 px-3 bg-white border border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 rounded-xl text-xs font-delight font-medium text-slate-900 outline-none transition-all"
-                  />
-                  <span className="text-[10px] text-slate-500 font-delight mt-1 block">
-                    When prospects click "Reply" to your outreach, their emails land directly in this inbox.
-                  </span>
-                </div>
-
-                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
-                  <div>
-                    <span className="text-[10px] font-delight font-bold text-slate-400 uppercase tracking-wider block">Outbound Envelope</span>
-                    <span className="text-xs font-mono font-bold text-slate-800">
-                      "{fromName || 'LeadPulse Growth Director'} via LeadPulse" &lt;outreach@leadpulse.io&gt;
-                    </span>
-                  </div>
-                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-full border border-emerald-200">
-                    SPF &amp; DKIM Ready
-                  </span>
-                </div>
-              </div>
-            ) : provider !== 'resend' ? (
-              <>
-                <div>
-                  <label className="block text-xs font-delight font-bold text-slate-700 mb-1">
-                    {provider === 'brevo' ? 'Brevo SMTP Login Email' : 'Email Address'}
-                  </label>
-                  <input 
-                    type="email"
-                    value={emailAccount}
-                    onChange={(e) => handleEmailChange(e.target.value)}
-                    placeholder={provider === 'gmail' ? 'yourname@gmail.com' : provider === 'outlook' ? 'yourname@outlook.com' : 'contact@yourdomain.com'}
-                    className="w-full h-9 px-3 bg-white border border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 rounded-xl text-xs font-delight font-medium text-slate-900 outline-none transition-all"
-                  />
-                  <span className="text-[10px] text-slate-400 font-delight mt-1 block">
-                    Typing your email automatically preconfigures server endpoints for you.
-                  </span>
-                </div>
-
-                {provider === 'gmail' && useSegmentedInput ? (
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <label className="block text-xs font-delight font-bold text-slate-700">
-                        Google 16-Character App Password
-                      </label>
-                      <div className="flex items-center gap-2">
-                        <span className={`text-[11px] font-mono font-bold px-1.5 py-0.5 rounded ${
-                          accountPassword.replace(/\s+/g, '').length === 16 
-                            ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' 
-                            : 'bg-slate-100 text-slate-500'
-                        }`}>
-                          {accountPassword.replace(/\s+/g, '').length}/16 chars
-                          {accountPassword.replace(/\s+/g, '').length === 16 ? ' ✓' : ''}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="text-xs font-delight text-slate-500 hover:text-slate-800 flex items-center gap-1 cursor-pointer"
-                        >
-                          {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                          <span className="text-[10px]">{showPassword ? 'Hide' : 'Show'}</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setUseSegmentedInput(false)}
-                          className="text-[10px] font-delight text-indigo-600 hover:text-indigo-800 underline cursor-pointer"
-                        >
-                          Single box
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* 4 segmented boxes styled like software product keys */}
-                    <div className="flex items-center gap-2">
-                      {[0, 1, 2, 3].map((idx) => (
-                        <div key={idx} className="flex-1 flex items-center gap-2">
-                          <input
-                            ref={blockRefs[idx]}
-                            type={showPassword ? 'text' : 'password'}
-                            value={appPasswordBlocks[idx]}
-                            maxLength={4}
-                            onChange={(e) => handleBlockChange(idx, e.target.value)}
-                            onKeyDown={(e) => handleBlockKeyDown(e, idx)}
-                            onPaste={handleBlockPaste}
-                            placeholder="xxxx"
-                            autoComplete="off"
-                            spellCheck={false}
-                            className={`w-full h-11 text-center font-mono text-sm tracking-widest font-bold bg-white border rounded-xl outline-none transition-all shadow-xs ${
-                              appPasswordBlocks[idx].length === 4
-                                ? 'border-emerald-400 bg-emerald-50/20 text-emerald-950 focus:ring-2 focus:ring-emerald-200'
-                                : 'border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 text-slate-900'
-                            }`}
-                          />
-                          {idx < 3 && (
-                            <span className="text-slate-300 font-bold text-sm select-none shrink-0">-</span>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="flex items-center justify-between text-[11px] font-delight text-slate-500 pt-0.5">
-                      <span>Spaces are stripped automatically. Type or paste all 16 characters.</span>
-                      <a
-                        href="https://myaccount.google.com/apppasswords"
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-indigo-600 hover:text-indigo-800 font-semibold underline"
-                      >
-                        Get app password
-                      </a>
-                    </div>
-                  </div>
-                ) : (
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="block text-xs font-delight font-bold text-slate-700">
-                        {provider === 'brevo' 
-                          ? 'Brevo SMTP Master Key' 
-                          : provider === 'gmail' 
-                          ? 'Google 16-Character App Password' 
-                          : 'Password / App Password'}
-                      </label>
-                      {provider === 'gmail' && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            syncBlocksFromPassword(accountPassword);
-                            setUseSegmentedInput(true);
-                          }}
-                          className="text-[10px] font-delight text-indigo-600 hover:text-indigo-800 underline cursor-pointer"
-                        >
-                          Switch to 4 boxes
-                        </button>
-                      )}
-                    </div>
-                    <div className="relative">
-                      <input 
-                        type={showPassword ? 'text' : 'password'}
-                        value={accountPassword}
-                        onChange={(e) => {
-                          setAccountPassword(e.target.value);
-                          if (provider === 'gmail') {
-                            syncBlocksFromPassword(e.target.value);
-                          }
-                        }}
-                        placeholder={provider === 'brevo' ? 'xsmtpsib-...' : provider === 'gmail' ? 'abcd efgh ijkl mnop' : '••••••••••••'}
-                        className="w-full h-9 pl-3 pr-10 bg-white border border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 rounded-xl text-xs font-sans font-medium text-slate-900 outline-none transition-all"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
-                      >
-                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </>
-            ) : (
-              <div>
-                <label className="block text-xs font-delight font-bold text-slate-700 mb-1">
-                  Resend API Key
-                </label>
-                <input 
-                  type="password"
-                  value={resendApiKey}
-                  onChange={(e) => setResendApiKey(e.target.value)}
-                  placeholder="re_123456789..."
-                  className="w-full h-9 px-3 bg-white border border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 rounded-xl text-xs font-sans font-medium text-slate-900 outline-none transition-all"
+              <div className="relative">
+                <Server className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={smtpHost}
+                  onChange={(e) => setSmtpHost(e.target.value)}
+                  placeholder="e.g. mail.yourdomain.com or smtp.server.net"
+                  className="w-full pl-9 pr-3 py-2 text-xs font-mono font-medium rounded-xl border border-slate-300 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 />
               </div>
-            )}
+            </div>
 
-            {/* Custom SMTP host & port fields */}
-            {provider === 'custom' && (
-              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2.5">
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="col-span-2">
-                    <label className="block text-[11px] font-delight font-bold text-slate-600 mb-1">SMTP Host</label>
-                    <input 
-                      type="text"
-                      value={smtpHost}
-                      onChange={(e) => setSmtpHost(e.target.value)}
-                      placeholder="smtp.yourdomain.com"
-                      className="w-full h-8 px-2.5 bg-white border border-slate-200 rounded-lg text-xs font-delight outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-delight font-bold text-slate-600 mb-1">Port</label>
-                    <input 
-                      type="number"
-                      value={smtpPort}
-                      onChange={(e) => setSmtpPort(e.target.value)}
-                      placeholder="587"
-                      className="w-full h-8 px-2.5 bg-white border border-slate-200 rounded-lg text-xs font-delight outline-none"
-                    />
-                  </div>
-                </div>
-                <label className="flex items-center gap-2 cursor-pointer pt-1">
-                  <input 
-                    type="checkbox"
-                    checked={smtpSecure}
-                    onChange={(e) => setSmtpSecure(e.target.checked)}
-                    className="w-3.5 h-3.5 accent-indigo-600 cursor-pointer"
-                  />
-                  <span className="text-xs font-delight text-slate-700">Use SSL (Port 465) instead of STARTTLS (Port 587)</span>
-                </label>
-              </div>
-            )}
+            <div>
+              <label className="block text-xs font-bold font-delight text-slate-700 mb-1">
+                Port <span className="text-rose-500">*</span>
+              </label>
+              <input
+                type="number"
+                value={smtpPort}
+                onChange={(e) => setSmtpPort(e.target.value)}
+                placeholder="587"
+                className="w-full px-3 py-2 text-xs font-mono font-medium rounded-xl border border-slate-300 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              />
+            </div>
           </div>
 
-          {/* Test Email Verification Checkbox */}
-          <div className="p-3 bg-indigo-50/50 border border-indigo-200/70 rounded-xl space-y-2">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input 
+          {/* Port Presets & SSL Toggle */}
+          <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-delight">
+            <div className="flex items-center gap-1.5">
+              <span className="text-[11px] font-bold text-slate-500 uppercase">Presets:</span>
+              <button
+                type="button"
+                onClick={() => handlePortSelect('587', false)}
+                className={`px-2 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
+                  smtpPort === '587' && !smtpSecure
+                    ? 'bg-indigo-600 text-white shadow-xs'
+                    : 'bg-white text-slate-700 border border-slate-200 hover:border-slate-300'
+                }`}
+              >
+                587 (STARTTLS)
+              </button>
+              <button
+                type="button"
+                onClick={() => handlePortSelect('465', true)}
+                className={`px-2 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
+                  smtpPort === '465' && smtpSecure
+                    ? 'bg-indigo-600 text-white shadow-xs'
+                    : 'bg-white text-slate-700 border border-slate-200 hover:border-slate-300'
+                }`}
+              >
+                465 (SSL/TLS)
+              </button>
+              <button
+                type="button"
+                onClick={() => handlePortSelect('25', false)}
+                className={`px-2 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
+                  smtpPort === '25'
+                    ? 'bg-indigo-600 text-white shadow-xs'
+                    : 'bg-white text-slate-700 border border-slate-200 hover:border-slate-300'
+                }`}
+              >
+                25 (Standard)
+              </button>
+            </div>
+
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <input
                 type="checkbox"
-                checked={sendTestEmail}
-                onChange={(e) => setSendTestEmail(e.target.checked)}
-                className="w-4 h-4 accent-indigo-600 cursor-pointer"
+                checked={smtpSecure}
+                onChange={(e) => setSmtpSecure(e.target.checked)}
+                className="w-3.5 h-3.5 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
               />
-              <span className="text-xs font-delight font-bold text-slate-800">
-                Dispatch a real test verification email upon connecting
-              </span>
+              <span className="text-[11px] font-medium text-slate-700">SSL/TLS Secure</span>
             </label>
+          </div>
+
+          {/* Form Fields: Username & Password */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-bold font-delight text-slate-700 mb-1">
+                SMTP Username / Account <span className="text-rose-500">*</span>
+              </label>
+              <div className="relative">
+                <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={smtpUser}
+                  onChange={(e) => {
+                    setSmtpUser(e.target.value);
+                    if (!fromEmail) setFromEmail(e.target.value);
+                    if (!replyTo) setReplyTo(e.target.value);
+                  }}
+                  placeholder="e.g. outreach@yourdomain.com"
+                  className="w-full pl-9 pr-3 py-2 text-xs font-mono font-medium rounded-xl border border-slate-300 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold font-delight text-slate-700 mb-1">
+                SMTP Password {connectedMailbox && <span className="text-slate-400 font-normal">(Leave blank to keep existing)</span>} <span className="text-rose-500">*</span>
+              </label>
+              <div className="relative">
+                <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={smtpPass}
+                  onChange={(e) => setSmtpPass(e.target.value)}
+                  placeholder={connectedMailbox?.hasPassword ? '••••••••••••••••' : 'Enter account password'}
+                  className="w-full pl-9 pr-9 py-2 text-xs font-mono font-medium rounded-xl border border-slate-300 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Sender Identity Details */}
+          <div className="pt-2 border-t border-slate-100 space-y-3">
+            <div className="text-[11px] font-bold font-delight uppercase tracking-wider text-slate-400">
+              Sender Identity &amp; Routing
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label className="block text-xs font-bold font-delight text-slate-700 mb-1">
+                  Sender Name
+                </label>
+                <input
+                  type="text"
+                  value={fromName}
+                  onChange={(e) => setFromName(e.target.value)}
+                  placeholder="e.g. John Doe | Outreach"
+                  className="w-full px-3 py-2 text-xs font-delight rounded-xl border border-slate-300 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold font-delight text-slate-700 mb-1">
+                  From Email
+                </label>
+                <input
+                  type="email"
+                  value={fromEmail}
+                  onChange={(e) => setFromEmail(e.target.value)}
+                  placeholder="e.g. outreach@yourdomain.com"
+                  className="w-full px-3 py-2 text-xs font-mono rounded-xl border border-slate-300 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold font-delight text-slate-700 mb-1">
+                  Reply-To Email
+                </label>
+                <input
+                  type="email"
+                  value={replyTo}
+                  onChange={(e) => setReplyTo(e.target.value)}
+                  placeholder="e.g. john@yourdomain.com"
+                  className="w-full px-3 py-2 text-xs font-mono rounded-xl border border-slate-300 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Test Ping Options */}
+          <div className="pt-2 border-t border-slate-100 space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={sendTestEmail}
+                  onChange={(e) => setSendTestEmail(e.target.checked)}
+                  className="w-3.5 h-3.5 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
+                />
+                <span className="text-xs font-bold font-delight text-slate-700">
+                  Send real verification test email on save
+                </span>
+              </label>
+            </div>
 
             {sendTestEmail && (
-              <div className="pl-6">
-                <input 
+              <div className="pl-5">
+                <input
                   type="email"
                   value={testRecipient}
                   onChange={(e) => setTestRecipient(e.target.value)}
-                  placeholder="Recipient inbox for verification test"
-                  className="w-full h-8 px-2.5 bg-white border border-indigo-200 rounded-lg text-xs font-delight text-slate-800 outline-none"
+                  placeholder="Recipient email address for test ping"
+                  className="w-full px-3 py-1.5 text-xs font-mono rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
                 />
-                <span className="text-[10px] text-slate-500 font-delight mt-1 block">
-                  A live test email will be sent to this address to verify real deliverability.
-                </span>
               </div>
             )}
           </div>
 
-          {/* Live Feedback Messages */}
+          {/* Verification Feedback Alerts */}
           {verificationSuccess && (
-            <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs font-delight text-emerald-900 flex items-start gap-2 shadow-2xs">
+            <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-start gap-2.5 text-emerald-900 font-delight text-xs animate-in fade-in">
               <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
               <div>
-                <strong className="block font-bold">Mailbox Verified &amp; Active!</strong>
-                <p className="mt-0.5">{verificationSuccess}</p>
+                <div className="font-bold">Verification Succeeded</div>
+                <div className="text-emerald-700 mt-0.5 leading-relaxed">{verificationSuccess}</div>
               </div>
             </div>
           )}
 
           {verificationError && (
-            <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs font-delight text-rose-900 flex items-start gap-2 shadow-2xs">
+            <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-start gap-2.5 text-rose-900 font-delight text-xs animate-in fade-in">
               <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <strong className="block font-bold">Verification Failed</strong>
-                <p className="mt-0.5">{verificationError}</p>
-                {provider === 'gmail' && !verificationError.includes('502') && (
-                  <div className="mt-2.5 pt-2 border-t border-rose-200/80 flex flex-wrap gap-3">
-                    <a
-                      href="https://myaccount.google.com/apppasswords"
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-1 font-bold text-rose-800 hover:text-rose-950 underline text-[11px]"
-                    >
-                      <span>1. Generate New App Password</span>
-                      <span>&rarr;</span>
-                    </a>
-                    <a
-                      href="https://myaccount.google.com/signinoptions/two-step-verification"
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-1 font-bold text-rose-800 hover:text-rose-950 underline text-[11px]"
-                    >
-                      <span>2. Verify 2-Step Verification is ON</span>
-                      <span>&rarr;</span>
-                    </a>
-                  </div>
-                )}
+              <div>
+                <div className="font-bold">Verification Failed</div>
+                <div className="text-rose-700 mt-0.5 leading-relaxed">{verificationError}</div>
               </div>
             </div>
           )}
 
+          {/* Security & Architecture Guarantee Footnote */}
+          <div className="p-3 bg-slate-50/80 rounded-xl border border-slate-200/80 text-[11px] font-delight text-slate-500 space-y-1">
+            <div className="flex items-center gap-1.5 font-bold text-slate-700">
+              <ShieldCheck className="w-3.5 h-3.5 text-indigo-600" />
+              <span>Direct Outbox Architecture &amp; Privacy Guarantee</span>
+            </div>
+            <p>
+              LeadPulse connects solely to your outbound SMTP socket to transmit authorized outreach campaigns. Your inbox, private conversations, and contacts are never accessed, read, or synchronized.
+            </p>
+          </div>
         </div>
 
-        {/* Footer Actions */}
-        <div className="p-4 border-t border-slate-100 bg-slate-50/80 flex items-center justify-between gap-3 font-delight">
+        {/* Modal Footer Controls */}
+        <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between gap-3 font-delight">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
+            className="px-4 py-2 text-xs font-bold text-slate-600 hover:text-slate-800 hover:bg-slate-200/60 rounded-xl transition-all cursor-pointer"
           >
             Cancel
           </button>
@@ -854,18 +481,22 @@ const EmailProviderModal = ({ isOpen, onClose, user, onSaved }: EmailProviderMod
           <button
             type="button"
             onClick={handleVerifyAndConnect}
-            disabled={isVerifying || (provider === 'leadpulse_cloud' ? !replyTo : (!emailAccount || (provider !== 'resend' && !accountPassword)))}
-            className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 disabled:opacity-50 text-white px-5 py-2 rounded-xl text-xs font-delight font-bold transition-all flex items-center gap-2 shadow-sm shadow-indigo-200 cursor-pointer"
+            disabled={isVerifying || !smtpHost.trim() || !smtpUser.trim() || (!smtpPass.trim() && !connectedMailbox)}
+            className={`px-5 py-2 text-xs font-bold rounded-xl flex items-center gap-2 transition-all cursor-pointer shadow-xs ${
+              isVerifying || !smtpHost.trim() || !smtpUser.trim() || (!smtpPass.trim() && !connectedMailbox)
+                ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-indigo-200'
+            }`}
           >
             {isVerifying ? (
               <>
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                <span>{provider === 'leadpulse_cloud' ? 'Activating Cloud Outbox...' : 'Verifying & Delivering Test...'}</span>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Verifying Socket Connection...</span>
               </>
             ) : (
               <>
-                <Send className="w-3.5 h-3.5" />
-                <span>{provider === 'leadpulse_cloud' ? 'Activate LeadPulse Cloud Outbox' : 'Verify & Connect Mailbox'}</span>
+                <Send className="w-4 h-4" />
+                <span>Verify &amp; Save Outbox</span>
               </>
             )}
           </button>

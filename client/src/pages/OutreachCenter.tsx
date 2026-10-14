@@ -684,13 +684,23 @@ const OutreachCenter = () => {
     setTimeout(() => setCopiedWhatsApp(false), 2500);
   };
 
+  // Open in Webmail / External Email Client fallback
+  const handleOpenWebmail = (lead: any) => {
+    const to = lead.email || '';
+    const subject = renderPreviewHtml(templateData.subject || 'Strategic Partnership Inquiry');
+    const body = `${renderPreviewHtml(templateData.headline || '')}\n\n${renderPreviewHtml(templateData.body || templateData.content || '')}\n\nBest regards,\n${user?.name || 'Growth Specialist'}\n${user?.company_name || ''}`;
+    
+    const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(to)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.open(gmailUrl, '_blank');
+  };
+
   // Direct Single Email Test Dispatcher
   const handleSendSingleTest = async () => {
     // Mailbox Connection Check
     if (!connectedMailbox) {
       await alertDialog({
         title: 'No Sending Mailbox Connected',
-        message: 'To deliver real emails straight to prospect inboxes, connect your sending email account (Gmail, Brevo Free Relay, Outlook, or Custom SMTP).',
+        message: 'To deliver real emails straight to prospect inboxes, connect your standard SMTP server credentials in Outbox settings, or click "Open Webmail" to compose directly.',
         variant: 'warning'
       });
       setIsProviderModalOpen(true);
@@ -721,7 +731,7 @@ const OutreachCenter = () => {
         targetLead: previewLead,
         customRecipientEmail: previewLead.email,
         fromName: connectedMailbox?.fromName || user?.name || 'Workspace Operator',
-        fromEmail: connectedMailbox?.email || user?.email || 'outreach@leadpulse.io'
+        fromEmail: connectedMailbox?.fromEmail || connectedMailbox?.user || user?.email || 'outreach@leadpulse.io'
       }, {
         headers: { userid: user?._id || 'demo-user' }
       });
@@ -729,7 +739,7 @@ const OutreachCenter = () => {
       if (res.data.success) {
         recordEmailDispatch(1);
         setDispatchNotification({
-          message: `Direct test email dispatched to ${previewLead.businessName} via ${connectedMailbox.email}!`,
+          message: `Direct test email dispatched to ${previewLead.businessName} via ${connectedMailbox.fromEmail || connectedMailbox.user}!`,
           previewUrl: res.data.result?.previewUrl
         });
       }
@@ -804,19 +814,25 @@ const OutreachCenter = () => {
               <div className="flex items-center gap-2 text-slate-700">
                 <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Outbox:</span>
                 {connectedMailbox ? (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80">
+                  <button
+                    type="button"
+                    onClick={() => setIsProviderModalOpen(true)}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200/80 transition-colors cursor-pointer"
+                    title="Click to view SMTP outbox settings"
+                  >
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    <span>{connectedMailbox.email}</span>
-                    <span className="text-[10px] text-emerald-600 uppercase font-bold">({connectedMailbox.provider || 'SMTP'})</span>
-                  </span>
+                    <span>{connectedMailbox.fromEmail || connectedMailbox.user}</span>
+                    <span className="text-[10px] text-emerald-600 font-bold">({connectedMailbox.host})</span>
+                  </button>
                 ) : (
                   <button
                     type="button"
                     onClick={() => setIsProviderModalOpen(true)}
                     className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200/90 transition-colors cursor-pointer"
+                    title="No SMTP server connected. Click to configure."
                   >
                     <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                    <span>No Sending Mailbox Connected</span>
+                    <span>Outbox: Disconnected (Setup Required)</span>
                     <span className="underline font-bold ml-0.5">+ Connect</span>
                   </button>
                 )}
@@ -1026,11 +1042,15 @@ const OutreachCenter = () => {
 
                   <button
                     onClick={() => setIsProviderModalOpen(true)}
-                    className="border px-2.5 py-1.5 rounded-lg text-xs font-delight font-semibold transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs bg-emerald-50/70 border-emerald-200 text-emerald-800 hover:bg-emerald-100/70"
-                    title={connectedMailbox ? `Outbox: ${connectedMailbox.replyTo || connectedMailbox.fromEmail}` : "LeadPulse Cloud Outbox Relay Active"}
+                    className={`border px-2.5 py-1.5 rounded-lg text-xs font-delight font-semibold transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs ${
+                      connectedMailbox 
+                        ? 'bg-emerald-50/70 border-emerald-200 text-emerald-800 hover:bg-emerald-100/70' 
+                        : 'bg-amber-50/80 border-amber-200 text-amber-900 hover:bg-amber-100/80'
+                    }`}
+                    title={connectedMailbox ? `Outbox: ${connectedMailbox.fromEmail || connectedMailbox.user} (${connectedMailbox.host})` : "No SMTP Outbox Connected - Click to configure"}
                   >
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    <span>Outbox: {connectedMailbox?.provider === 'leadpulse_cloud' || !connectedMailbox ? 'Cloud Relay (Ready)' : connectedMailbox.provider.toUpperCase()}</span>
+                    <span className={`w-1.5 h-1.5 rounded-full ${connectedMailbox ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
+                    <span>Outbox: {connectedMailbox ? `${connectedMailbox.fromEmail || connectedMailbox.user}` : 'Disconnected (Setup Required)'}</span>
                   </button>
                 </div>
 
@@ -2703,6 +2723,14 @@ const OutreachCenter = () => {
                     <span className="font-semibold">{user?.emails_limit || 50} Emails</span>
                   </div>
                   <button 
+                    onClick={() => handleOpenWebmail(previewLead)}
+                    className="bg-white border border-slate-200 hover:bg-slate-50 hover:border-slate-300 px-3.5 py-1.5 rounded-xl text-xs font-delight font-bold text-slate-700 shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer"
+                    title={`Open prefilled outreach email for ${previewLead.businessName} directly in Gmail / Webmail`}
+                  >
+                    <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
+                    <span>Open Webmail</span>
+                  </button>
+                  <button 
                     onClick={handleSendSingleTest}
                     disabled={isSendingSingle}
                     className="bg-white border border-slate-200 hover:bg-slate-50 hover:border-slate-300 disabled:opacity-50 px-3.5 py-1.5 rounded-xl text-xs font-delight font-bold text-slate-700 shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer"
@@ -3905,7 +3933,7 @@ const OutreachCenter = () => {
       />
 
       {/* ============================================================ */}
-      {/* EMAIL PROVIDER CONFIGURATION MODAL (GMAIL / BREVO / SMTP)    */}
+      {/* STANDARD SMTP OUTBOX CONFIGURATION MODAL                     */}
       {/* ============================================================ */}
       <EmailProviderModal
         isOpen={isProviderModalOpen}

@@ -97,7 +97,7 @@ const DispatchTrackerModal = ({
   const handleStartDispatch = async () => {
     // Mailbox Connection Check
     if (!connectedMailbox) {
-      setErrorMessage('No verified sending mailbox connected. Please connect your Gmail, Brevo Free Relay, Outlook, or Custom SMTP account before launching outreach.');
+      setErrorMessage('No verified sending mailbox connected. Please configure your standard SMTP credentials in Outbox settings before launching outreach.');
       setDispatchState('error');
       return;
     }
@@ -132,7 +132,7 @@ const DispatchTrackerModal = ({
           : audienceMode === 'single' && currentPreviewLead._id ? [currentPreviewLead._id] : [],
         fallbackLeads: selectedLeadsToDispatch,
         fromName: connectedMailbox?.fromName || (user?.name ? `${user.name} | LeadPulse` : 'LeadPulse Growth Engine'),
-        fromEmail: connectedMailbox?.email || user?.email || 'outreach@leadpulse.io'
+        fromEmail: connectedMailbox?.fromEmail || connectedMailbox?.user || user?.email || 'outreach@leadpulse.io'
       };
 
       setProgressPercent(45);
@@ -232,7 +232,7 @@ const DispatchTrackerModal = ({
                   {connectedMailbox ? (
                     <span className="px-2 py-0.5 rounded-sm bg-emerald-50 text-emerald-700 font-delight text-[10px] font-semibold border border-emerald-200 flex items-center gap-1">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                      <span>{connectedMailbox.email} ({(connectedMailbox.provider || 'smtp').toUpperCase()})</span>
+                      <span>{connectedMailbox.fromEmail || connectedMailbox.user} ({connectedMailbox.host})</span>
                     </span>
                   ) : (
                     <span className="px-2 py-0.5 rounded-sm bg-amber-50 text-amber-800 font-delight text-[10px] font-semibold border border-amber-200 flex items-center gap-1">

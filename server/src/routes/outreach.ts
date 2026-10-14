@@ -64,12 +64,7 @@ router.post('/dispatch-batch', requireAuth, async (req: any, res: any) => {
 
   const userId = req.user._id.toString();
   const userPlan = (req.user?.plan || 'free').toLowerCase();
-  const userSmtpSettings = customSmtp || memorySmtpStore.get(userId) || req.user.smtpSettings || {
-    provider: 'leadpulse_cloud',
-    fromName: req.user.name || 'LeadPulse Growth Director',
-    fromEmail: 'outreach@leadpulse.io',
-    replyTo: req.user.email || 'operator@leadpulse.io'
-  };
+  const userSmtpSettings = customSmtp || memorySmtpStore.get(userId) || req.user.smtpSettings;
 
   // Tier Enforcements: Templates & A/B Split Testing
   if (userPlan === 'free' && !ALLOWED_FREE_TEMPLATES.includes(templateId)) {
@@ -84,11 +79,13 @@ router.post('/dispatch-batch', requireAuth, async (req: any, res: any) => {
     });
   }
 
-  // Sending Mailbox Enforcement (only if not using default LeadPulse Cloud Relay)
-  const isCloudRelay = !userSmtpSettings?.provider || userSmtpSettings.provider === 'leadpulse_cloud';
-  if (!isCloudRelay && (!userSmtpSettings.user && !userSmtpSettings.resendApiKey && !process.env.SMTP_USER)) {
+  // Sending Mailbox Enforcement (Real SMTP check - no mock dummies)
+  const hasUserSmtp = Boolean(userSmtpSettings && userSmtpSettings.host && userSmtpSettings.user && userSmtpSettings.pass);
+  const hasSystemSmtp = Boolean(process.env.SMTP_HOST && process.env.SMTP_USER);
+
+  if (!hasUserSmtp && !hasSystemSmtp) {
     return res.status(400).json({ 
-      error: 'No sending mailbox connected. Please connect your email account (Gmail, Brevo, Outlook, Yahoo, Zoho, or Custom SMTP) in Mailbox Settings to dispatch live outreach to real inboxes.' 
+      error: 'No outbound SMTP server connected. Please configure your SMTP server credentials in Outbox Settings to dispatch live emails.' 
     });
   }
 
@@ -351,12 +348,7 @@ router.post('/dispatch-single', requireAuth, async (req: any, res: any) => {
   } = req.body;
 
   const userPlan = (req.user?.plan || 'free').toLowerCase();
-  const userSmtpSettings = customSmtp || memorySmtpStore.get(req.user._id) || req.user.smtpSettings || {
-    provider: 'leadpulse_cloud',
-    fromName: req.user.name || 'LeadPulse Growth Director',
-    fromEmail: 'outreach@leadpulse.io',
-    replyTo: req.user.email || 'operator@leadpulse.io'
-  };
+  const userSmtpSettings = customSmtp || memorySmtpStore.get(req.user._id) || req.user.smtpSettings;
 
   // Tier Enforcements: Template restriction on Free tier
   if (userPlan === 'free' && !ALLOWED_FREE_TEMPLATES.includes(templateId)) {
@@ -374,11 +366,13 @@ router.post('/dispatch-single', requireAuth, async (req: any, res: any) => {
     });
   }
 
-  // Sending Mailbox Enforcement (only if not using default LeadPulse Cloud Relay)
-  const isCloudRelay = !userSmtpSettings?.provider || userSmtpSettings.provider === 'leadpulse_cloud';
-  if (!isCloudRelay && (!userSmtpSettings.user && !userSmtpSettings.resendApiKey && !process.env.SMTP_USER)) {
+  // Sending Mailbox Enforcement (Real SMTP check - no mock dummies)
+  const hasUserSmtp = Boolean(userSmtpSettings && userSmtpSettings.host && userSmtpSettings.user && userSmtpSettings.pass);
+  const hasSystemSmtp = Boolean(process.env.SMTP_HOST && process.env.SMTP_USER);
+
+  if (!hasUserSmtp && !hasSystemSmtp) {
     return res.status(400).json({ 
-      error: 'No sending mailbox connected. Please connect your email account (Gmail, Brevo, Outlook, Yahoo, Zoho, or Custom SMTP) in Mailbox Settings to dispatch live outreach to real inboxes.' 
+      error: 'No outbound SMTP server connected. Please configure your SMTP server credentials in Outbox Settings to dispatch live emails.' 
     });
   }
 
@@ -483,10 +477,11 @@ router.post('/dispatch-single', requireAuth, async (req: any, res: any) => {
 });
 
 // ============================================================================
+// ============================================================================
 // 3. MAIL APP OUTBOX & SENDING MAILBOX CONTROLLER
 // ============================================================================
 
-// Get connected mailbox status (Defaults to LeadPulse Cloud Relay out of the box)
+// Get connected mailbox status (Honest check: false if no credentials configured)
 router.get('/mailbox', requireAuth, async (req: any, res: any) => {
   let smtpSettings = memorySmtpStore.get(req.user._id) || req.user.smtpSettings;
   try {
@@ -496,32 +491,37 @@ router.get('/mailbox', requireAuth, async (req: any, res: any) => {
       memorySmtpStore.set(req.user._id, smtpSettings);
     }
   } catch (err: any) {
-    // Continue with in-memory or default Cloud Relay
+    // Continue with in-memory store
   }
 
-  const isCustom = Boolean(smtpSettings && (smtpSettings.user || smtpSettings.resendApiKey) && smtpSettings.provider !== 'leadpulse_cloud');
+  const isConnected = Boolean(smtpSettings && smtpSettings.host && smtpSettings.user && smtpSettings.pass);
+
+  if (!isConnected) {
+    return res.json({
+      isConnected: false,
+      mailbox: null
+    });
+  }
 
   res.json({
     isConnected: true,
     mailbox: {
-      provider: isCustom ? smtpSettings.provider : 'leadpulse_cloud',
-      user: smtpSettings?.user || req.user.email || 'operator@leadpulse.io',
-      host: isCustom ? (smtpSettings?.host || '') : 'api.leadpulse.io',
-      port: isCustom ? (smtpSettings?.port || 587) : 443,
-      fromName: smtpSettings?.fromName || req.user.name || 'LeadPulse Growth Director',
-      fromEmail: isCustom ? (smtpSettings?.fromEmail || smtpSettings?.user || '') : (smtpSettings?.fromEmail || 'outreach@leadpulse.io'),
-      replyTo: smtpSettings?.replyTo || req.user.email || 'operator@leadpulse.io',
-      verifiedAt: smtpSettings?.verifiedAt || req.user.created_at || new Date().toISOString(),
-      hasPassword: isCustom ? !!smtpSettings?.pass : false,
-      isCloudRelay: !isCustom
+      host: smtpSettings.host,
+      port: smtpSettings.port || 587,
+      secure: !!smtpSettings.secure,
+      user: smtpSettings.user,
+      fromName: smtpSettings.fromName || req.user.name || 'Outreach Specialist',
+      fromEmail: smtpSettings.fromEmail || smtpSettings.user,
+      replyTo: smtpSettings.replyTo || smtpSettings.fromEmail || smtpSettings.user,
+      verifiedAt: smtpSettings.verifiedAt || new Date().toISOString(),
+      hasPassword: !!smtpSettings.pass
     }
   });
 });
 
-// Verify & connect sending mailbox (supports 1-click Cloud Relay or custom SMTP/API)
+// Verify & connect sending mailbox with standard SMTP socket check
 router.post('/verify-mailbox', requireAuth, async (req: any, res: any) => {
   const { 
-    provider = 'leadpulse_cloud', 
     host, 
     port, 
     secure, 
@@ -530,26 +530,33 @@ router.post('/verify-mailbox', requireAuth, async (req: any, res: any) => {
     fromName, 
     fromEmail, 
     replyTo,
-    resendApiKey, 
     sendTestPing = true, 
     testRecipient 
   } = req.body;
 
+  const cleanHost = (host || '').trim();
   const cleanUser = (user || '').trim();
-  const cleanPass = (pass || '').replace(/\s+/g, '').trim();
+  const cleanPass = (pass || '').trim();
+
+  if (!cleanHost || !cleanUser || !cleanPass) {
+    return res.status(400).json({
+      success: false,
+      error: 'SMTP Host, Username, and Password are required.'
+    });
+  }
+
+  const resolvedPort = port ? parseInt(port) : (secure ? 465 : 587);
   const testEmailTarget = (testRecipient || req.user.email || cleanUser).trim();
 
   const candidateSettings: UserSmtpSettings = {
-    provider,
-    host: host || '',
-    port: port ? parseInt(port) : (provider === 'leadpulse_cloud' ? 443 : 587),
-    secure: secure !== undefined ? secure : (parseInt(port) === 465),
+    host: cleanHost,
+    port: resolvedPort,
+    secure: secure !== undefined ? secure : (resolvedPort === 465),
     user: cleanUser,
     pass: cleanPass,
-    fromName: fromName || req.user.name || 'LeadPulse Operator',
-    fromEmail: fromEmail || cleanUser || req.user.email || 'outreach@leadpulse.io',
-    replyTo: replyTo || fromEmail || req.user.email || cleanUser || 'outreach@leadpulse.io',
-    resendApiKey: (resendApiKey || '').trim()
+    fromName: (fromName || req.user.name || 'Outreach Specialist').trim(),
+    fromEmail: (fromEmail || cleanUser).trim(),
+    replyTo: (replyTo || fromEmail || cleanUser).trim()
   };
 
   try {
@@ -567,7 +574,7 @@ router.post('/verify-mailbox', requireAuth, async (req: any, res: any) => {
     }
 
     // Save verified mailbox to memory store and Firestore
-    const savedRecord = {
+    const savedRecord: UserSmtpSettings = {
       ...candidateSettings,
       verifiedAt: new Date().toISOString()
     };
@@ -586,13 +593,14 @@ router.post('/verify-mailbox', requireAuth, async (req: any, res: any) => {
       success: true,
       message: verification.message,
       mailbox: {
-        provider: candidateSettings.provider,
+        host: candidateSettings.host,
+        port: candidateSettings.port,
+        secure: candidateSettings.secure,
         user: candidateSettings.user,
         fromName: candidateSettings.fromName,
         fromEmail: candidateSettings.fromEmail,
         replyTo: candidateSettings.replyTo,
-        verifiedAt: savedRecord.verifiedAt,
-        isCloudRelay: candidateSettings.provider === 'leadpulse_cloud'
+        verifiedAt: savedRecord.verifiedAt
       }
     });
 
@@ -601,21 +609,13 @@ router.post('/verify-mailbox', requireAuth, async (req: any, res: any) => {
   }
 });
 
-// Reset sending mailbox to default LeadPulse Cloud Outbox Relay
+// Disconnect SMTP sending mailbox
 router.delete('/disconnect-mailbox', requireAuth, async (req: any, res: any) => {
-  const defaultCloudSettings: UserSmtpSettings = {
-    provider: 'leadpulse_cloud',
-    fromName: req.user.name || 'LeadPulse Growth Director',
-    fromEmail: 'outreach@leadpulse.io',
-    replyTo: req.user.email || 'operator@leadpulse.io',
-    verifiedAt: new Date().toISOString()
-  };
-
-  memorySmtpStore.set(req.user._id, defaultCloudSettings);
+  memorySmtpStore.delete(req.user._id);
 
   try {
     await db.collection('users').doc(req.user._id).update({
-      smtpSettings: defaultCloudSettings
+      smtpSettings: null
     });
   } catch (dbErr) {
     // Continue
@@ -623,50 +623,56 @@ router.delete('/disconnect-mailbox', requireAuth, async (req: any, res: any) => 
 
   res.json({ 
     success: true, 
-    message: 'Reset to default LeadPulse Cloud Outbox Relay.',
-    mailbox: {
-      ...defaultCloudSettings,
-      isCloudRelay: true
-    }
+    message: 'SMTP sending mailbox disconnected.',
+    isConnected: false,
+    mailbox: null
   });
 });
 
-// Backwards-compatible smtp-config endpoints
+// Standard SMTP configuration endpoints
 router.get('/smtp-config', requireAuth, async (req: any, res: any) => {
   try {
-    const userDoc = await db.collection('users').doc(req.user._id).get();
-    const smtpSettings = userDoc.data()?.smtpSettings || {
-      provider: 'gmail',
-      fromName: req.user.name || 'LeadPulse Growth Director',
-      fromEmail: req.user.email || 'outreach@leadpulse.io'
-    };
-    res.json(smtpSettings);
+    let settings = memorySmtpStore.get(req.user._id);
+    if (!settings) {
+      const userDoc = await db.collection('users').doc(req.user._id).get();
+      settings = userDoc.data()?.smtpSettings || null;
+    }
+    res.json(settings || { isConnected: false });
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch email settings' });
   }
 });
 
 router.post('/smtp-config', requireAuth, async (req: any, res: any) => {
-  const { provider, host, port, user, pass, resendApiKey, sendgridApiKey, fromName, fromEmail } = req.body;
+  const { host, port, secure, user, pass, fromName, fromEmail, replyTo } = req.body;
   try {
-    const settings = {
-      provider: provider || 'gmail',
-      host: host || '',
-      port: port ? parseInt(port) : 587,
-      user: user || '',
-      pass: pass || '',
-      resendApiKey: resendApiKey || '',
-      sendgridApiKey: sendgridApiKey || '',
-      fromName: fromName || '',
-      fromEmail: fromEmail || '',
-      updatedAt: new Date().toISOString()
+    const cleanHost = (host || '').trim();
+    const cleanUser = (user || '').trim();
+    const cleanPass = (pass || '').trim();
+
+    if (!cleanHost || !cleanUser || !cleanPass) {
+      return res.status(400).json({ error: 'Host, user, and pass are required.' });
+    }
+
+    const settings: UserSmtpSettings = {
+      host: cleanHost,
+      port: port ? parseInt(port) : (secure ? 465 : 587),
+      secure: secure !== undefined ? secure : (parseInt(port) === 465),
+      user: cleanUser,
+      pass: cleanPass,
+      fromName: (fromName || req.user.name || '').trim(),
+      fromEmail: (fromEmail || cleanUser).trim(),
+      replyTo: (replyTo || fromEmail || cleanUser).trim(),
+      verifiedAt: new Date().toISOString()
     };
+
+    memorySmtpStore.set(req.user._id, settings);
 
     await db.collection('users').doc(req.user._id).update({
       smtpSettings: settings
     });
 
-    res.json({ success: true, message: 'Email sending configuration saved!', settings });
+    res.json({ success: true, message: 'SMTP settings saved.', settings });
   } catch (err) {
     res.status(500).json({ error: 'Failed to update email settings' });
   }

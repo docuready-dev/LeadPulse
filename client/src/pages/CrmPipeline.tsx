@@ -1231,7 +1231,7 @@ const CrmPipeline = () => {
                         </div>
                         <h4 className="text-sm font-bold text-slate-900 tracking-tight">No Verified Dispatches Yet</h4>
                         <p className="text-xs text-slate-500 leading-relaxed font-delight">
-                          LeadPulse enforces strict delivery verification. Only communications confirmed as delivered by the underlying gateway (Email/Brevo 250 OK, WhatsApp, or Google Calendar) are logged here.
+                          LeadPulse enforces strict delivery verification. Only communications confirmed as delivered by the underlying gateway (SMTP 250 OK, WhatsApp, or Google Calendar) are logged here.
                         </p>
                         <button
                           type="button"
