@@ -11,77 +11,249 @@ import { otpService } from '../services/otpService';
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'secret';
 
-// Provision Ashley Ghose Super Admin Accounts
-async function provisionSuperAdmins() {
+// Provision System Accounts: Ashley Super Admin & Bicon Ghose User Account
+async function provisionSystemAccounts() {
   try {
-    const superAdminPasswordHash = await bcrypt.hash('Ashley1234', 10);
-    const admins = [
-      {
-        _id: 'user_ashleyghose64',
-        email: 'ashleyghose64@gmail.com',
-        name: 'Ashley Ghose',
-        phone: '+919004804043',
-        role: 'SUPER_ADMIN',
-        plan: 'pro',
-        lead_credits: 1000,
-        emails_limit: 5000,
-        emails_sent: 0,
-        ai_pitches_limit: -1,
-        ai_pitches_used: 0,
-        password: superAdminPasswordHash,
-        onboarding_complete: true,
-        two_factor_enabled: false,
-        phone_verified: true,
-        createdAt: new Date().toISOString()
-      },
-      {
-        _id: 'user_ashleyghose28',
-        email: 'ashleyghose28@gmail.com',
-        name: 'Ashley Ghose',
-        phone: '+919004804043',
-        role: 'SUPER_ADMIN',
-        plan: 'pro',
-        lead_credits: 1000,
-        emails_limit: 5000,
-        emails_sent: 0,
-        ai_pitches_limit: -1,
-        ai_pitches_used: 0,
-        password: superAdminPasswordHash,
-        onboarding_complete: true,
-        two_factor_enabled: false,
-        phone_verified: true,
-        createdAt: new Date().toISOString()
-      }
-    ];
+    // 1. Ashley Super Admin (strictly SUPER_ADMIN only, password: Maybach@$#051995)
+    const superAdminHash = await bcrypt.hash('Maybach@$#051995', 10);
+    const superAdminUser = {
+      _id: 'user_ashleyghose64',
+      email: 'ashleyghose64@gmail.com',
+      name: 'Ashley',
+      phone: '+919004804043',
+      role: 'SUPER_ADMIN',
+      plan: 'pro',
+      lead_credits: 1000,
+      emails_limit: 5000,
+      emails_sent: 0,
+      ai_pitches_limit: -1,
+      ai_pitches_used: 0,
+      password: superAdminHash,
+      onboarding_complete: true,
+      two_factor_enabled: false,
+      phone_verified: true,
+      createdAt: '2026-10-14T00:00:00.000Z',
+      updatedAt: new Date().toISOString()
+    };
 
-    for (const adm of admins) {
-      const existing = userStore.getUserByEmail(adm.email);
-      userStore.saveUser({
-        ...adm,
-        ...(existing || {}),
-        password: superAdminPasswordHash,
-        phone: adm.phone,
-        role: 'SUPER_ADMIN',
-        plan: 'pro',
-        two_factor_enabled: false,
-        phone_verified: true
-      });
-      try {
-        await db.collection('users').doc(adm._id).set({
-          ...adm,
-          password: superAdminPasswordHash,
-          phone: adm.phone,
-          two_factor_enabled: false,
+    userStore.saveUser(superAdminUser);
+    try {
+      await db.collection('users').doc(superAdminUser._id).set(superAdminUser, { merge: true });
+    } catch {}
+
+    // 2. Bicon Ghose User Account (Free Tier User with generated leads, password: Ashley1234)
+    const biconPasswordHash = await bcrypt.hash('Ashley1234', 10);
+    const biconUser = {
+      _id: 'user_ashleyghose28',
+      email: 'ashleyghose28@gmail.com',
+      name: 'Bicon Ghose',
+      phone: '+919004804043',
+      role: 'USER',
+      plan: 'free',
+      lead_credits: 5,
+      emails_limit: 50,
+      emails_sent: 0,
+      ai_pitches_limit: 5,
+      ai_pitches_used: 0,
+      password: biconPasswordHash,
+      onboarding_complete: true,
+      two_factor_enabled: false,
+      phone_verified: true,
+      createdAt: '2026-10-14T00:00:00.000Z',
+      updatedAt: new Date().toISOString()
+    };
+
+    userStore.saveUser(biconUser);
+    try {
+      await db.collection('users').doc(biconUser._id).set(biconUser, { merge: true });
+    } catch {}
+
+    // 3. Ensure Bicon Ghose has generated leads in leadStore
+    const existingBiconLeads = leadStore.getLeads('user_ashleyghose28');
+    if (existingBiconLeads.length === 0) {
+      const sampleLeads = [
+        {
+          businessName: 'Apex Cloud Solutions',
+          category: 'Software & Cloud Architecture',
+          fieldOfWork: 'Information Technology',
+          firstName: 'Vikram',
+          phone: '+91 98201 12345',
+          email: 'contact@apexcloud.in',
+          emailStatus: 'Verified Email',
+          website: 'https://apexcloud.in',
+          rating: 4.8,
+          location: 'Bengaluru, Karnataka',
+          scope: 'deep',
+          status: 'Contacted',
+          saved: true,
+          source: 'Google Places API'
+        },
+        {
+          businessName: 'NextGen AI Labs',
+          category: 'Artificial Intelligence & Machine Learning',
+          fieldOfWork: 'AI Development',
+          firstName: 'Pooja',
+          phone: '+91 98450 67890',
+          email: 'hello@nextgenai.tech',
+          emailStatus: 'Verified Email',
+          website: 'https://nextgenai.tech',
+          rating: 4.9,
+          location: 'Hyderabad, Telangana',
+          scope: 'deep',
+          status: 'Interested',
+          saved: true,
+          source: 'Google Places API'
+        },
+        {
+          businessName: 'Zenith Logistics Hub',
+          category: 'Supply Chain & Freight Services',
+          fieldOfWork: 'Logistics',
+          firstName: 'Rajesh',
+          phone: '+91 98110 54321',
+          email: 'info@zenithlogistics.com',
+          emailStatus: 'Verified Email',
+          website: 'https://zenithlogistics.com',
+          rating: 4.7,
+          location: 'Mumbai, Maharashtra',
+          scope: 'quick',
+          status: 'New',
+          saved: true,
+          source: 'Google Places API'
+        },
+        {
+          businessName: 'Quantum FinTech Global',
+          category: 'Financial Technologies & Payments',
+          fieldOfWork: 'Fintech',
+          firstName: 'Ananya',
+          phone: '+91 98300 98765',
+          email: 'partners@quantumfin.io',
+          emailStatus: 'Verified Email',
+          website: 'https://quantumfin.io',
+          rating: 4.6,
+          location: 'Pune, Maharashtra',
+          scope: 'deep',
+          status: 'Follow Up',
+          saved: true,
+          source: 'Google Places API'
+        },
+        {
+          businessName: 'Starlight Media Studios',
+          category: 'Digital Branding & Video Marketing',
+          fieldOfWork: 'Marketing & Advertising',
+          firstName: 'Karan',
+          phone: '+91 98710 23456',
+          email: 'reach@starlightmedia.co',
+          emailStatus: 'Verified Email',
+          website: 'https://starlightmedia.co',
+          rating: 4.8,
+          location: 'New Delhi, Delhi',
+          scope: 'quick',
+          status: 'New',
+          saved: true,
+          source: 'Google Places API'
+        },
+        {
+          businessName: 'BluePeak Real Estate Advisors',
+          category: 'Commercial Properties & Advisory',
+          fieldOfWork: 'Real Estate',
+          firstName: 'Sunil',
+          phone: '+91 98990 87654',
+          email: 'advisory@bluepeakrealty.in',
+          emailStatus: 'Verified Email',
+          website: 'https://bluepeakrealty.in',
+          rating: 4.5,
+          location: 'Gurugram, Haryana',
+          scope: 'deep',
+          status: 'Contacted',
+          saved: true,
+          source: 'Google Places API'
+        },
+        {
+          businessName: 'PulseHealth Telemedicine',
+          category: 'Digital Healthcare Solutions',
+          fieldOfWork: 'Healthcare',
+          firstName: 'Dr. Sneha',
+          phone: '+91 98220 34567',
+          email: 'inquiries@pulsehealth.org',
+          emailStatus: 'Verified Email',
+          website: 'https://pulsehealth.org',
+          rating: 4.9,
+          location: 'Chennai, Tamil Nadu',
+          scope: 'quick',
+          status: 'New',
+          saved: true,
+          source: 'Google Places API'
+        },
+        {
+          businessName: 'Innova AgriTech Ventures',
+          category: 'Sustainable Farm Automation',
+          fieldOfWork: 'Agriculture',
+          firstName: 'Arun',
+          phone: '+91 98490 12349',
+          email: 'contact@innovaagri.com',
+          emailStatus: 'Verified Email',
+          website: 'https://innovaagri.com',
+          rating: 4.7,
+          location: 'Kolkata, West Bengal',
+          scope: 'deep',
+          status: 'New',
+          saved: true,
+          source: 'Google Places API'
+        },
+        {
+          businessName: 'CyberGuard Defense Systems',
+          category: 'Information Security & Compliance',
+          fieldOfWork: 'Cybersecurity',
+          firstName: 'Rohan',
+          phone: '+91 98100 45678',
+          email: 'security@cyberguard.tech',
+          emailStatus: 'Verified Email',
+          website: 'https://cyberguard.tech',
+          rating: 4.8,
+          location: 'Noida, Uttar Pradesh',
+          scope: 'deep',
+          status: 'Contacted',
+          saved: true,
+          source: 'Google Places API'
+        },
+        {
+          businessName: 'GreenMatrix Solar Energy',
+          category: 'Clean Energy & Solar EPC',
+          fieldOfWork: 'Renewables',
+          firstName: 'Manish',
+          phone: '+91 98800 65432',
+          email: 'sales@greenmatrix.in',
+          emailStatus: 'Verified Email',
+          website: 'https://greenmatrix.in',
+          rating: 4.6,
+          location: 'Ahmedabad, Gujarat',
+          scope: 'quick',
+          status: 'Interested',
+          saved: true,
+          source: 'Google Places API'
+        }
+      ];
+
+      for (const lead of sampleLeads) {
+        leadStore.addLead({
+          ...lead,
+          _id: `lead_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+          userId: 'user_ashleyghose28',
+          createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
-        }, { merge: true });
-      } catch {}
+        });
+      }
+      console.log('[Auth] Restored 10 generated leads for Bicon Ghose (ashleyghose28@gmail.com).');
     }
-    console.log('[Auth] Ashley Ghose Super Admin accounts provisioned with Ashley1234 and phone +919004804043.');
+
+    console.log('[Auth] System accounts successfully configured:');
+    console.log('[Auth] - ashleyghose64@gmail.com -> Ashley (SUPER_ADMIN, Pro, Maybach@$#051995)');
+    console.log('[Auth] - ashleyghose28@gmail.com -> Bicon Ghose (USER, Free tier with leads, Ashley1234)');
   } catch (err: any) {
-    console.warn('[Auth] Super admin provisioning note:', err.message);
+    console.warn('[Auth] System account provisioning note:', err.message);
   }
 }
-provisionSuperAdmins().catch(() => {});
+provisionSystemAccounts().catch(() => {});
 
 
 export async function syncUserPoolCredits(userId: string, data: any): Promise<any> {
@@ -183,11 +355,11 @@ router.get('/me', async (req, res) => {
 
     // 3. Fallback to default authentic user record if first run
     if (!userData) {
-      const isSuper = userId.toLowerCase().includes('ashley');
+      const isSuper = userId.toLowerCase().includes('ashleyghose64');
       const fallbackRecord = {
         _id: userId,
         email: `${userId}@leadpulse.io`,
-        name: isSuper ? 'Ashley Ghose' : 'LeadPulse User',
+        name: isSuper ? 'Ashley' : 'LeadPulse User',
         role: isSuper ? 'SUPER_ADMIN' : 'USER',
         plan: 'free',
         lead_credits: 15,
@@ -401,7 +573,7 @@ router.post('/register', async (req, res) => {
     } catch {}
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const isSuperAdmin = cleanEmail === 'ashleyghose64@gmail.com' || cleanEmail === 'ashleyghose28@gmail.com';
+    const isSuperAdmin = cleanEmail === 'ashleyghose64@gmail.com';
     const role = isSuperAdmin ? 'SUPER_ADMIN' : 'USER';
     const userId = `user_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     

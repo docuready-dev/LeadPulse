@@ -137,16 +137,17 @@ class UserStore {
     const existing = this.users.get(user._id) || (user.email ? this.getUserByEmail(user.email) : null);
     const nowIso = new Date().toISOString();
     const cleanEmail = (user.email || existing?.email || '').toLowerCase().trim();
-    const isSuperAdminEmail = cleanEmail === 'ashleyghose64@gmail.com' || cleanEmail === 'ashleyghose28@gmail.com';
+    const isSuperAdminEmail = cleanEmail === 'ashleyghose64@gmail.com';
+    const isBiconEmail = cleanEmail === 'ashleyghose28@gmail.com';
     
     const record: UserRecord = {
       _id: user._id,
       email: cleanEmail,
       password: user.password !== undefined ? user.password : existing?.password,
       googleId: user.googleId || existing?.googleId,
-      name: user.name || existing?.name || (isSuperAdminEmail ? 'Ashley Ghose' : 'LeadPulse User'),
-      role: user.role || existing?.role || (isSuperAdminEmail ? 'SUPER_ADMIN' : 'USER'),
-      plan: user.plan || existing?.plan || (isSuperAdminEmail ? 'pro' : 'free'),
+      name: user.name || (isSuperAdminEmail ? 'Ashley' : isBiconEmail ? 'Bicon Ghose' : existing?.name || 'LeadPulse User'),
+      role: isSuperAdminEmail ? 'SUPER_ADMIN' : (user.role || existing?.role || 'USER'),
+      plan: isSuperAdminEmail ? 'pro' : (user.plan || existing?.plan || 'free'),
       lead_credits: user.lead_credits !== undefined ? user.lead_credits : (existing?.lead_credits ?? (isSuperAdminEmail ? 1000 : 15)),
       pool_refreshed_at: user.pool_refreshed_at || existing?.pool_refreshed_at || nowIso,
       emails_limit: user.emails_limit !== undefined ? user.emails_limit : (existing?.emails_limit ?? (isSuperAdminEmail ? 5000 : 50)),

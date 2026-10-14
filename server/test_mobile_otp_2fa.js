@@ -31,35 +31,62 @@ async function runTests() {
     }
   }
 
-  // --- TEST 1: Ashley Super Admin Accounts Provisioning with Ashley1234 ---
-  console.log('--- 1. Testing Ashley Ghose Super Admin Accounts (28 & 64) with Ashley1234 ---');
-  for (const email of ['ashleyghose64@gmail.com', 'ashleyghose28@gmail.com']) {
-    const loginRes = await request('/api/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({
-        email,
-        password: 'Ashley1234'
-      })
-    });
+  // --- TEST 1: Ashley Super Admin & Bicon Ghose User Account ---
+  console.log('--- 1. Testing Ashley (SUPER_ADMIN) & Bicon Ghose (USER) Accounts ---');
+  
+  // 1a. Ashley Super Admin
+  const ashleyRes = await request('/api/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({
+      email: 'ashleyghose64@gmail.com',
+      password: 'Maybach@$#051995'
+    })
+  });
 
-    assert(
-      loginRes.status === 200 && !!loginRes.data?.token,
-      `Super Admin ${email} logs in directly with Ashley1234 (no 2FA required)`,
-      JSON.stringify(loginRes.data)
-    );
+  assert(
+    ashleyRes.status === 200 && !!ashleyRes.data?.token,
+    'Super Admin ashleyghose64@gmail.com logs in directly with Maybach@$#051995',
+    JSON.stringify(ashleyRes.data)
+  );
 
-    assert(
-      loginRes.data?.user?.role === 'SUPER_ADMIN' && loginRes.data?.user?.plan === 'pro',
-      `Super Admin ${email} has SUPER_ADMIN role and pro plan`,
-      `Role: ${loginRes.data?.user?.role}, Plan: ${loginRes.data?.user?.plan}`
-    );
+  assert(
+    ashleyRes.data?.user?.role === 'SUPER_ADMIN' && ashleyRes.data?.user?.plan === 'pro',
+    'Super Admin ashleyghose64@gmail.com has role SUPER_ADMIN and plan pro',
+    `Role: ${ashleyRes.data?.user?.role}, Plan: ${ashleyRes.data?.user?.plan}`
+  );
 
-    assert(
-      loginRes.data?.user?.phone === '+919004804043',
-      `Super Admin ${email} has phone set to +919004804043`,
-      `Phone: ${loginRes.data?.user?.phone}`
-    );
-  }
+  assert(
+    ashleyRes.data?.user?.name === 'Ashley',
+    'Super Admin ashleyghose64@gmail.com has name Ashley',
+    `Name: ${ashleyRes.data?.user?.name}`
+  );
+
+  // 1b. Bicon Ghose User Account
+  const biconRes = await request('/api/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({
+      email: 'ashleyghose28@gmail.com',
+      password: 'Ashley1234'
+    })
+  });
+
+  assert(
+    biconRes.status === 200 && !!biconRes.data?.token,
+    'User ashleyghose28@gmail.com logs in directly with Ashley1234',
+    JSON.stringify(biconRes.data)
+  );
+
+  assert(
+    biconRes.data?.user?.role === 'USER' && biconRes.data?.user?.plan === 'free',
+    'Account ashleyghose28@gmail.com has role USER and plan free',
+    `Role: ${biconRes.data?.user?.role}, Plan: ${biconRes.data?.user?.plan}`
+  );
+
+  assert(
+    biconRes.data?.user?.name === 'Bicon Ghose',
+    'Account ashleyghose28@gmail.com has name Bicon Ghose',
+    `Name: ${biconRes.data?.user?.name}`
+  );
 
   // --- TEST 2: Registration requires mobile number and OTP ---
   console.log('\n--- 2. Testing Registration Requirements ---');
