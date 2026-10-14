@@ -323,6 +323,24 @@ router.post('/scrape', async (req, res) => {
       }
     }
 
+    // Normalize Free tier pool (15 tokens max, 1 token = 1 contact) before transaction
+    if (userData) {
+      await syncUserPoolCredits(userId, userData).catch(() => {});
+    }
+
+    let currentCredits = userData?.lead_credits ?? 15;
+    let userPlan = (userData?.plan || 'free').toLowerCase();
+    let poolRefreshedAt = userData?.pool_refreshed_at || new Date().toISOString();
+
+    // STRICT CHECK: Reject immediately if user has exhausted all tokens
+    if (currentCredits < 1) {
+      return res.status(403).json({
+        error: 'Insufficient tokens. You have exhausted all tokens in your Free Tier pool (0 / 15 remaining). Tokens auto-refresh every 4 days, or you can top up / upgrade to Basic or Pro.',
+        needsTopUp: true,
+        creditsRemaining: 0
+      });
+    }
+
     // Check SerpApi engine requirement
     const userSerpInfo = memorySerpApiStore.get(userId);
     const resolvedSerpKey = userSerpInfo?.apiKey || userData?.serpapi_key || process.env.SERPAPI_KEY || '';
@@ -334,16 +352,11 @@ router.post('/scrape', async (req, res) => {
       });
     }
 
-    // Normalize Free tier pool (15 tokens max, 1 token = 1 contact) before transaction
-    if (userData) {
-      await syncUserPoolCredits(userId, userData).catch(() => {});
-    }
-
-    let creditsRemaining = userData?.lead_credits ?? 15;
-    let userPlan = (userData?.plan || 'free').toLowerCase();
-    let poolRefreshedAt = userData?.pool_refreshed_at || new Date().toISOString();
-    let limit = userPlan === 'free' ? 10 : 20;
-    let tokensUsed = 0;
+    const maxPerQuery = userPlan === 'free' ? 10 : 20;
+    // Cap query limit strictly by available credits (e.g. if 5 credits available, limit is 5)
+    let limit = Math.min(maxPerQuery, currentCredits);
+    let tokensUsed = limit;
+    let creditsRemaining = Math.max(0, currentCredits - tokensUsed);
 
     // Deduct 1 Token per Contact scraped (1 Token = 1 Contact)
     try {
@@ -354,29 +367,27 @@ router.post('/scrape', async (req, res) => {
         userPlan = (data.plan || 'free').toLowerCase();
         poolRefreshedAt = data.pool_refreshed_at || new Date().toISOString();
 
-        let currentCredits = data.lead_credits ?? 15;
+        let liveCredits = data.lead_credits ?? 15;
 
         // Check 4-day auto-refresh & free-tier 15-token cap
         if (userPlan === 'free') {
           const fourDaysMs = 4 * 24 * 60 * 60 * 1000;
           const lastRefresh = data.pool_refreshed_at ? new Date(data.pool_refreshed_at).getTime() : 0;
-          if (!data.pool_refreshed_at || Date.now() - lastRefresh >= fourDaysMs) {
-            currentCredits = 15;
+          if (lastRefresh > 0 && Date.now() - lastRefresh >= fourDaysMs) {
+            liveCredits = 15;
             poolRefreshedAt = new Date().toISOString();
-          } else if (!data.has_topup && currentCredits > 15) {
-            currentCredits = 15;
+          } else if (!data.has_topup && liveCredits > 15) {
+            liveCredits = 15;
           }
         }
 
-        if (currentCredits < 1) {
+        if (liveCredits < 1) {
           throw new Error("Insufficient credits");
         }
 
-        // Max contacts per query: 10 on Free tier, 20 on Basic/Pro, capped by available tokens (1 Token = 1 Contact)
-        const maxPerQuery = userPlan === 'free' ? 10 : 20;
-        limit = Math.min(maxPerQuery, currentCredits);
-        tokensUsed = limit; // 1 token = 1 contact scraped
-        creditsRemaining = currentCredits - tokensUsed;
+        limit = Math.min(maxPerQuery, liveCredits);
+        tokensUsed = limit;
+        creditsRemaining = Math.max(0, liveCredits - tokensUsed);
 
         t.update(userRef, { 
           lead_credits: creditsRemaining,
@@ -385,15 +396,18 @@ router.post('/scrape', async (req, res) => {
       });
     } catch (txErr: any) {
       if (txErr.message === "Insufficient credits") {
-        return res.status(403).json({ error: 'Insufficient credits', needsTopUp: true });
+        return res.status(403).json({ 
+          error: 'Insufficient tokens. You have exhausted all tokens in your Free Tier pool (0 / 15 remaining).', 
+          needsTopUp: true,
+          creditsRemaining: 0 
+        });
       }
-      // If Firestore transaction fails due to offline/permission, proceed with default quota
-      const maxPerQuery = userPlan === 'free' ? 10 : 20;
-      limit = Math.min(maxPerQuery, creditsRemaining > 0 ? creditsRemaining : maxPerQuery);
-      tokensUsed = limit;
-      creditsRemaining = Math.max(0, creditsRemaining - tokensUsed);
+      // If Firestore transaction fails due to offline/permission, proceed with local deduction
       userStore.updateUser(userId, { lead_credits: creditsRemaining });
     }
+    
+    // Always persist deduction in local store
+    userStore.updateUser(userId, { lead_credits: creditsRemaining });
     
     const jobId = `job_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
 

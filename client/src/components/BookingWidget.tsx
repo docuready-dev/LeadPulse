@@ -311,18 +311,6 @@ export const BookingWidget: React.FC<BookingWidgetProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Direct link to Google Booking Page */}
-          <a
-            href={calendarStatus?.appointmentScheduleUrl || DEFAULT_GOOGLE_SCHEDULE_URL}
-            target="_blank"
-            rel="noreferrer"
-            className="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs transition-all flex items-center gap-1.5 shadow-sm cursor-pointer"
-            title="Open Google Booking Page"
-          >
-            <span>Open Google Booking Page</span>
-            <ExternalLink className="w-3.5 h-3.5" />
-          </a>
-
           <button
             type="button"
             onClick={fetchStatus}
@@ -343,26 +331,6 @@ export const BookingWidget: React.FC<BookingWidgetProps> = ({
             <span>Calendar Settings</span>
           </button>
         </div>
-      </div>
-
-      {/* Linked Google Schedule Notice Ribbon */}
-      <div className="bg-indigo-50 border-b border-indigo-100 px-4 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-2 text-xs">
-        <div className="flex items-center gap-2 text-indigo-950 font-medium">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-          <span className="font-bold">Official Booking Page:</span>
-          <span className="text-slate-600 truncate max-w-xs hidden md:inline">
-            {calendarStatus?.appointmentScheduleUrl || DEFAULT_GOOGLE_SCHEDULE_URL}
-          </span>
-        </div>
-        <a
-          href={calendarStatus?.appointmentScheduleUrl || DEFAULT_GOOGLE_SCHEDULE_URL}
-          target="_blank"
-          rel="noreferrer"
-          className="inline-flex items-center gap-1.5 px-3 py-1 bg-white hover:bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-lg text-xs font-bold transition-colors shadow-2xs cursor-pointer ml-auto"
-        >
-          <span>Open Google Booking Page</span>
-          <ExternalLink className="w-3.5 h-3.5" />
-        </a>
       </div>
 
       {/* Main Scheduler View */}

@@ -33,8 +33,8 @@ const LeadFinderWizard = ({ onHarvestStarted }: WizardProps) => {
 
   // Step state: 1 (Location) -> 2 (Keyword) -> 3 (Scope Proficiency)
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
-  const [location, setLocation] = useState(user?.target_audience || '');
-  const [keyword, setKeyword] = useState(user?.niche || user?.field_of_work || '');
+  const [location, setLocation] = useState((user as any)?.location || (user as any)?.city || '');
+  const [keyword, setKeyword] = useState(user?.niche || user?.field_of_work || user?.target_audience || '');
   const [scope, setScope] = useState<'quick' | 'deep'>('quick');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -142,17 +142,23 @@ const LeadFinderWizard = ({ onHarvestStarted }: WizardProps) => {
   const currentPlan = (user?.plan || 'free').toLowerCase();
   const isFree = currentPlan === 'free';
   const rawCredits = user?.lead_credits ?? 15;
-  const credits = isFree && !(user as any)?.has_topup ? Math.min(rawCredits, 15) : rawCredits;
+  const credits = isFree && !(user as any)?.has_topup ? Math.max(0, Math.min(rawCredits, 15)) : Math.max(0, rawCredits);
   const maxPool = isFree ? '15' : (currentPlan === 'basic' ? '600' : 'Unlimited');
   const perQueryLimit = isFree ? 10 : 20;
-  const batchContactsCount = Math.min(perQueryLimit, Math.max(1, credits));
+  const isExhausted = credits < 1;
+  const batchContactsCount = Math.min(perQueryLimit, Math.max(0, credits));
 
-  const locationPresets = ['Mumbai', 'Bengaluru', 'Delhi NCR', 'Hyderabad', 'Pune'];
+  const locationPresets = ['Mumbai', 'Bengaluru', 'Delhi NCR', 'Hyderabad', 'Pune', 'New York', 'London', 'Dubai'];
   const keywordPresets = ['SaaS & Software', 'Real Estate Agencies', 'Healthcare Clinics', 'Digital Marketing', 'Legal & Advisory', 'Hospitality'];
 
   const handleLaunchHarvest = async () => {
-    // 1 Token = 1 Contact scraped
+    // 1 Token = 1 Contact scraped: block immediately if tokens exhausted
     if (credits < 1) {
+      await alertDialog({
+        title: 'Token Pool Exhausted',
+        message: 'You have exhausted all available contact tokens in your Free Tier pool (0 / 15 remaining). Free tier tokens auto-refresh every 4 days, or you can top up / upgrade to Basic or Pro.',
+        variant: 'warning'
+      });
       setUpgradeTab('topup');
       setUpgradeModalOpen(true);
       return;
@@ -210,9 +216,18 @@ const LeadFinderWizard = ({ onHarvestStarted }: WizardProps) => {
         setIsSerpModalOpen(true);
         return;
       }
-      if (err.response?.data?.needsTopUp) {
-        setUpgradeTab('plans');
+      if (err.response?.status === 403 || err.response?.data?.needsTopUp) {
+        if (typeof err.response?.data?.creditsRemaining === 'number') {
+          updateCredits(err.response.data.creditsRemaining);
+        }
+        await alertDialog({
+          title: 'Token Pool Exhausted',
+          message: err.response?.data?.error || 'Your token pool is exhausted (0 remaining). Please top up or upgrade to harvest additional leads.',
+          variant: 'warning'
+        });
+        setUpgradeTab('topup');
         setUpgradeModalOpen(true);
+        return;
       } else {
         await alertDialog({
           title: 'Harvesting Error',
@@ -242,10 +257,15 @@ const LeadFinderWizard = ({ onHarvestStarted }: WizardProps) => {
             </span>
           </div>
 
-          <div className="text-xs font-delight font-medium">
+          <div className="text-xs font-delight font-medium flex items-center gap-1.5">
             <span className="text-slate-500">Available Tokens: </span>
-            <span className="font-bold text-slate-900">{credits}</span>
+            <span className={`font-bold ${isExhausted ? 'text-rose-600' : 'text-slate-900'}`}>{credits}</span>
             <span className="text-slate-400"> / {maxPool}</span>
+            {isExhausted && (
+              <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200 uppercase">
+                Pool Exhausted
+              </span>
+            )}
           </div>
 
           <div className="text-xs font-delight px-2 py-0.5 rounded-sm bg-slate-100 text-slate-700 border border-slate-200 font-semibold">
@@ -434,7 +454,7 @@ const LeadFinderWizard = ({ onHarvestStarted }: WizardProps) => {
             <div className="max-w-lg mx-auto space-y-4">
               <div className="space-y-1">
                 <h3 className="font-bold text-sm tracking-tight text-slate-900">Target Geographic Territory</h3>
-                <p className="text-xs text-slate-500">Specify city, district, or postal market code.</p>
+                <p className="text-xs text-slate-500">Specify a geographic city, district, or metro territory (e.g. Mumbai, Bengaluru, New York, London).</p>
               </div>
 
               <div className="relative">
@@ -443,14 +463,14 @@ const LeadFinderWizard = ({ onHarvestStarted }: WizardProps) => {
                   type="text" 
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
-                  placeholder="e.g. Mumbai, Bengaluru, or Austin TX"
+                  placeholder="e.g. Mumbai, Bengaluru, Delhi NCR, London, or Austin TX"
                   className="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-md text-xs font-medium text-slate-900 outline-none focus:border-slate-400 transition-colors"
                 />
               </div>
 
               {/* Quick Preset Location Chips */}
               <div className="space-y-1.5">
-                <span className="text-[10px] font-delight font-semibold text-slate-400 uppercase tracking-wider">Presets:</span>
+                <span className="text-[10px] font-delight font-semibold text-slate-400 uppercase tracking-wider">Suggested Cities &amp; Regions:</span>
                 <div className="flex flex-wrap gap-1.5">
                   {locationPresets.map((loc) => (
                     <button
@@ -569,8 +589,8 @@ const LeadFinderWizard = ({ onHarvestStarted }: WizardProps) => {
                   <p className="text-[11px] text-slate-500 leading-relaxed">
                     Primary public business profile, verified phone, address, and ratings.
                   </p>
-                  <div className="text-[10px] font-delight text-slate-700 font-semibold pt-2 mt-2 border-t border-slate-200">
-                    1 Token = 1 Contact ({batchContactsCount} Tokens for {batchContactsCount} Contacts)
+                  <div className={`text-[10px] font-delight font-semibold pt-2 mt-2 border-t border-slate-200 ${isExhausted ? 'text-rose-600' : 'text-slate-700'}`}>
+                    {isExhausted ? '0 Tokens Available (Pool Exhausted)' : `1 Token = 1 Contact (${batchContactsCount} Tokens for ${batchContactsCount} Contacts)`}
                   </div>
                 </div>
 
@@ -589,16 +609,22 @@ const LeadFinderWizard = ({ onHarvestStarted }: WizardProps) => {
                   <p className="text-[11px] text-slate-500 leading-relaxed">
                     Multi-page website scan, domain verification, and rich metadata.
                   </p>
-                  <div className="text-[10px] font-delight text-indigo-700 font-semibold pt-2 mt-2 border-t border-slate-200">
-                    1 Token = 1 Contact ({batchContactsCount} Tokens for {batchContactsCount} Contacts)
+                  <div className={`text-[10px] font-delight font-semibold pt-2 mt-2 border-t border-slate-200 ${isExhausted ? 'text-rose-600' : 'text-indigo-700'}`}>
+                    {isExhausted ? '0 Tokens Available (Pool Exhausted)' : `1 Token = 1 Contact (${batchContactsCount} Tokens for ${batchContactsCount} Contacts)`}
                   </div>
                 </div>
               </div>
 
               {/* Execution Summary Strip */}
-              <div className="p-3 bg-slate-50 rounded-md border border-slate-200 flex items-center justify-between text-xs font-delight font-medium">
-                <span className="text-slate-600 truncate">{keyword} in {location}</span>
-                <span className="font-bold text-slate-900">{batchContactsCount} Contacts • {batchContactsCount} Tokens Used</span>
+              <div className={`p-3 rounded-md border flex items-center justify-between text-xs font-delight font-medium ${
+                isExhausted ? 'bg-rose-50/70 border-rose-200 text-rose-800' : 'bg-slate-50 border-slate-200 text-slate-700'
+              }`}>
+                <span className="truncate">{keyword || 'Selected Category'} in {location || 'Target Territory'}</span>
+                <span className="font-bold">
+                  {isExhausted 
+                    ? '0 Tokens Available • Pool Exhausted' 
+                    : `${batchContactsCount} Contacts • ${batchContactsCount} Tokens Used`}
+                </span>
               </div>
 
               <div className="flex justify-between items-center pt-2">
@@ -616,17 +642,26 @@ const LeadFinderWizard = ({ onHarvestStarted }: WizardProps) => {
                   type="button"
                   onClick={handleLaunchHarvest}
                   disabled={isSubmitting}
-                  className="bg-slate-900 hover:bg-black text-white px-5 py-2 rounded-md text-xs font-semibold transition-all flex items-center gap-2 disabled:opacity-50 cursor-pointer shadow-xs"
+                  className={`px-5 py-2 rounded-md text-xs font-semibold transition-all flex items-center gap-2 cursor-pointer shadow-xs ${
+                    isExhausted 
+                      ? 'bg-amber-600 hover:bg-amber-700 text-white' 
+                      : 'bg-slate-900 hover:bg-black text-white disabled:opacity-50'
+                  }`}
                 >
                   {isSubmitting ? (
                     <>
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
                       <span>Executing Task...</span>
                     </>
+                  ) : isExhausted ? (
+                    <>
+                      <AlertCircle className="w-3.5 h-3.5 text-white" />
+                      <span>Tokens Exhausted (0/{maxPool}) • Top Up</span>
+                    </>
                   ) : (
                     <>
                       <Sparkles className="w-3.5 h-3.5" />
-                      <span>Dispatch Task</span>
+                      <span>Dispatch Task ({batchContactsCount} Tokens)</span>
                     </>
                   )}
                 </button>

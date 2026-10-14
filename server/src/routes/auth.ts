@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import { db } from '../index';
 import { userStore } from '../services/userStore';
+import { leadStore } from '../services/leadStore';
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'secret';
@@ -13,7 +14,8 @@ export async function syncUserPoolCredits(userId: string, data: any): Promise<an
   const lastRefresh = data.pool_refreshed_at ? new Date(data.pool_refreshed_at).getTime() : 0;
 
   if (plan === 'free') {
-    if (!data.pool_refreshed_at || Date.now() - lastRefresh >= fourDaysMs) {
+    if (lastRefresh > 0 && Date.now() - lastRefresh >= fourDaysMs) {
+      // 4-day full refresh window reached
       const nowIso = new Date().toISOString();
       data.lead_credits = 15;
       data.pool_refreshed_at = nowIso;
@@ -23,16 +25,29 @@ export async function syncUserPoolCredits(userId: string, data: any): Promise<an
           pool_refreshed_at: nowIso
         });
       } catch {}
-    } else if (!data.has_topup) {
-      const leadsSnap = await db.collection('leads').where('userId', '==', userId).get().catch(() => ({ size: 0 } as any));
-      const expectedMaxCredits = Math.max(0, 15 - (leadsSnap.size || 0));
-      if (data.lead_credits === undefined || data.lead_credits > 15 || data.lead_credits > expectedMaxCredits) {
-        data.lead_credits = expectedMaxCredits;
+    } else {
+      if (!data.pool_refreshed_at) {
+        data.pool_refreshed_at = new Date().toISOString();
+      }
+      if (!data.has_topup) {
+        // Enforce 1 Token = 1 Contact strictly: tally across local leadStore and Firestore
+        const localLeads = leadStore.getLeads(userId);
+        let leadsCount = localLeads.length;
         try {
-          await db.collection('users').doc(userId).update({
-            lead_credits: expectedMaxCredits
-          });
+          const leadsSnap = await db.collection('leads').where('userId', '==', userId).get();
+          leadsCount = Math.max(leadsCount, leadsSnap.size);
         } catch {}
+
+        const expectedMaxCredits = Math.max(0, 15 - leadsCount);
+        if (data.lead_credits === undefined) {
+          data.lead_credits = expectedMaxCredits;
+        } else if (data.lead_credits > 15) {
+          data.lead_credits = Math.min(15, expectedMaxCredits);
+        } else if (data.lead_credits > expectedMaxCredits) {
+          data.lead_credits = expectedMaxCredits;
+        }
+        // If data.lead_credits <= 0, preserve exhausted state (0 tokens)
+        data.lead_credits = Math.max(0, data.lead_credits);
       }
     }
   }
@@ -350,7 +365,9 @@ router.patch('/profile', async (req, res) => {
     niche,
     target_audience,
     goals,
-    profile_picture
+    profile_picture,
+    serpapi_key,
+    serpapi_connected
   } = req.body;
 
   try {
@@ -365,6 +382,8 @@ router.patch('/profile', async (req, res) => {
     if (target_audience !== undefined) updates.target_audience = target_audience;
     if (goals !== undefined) updates.goals = goals;
     if (profile_picture !== undefined) updates.profile_picture = profile_picture;
+    if (serpapi_key !== undefined) updates.serpapi_key = serpapi_key;
+    if (serpapi_connected !== undefined) updates.serpapi_connected = serpapi_connected;
     updates.updatedAt = new Date().toISOString();
 
     // 1. Update in local persistent store
