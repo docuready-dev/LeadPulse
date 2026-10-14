@@ -6,6 +6,7 @@ import path from 'path';
 export interface GoogleCalendarSettings {
   calendarId?: string;
   authType?: 'service_account' | 'oauth2' | 'env';
+  syncMode?: 'smart_direct' | 'google_schedule' | 'ical' | 'service_account';
   clientEmail?: string;
   privateKey?: string;
   serviceAccountJson?: string;
@@ -15,6 +16,7 @@ export interface GoogleCalendarSettings {
   refreshToken?: string;
   accessToken?: string;
   appointmentScheduleUrl?: string;
+  icalUrl?: string;
   timeZone?: string;
 }
 

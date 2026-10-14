@@ -92,10 +92,11 @@ const Appointments = () => {
     <div className="flex w-full h-screen overflow-hidden bg-transparent font-sans text-slate-900">
       <Sidebar />
 
-      <div className="flex-1 flex flex-col h-full overflow-hidden">
+      <div className="flex-1 flex flex-col h-full min-h-0 overflow-hidden">
         <Header title="Google Calendar Booking Engine & Appointment Hub" />
 
-        <div className="flex-1 flex flex-col p-6 sm:p-8 overflow-y-auto custom-scrollbar space-y-6">
+        <main className="flex-1 min-h-0 overflow-y-auto p-6 sm:p-8 custom-scrollbar">
+          <div className="max-w-[1360px] mx-auto space-y-6 pb-24">
           
           {toastMessage && (
             <div className="fixed top-6 right-6 z-50 bg-slate-900 text-white px-3.5 py-2 rounded-md shadow-xl border border-slate-800 text-xs font-delight font-medium flex items-center gap-2 animate-in fade-in">
@@ -114,7 +115,13 @@ const Appointments = () => {
               <div className="text-base font-bold text-slate-900">Google Calendar</div>
               <div className="text-[11px] text-emerald-700 font-semibold mt-0.5 flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span>{calendarStatus?.isConnected ? 'Live API Synced' : 'Active (Direct Mode)'}</span>
+                <span>
+                  {calendarStatus?.syncMode === 'google_schedule' 
+                    ? 'Google Schedule Linked' 
+                    : calendarStatus?.syncMode === 'service_account' && calendarStatus?.isConnected
+                    ? 'API Synced'
+                    : 'Smart Direct Mode (Active)'}
+                </span>
               </div>
             </div>
 
@@ -202,7 +209,7 @@ const Appointments = () => {
                 }`}
               >
                 <Settings className="w-3.5 h-3.5" />
-                <span>API Setup Guide</span>
+                <span>Calendar Linking Guide</span>
               </button>
             </div>
           </div>
@@ -372,66 +379,123 @@ const Appointments = () => {
             </div>
           )}
 
-          {/* TAB 4: GOOGLE CALENDAR SETUP GUIDE */}
+          {/* TAB 4: GOOGLE CALENDAR LINKING GUIDE */}
           {activeTab === 'setup' && (
             <div className="bg-white border border-slate-200 rounded-xl p-6 space-y-6 shadow-2xs text-xs">
               <div>
-                <h3 className="font-bold text-base text-slate-900 tracking-tight">Google Calendar &amp; Meet API Architecture</h3>
+                <h3 className="font-bold text-base text-slate-900 tracking-tight">Easy Google Calendar Linking Guide</h3>
                 <p className="text-slate-600 mt-1">
-                  How LeadPulse integrates directly with Google Calendar to manage live booking slots, query free/busy conflicts, and auto-provision Google Meet links.
+                  Connect LeadPulse to your Google Calendar in seconds. Choose the method that best fits your workflow.
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="border border-slate-200 rounded-xl p-4 space-y-3 bg-[#FAF8F5]">
-                  <h4 className="font-bold text-xs uppercase tracking-wider text-slate-800 flex items-center gap-2">
-                    <Key className="w-4 h-4 text-indigo-600" />
-                    <span>Step-by-Step Google Cloud Setup</span>
-                  </h4>
-                  <ol className="space-y-2 text-slate-700 list-decimal pl-4 leading-relaxed">
-                    <li>
-                      <strong>Google Cloud Project:</strong> Go to <a href="https://console.cloud.google.com" target="_blank" rel="noreferrer" className="text-indigo-600 underline font-semibold">Google Cloud Console</a> and create or select your project.
-                    </li>
-                    <li>
-                      <strong>Enable API:</strong> Under <em>APIs &amp; Services &gt; Library</em>, search for <strong>Google Calendar API</strong> and click <strong>Enable</strong>.
-                    </li>
-                    <li>
-                      <strong>Service Account:</strong> Under <em>IAM &amp; Admin &gt; Service Accounts</em>, create a Service Account, click <em>Keys &gt; Add Key &gt; Create new key (JSON)</em>, and download the key.
-                    </li>
-                    <li>
-                      <strong>Share Your Calendar:</strong> In Google Calendar UI, open Settings for your calendar, scroll to <em>Share with specific people</em>, and add your service account email with <strong>"Make changes to events"</strong> permission.
-                    </li>
-                    <li>
-                      <strong>Save in LeadPulse:</strong> Open <em>Calendar Settings</em> in the Live Scheduler above and paste your Calendar ID and Service Account JSON.
-                    </li>
-                  </ol>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                
+                {/* Method 1: Zero Setup Smart Scheduler */}
+                <div className="border border-emerald-200 bg-emerald-50/40 rounded-xl p-4 space-y-3 flex flex-col justify-between">
+                  <div>
+                    <div className="inline-block px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[10px] uppercase tracking-wider mb-2">
+                      Active Now • 0 Setup
+                    </div>
+                    <h4 className="font-bold text-sm text-slate-900 flex items-center gap-1.5">
+                      <Sparkles className="w-4 h-4 text-emerald-600" />
+                      <span>Smart Direct Scheduler</span>
+                    </h4>
+                    <p className="text-slate-600 mt-2 text-[11px] leading-relaxed">
+                      Works out of the box with zero API keys or developer console setup.
+                    </p>
+                    <ul className="mt-3 space-y-1.5 text-[11px] text-slate-700 list-disc pl-4">
+                      <li>Automated Google Meet room generation</li>
+                      <li>1-Click &quot;Add to Google Calendar&quot; buttons</li>
+                      <li>Auto-advances CRM leads to &quot;Demo&quot;</li>
+                      <li>Instant email confirmations with .ics invites</li>
+                    </ul>
+                  </div>
+                  <button
+                    onClick={() => setActiveTab('scheduler')}
+                    className="w-full mt-3 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                  >
+                    Open Live Scheduler
+                  </button>
                 </div>
 
-                <div className="border border-slate-200 rounded-xl p-4 space-y-3 bg-slate-900 text-white font-mono">
-                  <h4 className="font-bold text-xs uppercase tracking-wider text-slate-300 flex items-center gap-2">
-                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                    <span>Calendar SDK Architecture</span>
-                  </h4>
-                  <div className="space-y-2.5 text-[11px] leading-relaxed text-slate-300">
-                    <div className="p-2 bg-slate-950 rounded border border-slate-800">
-                      <div className="text-emerald-400 font-bold mb-0.5">1. Free/Busy Detection</div>
-                      <div>Calls <code className="text-indigo-300">calendar.freebusy.query</code> to inspect real conflicts and hide busy slots dynamically.</div>
+                {/* Method 2: Google Appointment Schedule Link */}
+                <div className="border border-indigo-200 bg-indigo-50/40 rounded-xl p-4 space-y-3 flex flex-col justify-between">
+                  <div>
+                    <div className="inline-block px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800 font-bold text-[10px] uppercase tracking-wider mb-2">
+                      Recommended • 10 Seconds
                     </div>
-                    <div className="p-2 bg-slate-950 rounded border border-slate-800">
-                      <div className="text-emerald-400 font-bold mb-0.5">2. Event Creation &amp; Google Meet</div>
-                      <div>Calls <code className="text-indigo-300">calendar.events.insert</code> with conferenceData to provision live Google Meet rooms automatically.</div>
+                    <h4 className="font-bold text-sm text-slate-900 flex items-center gap-1.5">
+                      <Calendar className="w-4 h-4 text-indigo-600" />
+                      <span>Google Schedule URL</span>
+                    </h4>
+                    <p className="text-slate-600 mt-2 text-[11px] leading-relaxed">
+                      Link your official Google Calendar Appointment Schedule directly.
+                    </p>
+                    <ol className="mt-3 space-y-1.5 text-[11px] text-slate-700 list-decimal pl-4">
+                      <li>In Google Calendar, click <strong>+ Create &gt; Appointment Schedule</strong>.</li>
+                      <li>Copy your booking URL (ends in <code>/schedules/...</code>).</li>
+                      <li>Click <strong>Calendar Settings</strong> above and paste your link.</li>
+                      <li>Your official Google schedule embeds right into LeadPulse!</li>
+                    </ol>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setActiveTab('scheduler');
+                      showToast('Open Calendar Settings in the top right to paste your link');
+                    }}
+                    className="w-full mt-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                  >
+                    Configure Schedule Link
+                  </button>
+                </div>
+
+                {/* Method 3: Live iCal Feed Sync */}
+                <div className="border border-slate-200 bg-[#FAF8F5] rounded-xl p-4 space-y-3 flex flex-col justify-between">
+                  <div>
+                    <div className="inline-block px-2 py-0.5 rounded-full bg-slate-200 text-slate-800 font-bold text-[10px] uppercase tracking-wider mb-2">
+                      Universal Sync • 1 Click
                     </div>
-                    <div className="p-2 bg-slate-950 rounded border border-slate-800">
-                      <div className="text-emerald-400 font-bold mb-0.5">3. CRM Pipeline Sync</div>
-                      <div>Matches attendee email to CRM leads, records appointment timeline activity, and advances pipeline stage to Demo.</div>
-                    </div>
+                    <h4 className="font-bold text-sm text-slate-900 flex items-center gap-1.5">
+                      <Clock className="w-4 h-4 text-slate-700" />
+                      <span>Google Calendar iCal Feed</span>
+                    </h4>
+                    <p className="text-slate-600 mt-2 text-[11px] leading-relaxed">
+                      Subscribe your Google Calendar app to all LeadPulse appointments.
+                    </p>
+                    <ol className="mt-3 space-y-1.5 text-[11px] text-slate-700 list-decimal pl-4">
+                      <li>Copy your personal feed URL from Calendar Settings.</li>
+                      <li>In Google Calendar, click <strong>+ Other calendars &gt; From URL</strong>.</li>
+                      <li>Paste the link and click <strong>Add calendar</strong>.</li>
+                      <li>All LeadPulse bookings appear on your phone &amp; laptop automatically!</li>
+                    </ol>
+                  </div>
+                  <div className="mt-3 p-2 bg-white rounded border border-slate-200 font-mono text-[10px] text-slate-600 truncate">
+                    {calendarStatus?.icalFeedUrl || `${apiBase}/api/booking/feed/${user?._id || 'default'}.ics`}
                   </div>
                 </div>
+
               </div>
+
+              {/* Advanced Developer Section (Collapsible Accordion) */}
+              <div className="border border-slate-200 rounded-xl p-4 bg-slate-50 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Key className="w-4 h-4 text-slate-500" />
+                    <span className="font-bold text-xs text-slate-800">Advanced Option: Google Cloud Service Account (For Developers)</span>
+                  </div>
+                  <span className="text-[10px] text-slate-500 font-medium">Optional</span>
+                </div>
+                <p className="text-[11px] text-slate-600 leading-relaxed">
+                  If you require backend Google Calendar API SDK access: In Google Cloud Console, enable <strong>Google Calendar API</strong>, generate a <strong>Service Account Key (JSON)</strong>, and in Google Calendar settings, share your calendar with the service account email with <strong>&quot;Make changes to events&quot;</strong> permission.
+                </p>
+              </div>
+
             </div>
           )}
 
-        </div>
+          </div>
+        </main>
       </div>
     </div>
   );
