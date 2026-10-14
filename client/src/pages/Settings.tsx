@@ -3,8 +3,8 @@ import { useStore } from '../store/useStore';
 import { alertDialog } from '../components/AppConfirmModal';
 import axios from 'axios';
 import { 
-  User, Mail, Server, Shield, 
-  CreditCard, Download, Check,
+  User, Mail, Server, Shield, ShieldCheck,
+  CreditCard, Download, Check, Send,
   Sparkles, Save, CheckCircle2, AlertCircle,
   MessageCircle, Zap, Lock, BookOpen
 } from 'lucide-react';
