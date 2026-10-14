@@ -1,7 +1,7 @@
 import { 
   BarChart3, Database, Sparkles, Users, Zap, ShieldCheck, X, Check
 } from 'lucide-react';
-import { motion, useScroll, useTransform } from 'framer-motion';
+import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
 import { useRef, useState } from 'react';
 import MeshBackground from '../components/MeshBackground';
 import { useStore } from '../store/useStore';
@@ -209,8 +209,16 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
     offset: ["start end", "end start"]
   });
 
-  const opacity = useTransform(scrollYProgress, [0, 0.5], [0, 1]);
-  const y = useTransform(scrollYProgress, [0, 0.5], [60, 0]);
+  // 60fps+ spring-interpolated scroll physics for fluid momentum response
+  const smoothScrollProgress = useSpring(scrollYProgress, {
+    stiffness: 90,
+    damping: 24,
+    mass: 0.6,
+    restDelta: 0.0005
+  });
+
+  const opacity = useTransform(smoothScrollProgress, [0, 0.45], [0, 1]);
+  const y = useTransform(smoothScrollProgress, [0, 0.45], [45, 0]);
 
   // Modal states for footer
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
@@ -224,13 +232,22 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
     hidden: { opacity: 0 },
     show: {
       opacity: 1,
-      transition: { staggerChildren: 0.1, delayChildren: 0.15 }
+      transition: { staggerChildren: 0.08, delayChildren: 0.1 }
     }
   };
 
   const itemVars = {
-    hidden: { opacity: 0, y: 24 },
-    show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 75, damping: 16 } }
+    hidden: { opacity: 0, y: 20 },
+    show: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        type: "spring",
+        stiffness: 110,
+        damping: 18,
+        mass: 0.65
+      }
+    }
   };
 
   return (
@@ -369,8 +386,9 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
           >
             {/* Main Architectural Frame */}
             <motion.div 
-              animate={{ y: [0, -7, 0] }}
-              transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
+              animate={{ y: [0, -8, 0] }}
+              transition={{ duration: 6.5, repeat: Infinity, ease: "easeInOut" }}
+              style={{ willChange: "transform", transform: "translate3d(0, 0, 0)" }}
               className="absolute inset-0 rounded-lg overflow-hidden shadow-lg border border-[#D6CFC2] ml-6 lg:ml-9 mt-8 bg-[#191716]"
             >
               <img 
@@ -384,15 +402,20 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
                   background: 'linear-gradient(135deg, rgba(25, 23, 22, 0.82) 0%, rgba(25, 23, 22, 0.25) 55%, rgba(200, 90, 50, 0.32) 100%)'
                 }}
               />
-              <div className="absolute top-4 right-4 bg-[#191716]/80 backdrop-blur-xs border border-white/15 text-[#F5F2EB] px-2.5 py-1 rounded-[4px] text-[10px] font-delight font-semibold tracking-wider uppercase">
-                WORKSPACE // LIVE STREAM
+              <div className="absolute top-4 right-4 bg-[#191716]/80 backdrop-blur-xs border border-white/15 text-[#F5F2EB] px-2.5 py-1 rounded-[4px] text-[10px] font-delight font-semibold tracking-wider uppercase flex items-center gap-1.5">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                <span>WORKSPACE // LIVE STREAM</span>
               </div>
             </motion.div>
 
             {/* Floating Vector UI 1: Telemetry Card */}
             <motion.div 
-              animate={{ y: [0, 10, 0] }}
-              transition={{ duration: 5.2, repeat: Infinity, ease: "easeInOut", delay: 0.4 }}
+              animate={{ y: [0, 9, 0] }}
+              transition={{ duration: 4.8, repeat: Infinity, ease: "easeInOut", delay: 0.2 }}
+              style={{ willChange: "transform", transform: "translate3d(0, 0, 0)" }}
               className="absolute top-2 left-0 w-72 bg-white rounded-lg shadow-xl border border-[#D6CFC2] overflow-hidden z-20 text-[#191716]"
             >
               <div className="h-8.5 bg-[#F5F2EB] border-b border-[#E5E0D5] flex items-center px-3 gap-2">
@@ -418,10 +441,11 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
                       key={i}
                       initial={{ height: 0 }}
                       animate={{ height: `${h}%` }}
-                      transition={{ duration: 0.9, delay: 0.8 + (i * 0.1) }}
+                      transition={{ type: "spring", stiffness: 120, damping: 14, delay: 0.5 + (i * 0.08) }}
                       className={`flex-1 rounded-t-[3px] transition-colors ${
                         i === 3 ? 'bg-[#C85A32]' : 'bg-[#191716] hover:bg-[#C85A32]'
                       }`}
+                      style={{ willChange: "height" }}
                     />
                   ))}
                 </div>
@@ -434,8 +458,9 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
 
             {/* Floating Vector UI 2: Dispatch Notification */}
             <motion.div 
-              animate={{ y: [0, -8, 0] }}
-              transition={{ duration: 4.6, repeat: Infinity, ease: "easeInOut", delay: 1.2 }}
+              animate={{ y: [0, -7, 0] }}
+              transition={{ duration: 4.2, repeat: Infinity, ease: "easeInOut", delay: 0.8 }}
+              style={{ willChange: "transform", transform: "translate3d(0, 0, 0)" }}
               className="absolute bottom-5 left-5 bg-[#191716] p-3.5 rounded-[7px] shadow-xl flex items-center gap-3 z-30 text-[#FAF8F5] border border-[#332E2B]"
             >
               <div>
@@ -452,7 +477,13 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
 
       {/* ================= 3. PLATFORM ARCHITECTURE SHOWCASE (id="product") ================= */}
       <section id="product" className="py-22 px-6 md:px-12 max-w-7xl mx-auto w-full relative z-10 scroll-mt-20 border-t border-[#E5E0D5]">
-        <div className="text-left mb-12 max-w-2xl">
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-60px" }}
+          transition={{ type: "spring", stiffness: 100, damping: 20 }}
+          className="text-left mb-12 max-w-2xl"
+        >
           <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-[5px] border border-[#E5E0D5] bg-[#F5F2EB] text-[11px] font-delight font-bold text-[#57524B] mb-3.5">
             <span>UNIFIED ARCHITECTURE // THREE ENGINES</span>
           </div>
@@ -462,10 +493,16 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
           <p className="text-sm md:text-[15px] text-[#57524B] font-normal leading-relaxed">
             Eliminate fragmented tools. LeadPulse connects precision prospect harvesting, generative AI email &amp; WhatsApp delivery, and visual CRM pipeline automation into an interconnected ledger.
           </p>
-        </div>
+        </motion.div>
 
         {/* Unified 3-Column 1px Divided Architectural Ledger */}
-        <div className="bg-white border border-[#E5E0D5] rounded-lg grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-[#E5E0D5] overflow-hidden shadow-2xs">
+        <motion.div
+          initial={{ opacity: 0, y: 28 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-60px" }}
+          transition={{ type: "spring", stiffness: 95, damping: 20, delay: 0.1 }}
+          className="bg-white border border-[#E5E0D5] rounded-lg grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-[#E5E0D5] overflow-hidden shadow-2xs"
+        >
           
           {/* Engine 1 */}
           <div className="p-8 hover:bg-[#FAF8F5]/70 transition-colors flex flex-col justify-between space-y-6">
@@ -539,7 +576,7 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
             </div>
           </div>
 
-        </div>
+        </motion.div>
       </section>
 
       {/* ================= 5. BENTO GRID CAPABILITIES (id="features") ================= */}
@@ -562,8 +599,10 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-80px" }}
-            transition={{ duration: 0.5 }}
+            viewport={{ once: true, margin: "-60px" }}
+            whileHover={{ y: -4, transition: { type: "spring", stiffness: 350, damping: 22 } }}
+            style={{ willChange: "transform", transform: "translate3d(0, 0, 0)" }}
+            transition={{ type: "spring", stiffness: 100, damping: 20 }}
             className="md:col-span-2 bg-white border border-[#E5E0D5] rounded-lg overflow-hidden relative flex flex-col justify-between p-8 hover:border-[#D6CFC2] transition-colors"
           >
             <div>
@@ -603,8 +642,10 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-80px" }}
-            transition={{ duration: 0.5, delay: 0.15 }}
+            viewport={{ once: true, margin: "-60px" }}
+            whileHover={{ y: -4, transition: { type: "spring", stiffness: 350, damping: 22 } }}
+            style={{ willChange: "transform", transform: "translate3d(0, 0, 0)" }}
+            transition={{ type: "spring", stiffness: 100, damping: 20, delay: 0.12 }}
             className="bg-[#F5F2EB] border border-[#E5E0D5] rounded-lg p-8 relative overflow-hidden flex flex-col justify-between hover:border-[#D6CFC2] transition-colors"
           >
             <div>
@@ -630,8 +671,10 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-80px" }}
-            transition={{ duration: 0.5, delay: 0.1 }}
+            viewport={{ once: true, margin: "-60px" }}
+            whileHover={{ y: -4, transition: { type: "spring", stiffness: 350, damping: 22 } }}
+            style={{ willChange: "transform", transform: "translate3d(0, 0, 0)" }}
+            transition={{ type: "spring", stiffness: 100, damping: 20, delay: 0.08 }}
             className="bg-[#F5F2EB] border border-[#E5E0D5] rounded-lg p-8 relative overflow-hidden flex flex-col justify-between hover:border-[#D6CFC2] transition-colors"
           >
             <div>
@@ -661,8 +704,10 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-80px" }}
-            transition={{ duration: 0.5, delay: 0.25 }}
+            viewport={{ once: true, margin: "-60px" }}
+            whileHover={{ y: -4, transition: { type: "spring", stiffness: 350, damping: 22 } }}
+            style={{ willChange: "transform", transform: "translate3d(0, 0, 0)" }}
+            transition={{ type: "spring", stiffness: 100, damping: 20, delay: 0.18 }}
             className="md:col-span-2 bg-white border border-[#E5E0D5] rounded-lg p-8 relative overflow-hidden flex flex-col justify-between hover:border-[#D6CFC2] transition-colors"
           >
             <div>
@@ -763,7 +808,13 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
         <div className="grid lg:grid-cols-12 gap-10 items-start">
           
           {/* Left Column (5 Cols): DocuReady Entity Story & What We Offer */}
-          <div className="lg:col-span-5 space-y-6 lg:sticky lg:top-24">
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-60px" }}
+            transition={{ type: "spring", stiffness: 95, damping: 20 }}
+            className="lg:col-span-5 space-y-6 lg:sticky lg:top-24"
+          >
             <div className="inline-flex items-center gap-2.5 px-3 py-1.5 rounded-[5px] border border-[#E5E0D5] bg-[#F5F2EB]">
               <img src={docuReadyBlackLogo} alt="DocuReady" className="h-4 w-auto object-contain" />
               <span className="w-1 h-1 rounded-full bg-[#C85A32]"></span>
@@ -812,10 +863,16 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
                 </li>
               </ul>
             </div>
-          </div>
+          </motion.div>
 
           {/* Right Column (7 Cols): Repolished Intuitive Real-World Cost Benchmarking Studio */}
-          <div className="lg:col-span-7">
+          <motion.div
+            initial={{ opacity: 0, y: 28 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-60px" }}
+            transition={{ type: "spring", stiffness: 95, damping: 20, delay: 0.1 }}
+            className="lg:col-span-7"
+          >
             <div className="bg-white border border-[#D6CFC2] rounded-xl overflow-hidden shadow-sm">
               
               {/* Studio Header + Interactive Team Size Switcher */}
@@ -841,7 +898,7 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
                     <span>SELECT YOUR TEAM PROFILE TO COMPARE MONTHLY BURN:</span>
                     <span className="text-[#191716] font-bold">{activeBenchmark.seats} • {activeBenchmark.leadsPerMo}</span>
                   </div>
-                  <div className="grid grid-cols-3 gap-1.5 p-1 rounded-[7px] bg-[#EAE5DA] border border-[#D6CFC2]">
+                  <div className="grid grid-cols-3 gap-1.5 p-1 rounded-[7px] bg-[#EAE5DA] border border-[#D6CFC2] relative">
                     {(['solo', 'agency', 'scale'] as const).map((key) => {
                       const prof = benchmarkProfiles[key];
                       const isActive = benchmarkScale === key;
@@ -850,14 +907,21 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
                           key={key}
                           type="button"
                           onClick={() => setBenchmarkScale(key)}
-                          className={`py-2 px-2.5 rounded-[5px] text-center transition-all cursor-pointer font-delight ${
+                          className={`relative py-2 px-2.5 rounded-[5px] text-center cursor-pointer font-delight transition-colors duration-200 ${
                             isActive
-                              ? 'bg-[#191716] text-white shadow-xs'
-                              : 'text-[#57524B] hover:text-[#191716] hover:bg-white/60'
+                              ? 'text-white'
+                              : 'text-[#57524B] hover:text-[#191716] hover:bg-white/40'
                           }`}
                         >
-                          <div className="text-[11px] font-bold leading-tight">{prof.label}</div>
-                          <div className={`text-[9.5px] mt-0.5 ${isActive ? 'text-[#E07A5F]' : 'text-[#78716A]'}`}>
+                          {isActive && (
+                            <motion.div
+                              layoutId="activeBenchmarkPill"
+                              className="absolute inset-0 bg-[#191716] rounded-[5px] -z-10 shadow-xs"
+                              transition={{ type: "spring", stiffness: 350, damping: 28 }}
+                            />
+                          )}
+                          <div className="text-[11px] font-bold leading-tight relative z-10">{prof.label}</div>
+                          <div className={`text-[9.5px] mt-0.5 relative z-10 ${isActive ? 'text-[#E07A5F]' : 'text-[#78716A]'}`}>
                             {prof.leadsPerMo}
                           </div>
                         </button>
@@ -880,7 +944,7 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
                       </span>
                     </div>
                     <div className="w-full h-2.5 rounded-full bg-[#F5F2EB] overflow-hidden border border-[#E5E0D5]">
-                      <div className="h-full bg-[#9C9488]/65 rounded-full w-full transition-all duration-500"></div>
+                      <div className="h-full bg-[#9C9488]/65 rounded-full w-full"></div>
                     </div>
                   </div>
 
@@ -896,10 +960,13 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
                       </span>
                     </div>
                     <div className="w-full h-2.5 rounded-full bg-[#FDF3EF] overflow-hidden border border-[#F2D0C2]">
-                      <div
-                        className="h-full bg-[#C85A32] rounded-full transition-all duration-500"
-                        style={{ width: `${activeBenchmark.leadPulseBarPct}%` }}
-                      ></div>
+                      <motion.div
+                        className="h-full bg-[#C85A32] rounded-full"
+                        initial={false}
+                        animate={{ width: `${activeBenchmark.leadPulseBarPct}%` }}
+                        transition={{ type: "spring", stiffness: 130, damping: 18 }}
+                        style={{ willChange: "width" }}
+                      />
                     </div>
                   </div>
                 </div>
@@ -997,14 +1064,20 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
                 </button>
               </div>
             </div>
-          </div>
+          </motion.div>
 
         </div>
       </section>
 
       {/* ================= 7. DETAILED PRICING & BIFURCATION SECTION (id="pricing") ================= */}
       <section id="pricing" className="py-20 px-6 md:px-12 max-w-7xl mx-auto w-full relative z-10 scroll-mt-20 border-t border-[#E5E0D5]">
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-60px" }}
+          transition={{ type: "spring", stiffness: 100, damping: 20 }}
+          className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6"
+        >
           <div className="max-w-2xl">
             <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-[5px] border border-[#E5E0D5] bg-[#F5F2EB] text-[11px] font-delight font-bold text-[#57524B] mb-3.5">
               <span>TRANSPARENT PRICING // DETAILED COST BIFURCATION</span>
@@ -1024,10 +1097,16 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
               <div className="text-[11px] text-[#78716A]">Instant UPI / PhonePe • Cancel or top-up anytime</div>
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* 3 Subscription Tier Cards */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <motion.div
+          initial={{ opacity: 0, y: 28 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-60px" }}
+          transition={{ type: "spring", stiffness: 95, damping: 20, delay: 0.1 }}
+          className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8"
+        >
           
           {/* TIER 1: FREE EXPLORER */}
           <div className="bg-white border border-[#E5E0D5] rounded-lg p-7 flex flex-col justify-between hover:border-[#D6CFC2] transition-all shadow-2xs">
@@ -1220,7 +1299,7 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
             </div>
           </div>
 
-        </div>
+        </motion.div>
 
         {/* Pay-As-You-Go Micro Top-Up Bifurcation Strip */}
         <div className="bg-[#F5F2EB] border border-[#E5E0D5] rounded-lg p-6 mb-8">
@@ -1374,12 +1453,19 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
       {/* ================= 8. CTA SECTION (ESPRESSO & TERRACOTTA) ================= */}
       <section className="py-22 px-6 md:px-12 bg-[#191716] border-t border-[#2E2A27] text-[#FAF8F5] text-left relative overflow-hidden z-10 mt-8">
         <div
-          className="absolute right-[-8%] top-[-30%] w-[520px] h-[520px] pointer-events-none"
+          className="absolute right-[-8%] top-[-30%] w-[580px] h-[580px] pointer-events-none rounded-full opacity-40 blur-3xl animate-mesh-blob-3"
           style={{
-            background: 'radial-gradient(circle, rgba(200, 90, 50, 0.22) 0%, transparent 65%)'
+            background: 'radial-gradient(circle, rgba(200, 90, 50, 0.35) 0%, transparent 70%)',
+            willChange: 'transform'
           }}
         />
-        <div className="relative z-10 max-w-7xl mx-auto flex flex-col items-start">
+        <motion.div
+          initial={{ opacity: 0, y: 28 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-60px" }}
+          transition={{ type: "spring", stiffness: 95, damping: 20 }}
+          className="relative z-10 max-w-7xl mx-auto flex flex-col items-start"
+        >
           <div className="inline-flex items-center gap-2.5 px-3 py-1 rounded-[4px] border border-[#E07A5F]/35 bg-[#C85A32]/20 text-[11px] font-delight font-bold text-[#E07A5F] tracking-wider mb-4">
             <img src={docuReadyWhiteLogo} alt="DocuReady" className="h-3.5 w-auto object-contain" />
             <span>•</span>
@@ -1391,16 +1477,18 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
           <p className="text-sm md:text-base text-[#B8B0A4] mb-8 max-w-xl leading-relaxed">
             See why teams are replacing ₹12,000+/month of bloated outreach tools with DocuReady&apos;s unified LeadPulse engine. Start free and upgrade only when you see the pipeline results.
           </p>
-          <button
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             onClick={onLogin}
             className="h-11 px-7 bg-[#C85A32] text-white rounded-[6px] font-delight font-bold text-[13px] hover:bg-[#B04B25] transition-colors border border-[#B04B25] shadow-xs flex items-center gap-2 cursor-pointer"
           >
             Check In &amp; Launch Free Workspace &rarr;
-          </button>
+          </motion.button>
           <p className="mt-4 text-xs font-delight text-[#8C8479]">
             15 Free Tokens • ₹50 Instant Micro Top-Ups • ₹699/mo Basic Tier
           </p>
-        </div>
+        </motion.div>
       </section>
 
       {/* ================= 9. FOOTER (A DOCUREADY ENTITY) ================= */}

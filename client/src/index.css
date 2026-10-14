@@ -597,7 +597,29 @@
 }
 
 .animate-marquee {
-  animation: marquee 28s linear infinite;
+  animation: marquee 24s linear infinite;
   will-change: transform;
+  backface-visibility: hidden;
+  transform: translate3d(0, 0, 0);
 }
+
+/* 60fps+ Hardware Compositor Optimization Layer */
+html {
+  scroll-behavior: smooth;
+}
+
+.motion-gpu-60 {
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+  transform-style: preserve-3d;
+  will-change: transform, opacity;
+}
+
+.motion-hover-spring {
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.28s ease;
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
+}
+
 
