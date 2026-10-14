@@ -1,7 +1,14 @@
 import express from 'express';
 import { db } from '../index';
 import { compileEmailHtml, LeadData } from '../services/emailRenderer';
-import { sendDirectEmail, verifyMailboxConnection, DispatchResult, inAppDeliveredInbox, UserSmtpSettings } from '../services/mailer';
+import { 
+  sendDirectEmail, 
+  verifyMailboxConnection, 
+  verifySendGridConnection, 
+  DispatchResult, 
+  inAppDeliveredInbox, 
+  UserSmtpSettings 
+} from '../services/mailer';
 
 const router = express.Router();
 
@@ -79,13 +86,17 @@ router.post('/dispatch-batch', requireAuth, async (req: any, res: any) => {
     });
   }
 
-  // Sending Mailbox Enforcement (Real SMTP check - no mock dummies)
+  // Sending Mailbox Enforcement (SendGrid HTTPS Web API or SMTP)
+  const hasSendGrid = Boolean(
+    (userSmtpSettings && (userSmtpSettings.apiKey || userSmtpSettings.provider === 'sendgrid')) ||
+    process.env.SENDGRID_API_KEY
+  );
   const hasUserSmtp = Boolean(userSmtpSettings && userSmtpSettings.host && userSmtpSettings.user && userSmtpSettings.pass);
   const hasSystemSmtp = Boolean(process.env.SMTP_HOST && process.env.SMTP_USER);
 
-  if (!hasUserSmtp && !hasSystemSmtp) {
+  if (!hasSendGrid && !hasUserSmtp && !hasSystemSmtp) {
     return res.status(400).json({ 
-      error: 'No outbound SMTP server connected. Please configure your SMTP server credentials in Outbox Settings to dispatch live emails.' 
+      error: 'No SendGrid outbox connected. Please configure your SendGrid API Key in Outbox Settings to dispatch live emails.' 
     });
   }
 
@@ -366,13 +377,17 @@ router.post('/dispatch-single', requireAuth, async (req: any, res: any) => {
     });
   }
 
-  // Sending Mailbox Enforcement (Real SMTP check - no mock dummies)
+  // Sending Mailbox Enforcement (SendGrid HTTPS Web API or SMTP)
+  const hasSendGrid = Boolean(
+    (userSmtpSettings && (userSmtpSettings.apiKey || userSmtpSettings.provider === 'sendgrid')) ||
+    process.env.SENDGRID_API_KEY
+  );
   const hasUserSmtp = Boolean(userSmtpSettings && userSmtpSettings.host && userSmtpSettings.user && userSmtpSettings.pass);
   const hasSystemSmtp = Boolean(process.env.SMTP_HOST && process.env.SMTP_USER);
 
-  if (!hasUserSmtp && !hasSystemSmtp) {
+  if (!hasSendGrid && !hasUserSmtp && !hasSystemSmtp) {
     return res.status(400).json({ 
-      error: 'No outbound SMTP server connected. Please configure your SMTP server credentials in Outbox Settings to dispatch live emails.' 
+      error: 'No SendGrid outbox connected. Please configure your SendGrid API Key in Outbox Settings to dispatch live emails.' 
     });
   }
 
@@ -483,57 +498,181 @@ router.post('/dispatch-single', requireAuth, async (req: any, res: any) => {
 
 // Get connected mailbox status (Honest check: false if no credentials configured)
 router.get('/mailbox', requireAuth, async (req: any, res: any) => {
-  let smtpSettings = memorySmtpStore.get(req.user._id) || req.user.smtpSettings;
+  let smtpSettings = memorySmtpStore.get(req.user._id) || req.user.smtpSettings || req.user.smtp_settings;
   try {
     const userDoc = await db.collection('users').doc(req.user._id).get();
-    if (userDoc.exists && userDoc.data()?.smtpSettings) {
-      smtpSettings = userDoc.data()?.smtpSettings;
-      memorySmtpStore.set(req.user._id, smtpSettings);
+    if (userDoc.exists) {
+      const d = userDoc.data();
+      if (d?.smtpSettings || d?.smtp_settings) {
+        smtpSettings = d?.smtpSettings || d?.smtp_settings;
+        memorySmtpStore.set(req.user._id, smtpSettings);
+      }
     }
   } catch (err: any) {
     // Continue with in-memory store
   }
 
-  const isConnected = Boolean(smtpSettings && smtpSettings.host && smtpSettings.user && smtpSettings.pass);
+  // Also check if SendGrid API key exists in Render system environment
+  const hasEnvKey = Boolean(process.env.SENDGRID_API_KEY);
+  if (!smtpSettings && hasEnvKey) {
+    smtpSettings = {
+      provider: 'sendgrid',
+      apiKey: process.env.SENDGRID_API_KEY,
+      fromEmail: process.env.SENDGRID_FROM_EMAIL || req.user.email,
+      fromName: req.user.name || 'LeadPulse Operator',
+      replyTo: process.env.SENDGRID_FROM_EMAIL || req.user.email,
+      isRenderEnv: true,
+      verifiedAt: new Date().toISOString()
+    };
+  }
+
+  const isSendGrid = Boolean(
+    smtpSettings?.apiKey ||
+    smtpSettings?.provider === 'sendgrid' ||
+    (smtpSettings?.user && smtpSettings.user === 'apikey')
+  );
+
+  const isLegacyConnected = Boolean(smtpSettings && smtpSettings.host && smtpSettings.user && smtpSettings.pass);
+  const isConnected = Boolean(isSendGrid || isLegacyConnected);
 
   if (!isConnected) {
     return res.json({
       isConnected: false,
-      mailbox: null
+      mailbox: null,
+      isRenderEnv: hasEnvKey
     });
   }
+
+  const maskedKey = smtpSettings?.apiKey
+    ? `${smtpSettings.apiKey.substring(0, 7)}...${smtpSettings.apiKey.substring(smtpSettings.apiKey.length - 4)}`
+    : null;
 
   res.json({
     isConnected: true,
     mailbox: {
-      host: smtpSettings.host,
-      port: smtpSettings.port || 587,
-      secure: !!smtpSettings.secure,
-      user: smtpSettings.user,
+      provider: isSendGrid ? 'sendgrid' : 'smtp',
+      apiKeyMasked: maskedKey,
+      host: isSendGrid ? 'api.sendgrid.com (Port 443 HTTPS)' : smtpSettings.host,
+      port: isSendGrid ? 443 : (smtpSettings.port || 587),
+      secure: true,
+      user: smtpSettings.fromEmail || smtpSettings.user,
       fromName: smtpSettings.fromName || req.user.name || 'Outreach Specialist',
       fromEmail: smtpSettings.fromEmail || smtpSettings.user,
       replyTo: smtpSettings.replyTo || smtpSettings.fromEmail || smtpSettings.user,
       verifiedAt: smtpSettings.verifiedAt || new Date().toISOString(),
-      hasPassword: !!smtpSettings.pass
+      hasPassword: Boolean(smtpSettings.apiKey || smtpSettings.pass),
+      isRenderEnv: !!smtpSettings.isRenderEnv
     }
   });
 });
 
-// Verify & connect sending mailbox with standard SMTP socket check
+// Verify & connect sending mailbox with SendGrid Web API over HTTPS (Port 443)
 router.post('/verify-mailbox', requireAuth, async (req: any, res: any) => {
   const { 
+    apiKey,
+    fromName, 
+    fromEmail, 
+    replyTo,
+    // Optional legacy fields
     host, 
     port, 
     secure, 
     user, 
     pass, 
-    fromName, 
-    fromEmail, 
-    replyTo,
     sendTestPing = true, 
     testRecipient 
   } = req.body;
 
+  const resolvedApiKey = (apiKey || (user === 'apikey' ? pass : '') || process.env.SENDGRID_API_KEY || '').trim();
+  const cleanFromEmail = (fromEmail !== undefined ? fromEmail : (user || req.user.email || '')).trim();
+  const cleanFromName = (fromName || req.user.name || 'LeadPulse Operator').trim();
+  const cleanReplyTo = (replyTo || cleanFromEmail).trim();
+
+  // Primary pathway: SendGrid Web API over HTTPS (Port 443)
+  if (resolvedApiKey || (!host && !pass)) {
+    if (!resolvedApiKey) {
+      return res.status(400).json({
+        success: false,
+        error: 'SendGrid API Key is required. Please generate an API Key in SendGrid Settings > API Keys.'
+      });
+    }
+
+    if (!cleanFromEmail) {
+      return res.status(400).json({
+        success: false,
+        error: 'Verified Sender Email is required. Enter the email address you verified in SendGrid Single Sender Verification.'
+      });
+    }
+
+    const testEmailTarget = (testRecipient || req.user.email || cleanFromEmail).trim();
+
+    try {
+      const verification = await verifySendGridConnection(
+        {
+          apiKey: resolvedApiKey,
+          fromEmail: cleanFromEmail,
+          fromName: cleanFromName,
+          replyTo: cleanReplyTo
+        },
+        sendTestPing ? testEmailTarget : undefined
+      );
+
+      if (!verification.success) {
+        return res.status(400).json({
+          success: false,
+          error: verification.message,
+          details: verification.error
+        });
+      }
+
+      const savedRecord: UserSmtpSettings = {
+        provider: 'sendgrid',
+        apiKey: resolvedApiKey,
+        host: 'api.sendgrid.com',
+        port: 443,
+        secure: true,
+        user: cleanFromEmail,
+        fromName: cleanFromName,
+        fromEmail: cleanFromEmail,
+        replyTo: cleanReplyTo,
+        verifiedAt: new Date().toISOString()
+      };
+
+      memorySmtpStore.set(req.user._id, savedRecord);
+
+      try {
+        await db.collection('users').doc(req.user._id).update({
+          smtpSettings: savedRecord,
+          smtp_settings: savedRecord
+        });
+      } catch (dbErr) {
+        console.warn('[Outreach Router] Could not persist smtpSettings to Firestore (cached in-memory):', dbErr);
+      }
+
+      const maskedKey = `${resolvedApiKey.substring(0, 7)}...${resolvedApiKey.substring(resolvedApiKey.length - 4)}`;
+
+      return res.json({
+        success: true,
+        message: verification.message,
+        mailbox: {
+          provider: 'sendgrid',
+          apiKeyMasked: maskedKey,
+          host: 'api.sendgrid.com (Port 443 HTTPS)',
+          port: 443,
+          secure: true,
+          user: cleanFromEmail,
+          fromName: cleanFromName,
+          fromEmail: cleanFromEmail,
+          replyTo: cleanReplyTo,
+          verifiedAt: savedRecord.verifiedAt
+        }
+      });
+    } catch (err: any) {
+      return res.status(500).json({ success: false, error: err.message || 'SendGrid verification failed' });
+    }
+  }
+
+  // Fallback legacy SMTP socket check (for non-Render local development only)
   const cleanHost = (host || '').trim();
   const cleanUser = (user || '').trim();
   const cleanPass = (pass || '').trim();
@@ -541,7 +680,7 @@ router.post('/verify-mailbox', requireAuth, async (req: any, res: any) => {
   if (!cleanHost || !cleanUser || !cleanPass) {
     return res.status(400).json({
       success: false,
-      error: 'SMTP Host, Username, and Password are required.'
+      error: 'Render blocks raw SMTP ports 587 and 465. Please enter your SendGrid API Key for 100% reliable HTTPS delivery.'
     });
   }
 
@@ -549,14 +688,15 @@ router.post('/verify-mailbox', requireAuth, async (req: any, res: any) => {
   const testEmailTarget = (testRecipient || req.user.email || cleanUser).trim();
 
   const candidateSettings: UserSmtpSettings = {
+    provider: 'smtp',
     host: cleanHost,
     port: resolvedPort,
     secure: secure !== undefined ? secure : (resolvedPort === 465),
     user: cleanUser,
     pass: cleanPass,
-    fromName: (fromName || req.user.name || 'Outreach Specialist').trim(),
-    fromEmail: (fromEmail || cleanUser).trim(),
-    replyTo: (replyTo || fromEmail || cleanUser).trim()
+    fromName: cleanFromName,
+    fromEmail: cleanFromEmail,
+    replyTo: cleanReplyTo
   };
 
   try {
@@ -573,7 +713,6 @@ router.post('/verify-mailbox', requireAuth, async (req: any, res: any) => {
       });
     }
 
-    // Save verified mailbox to memory store and Firestore
     const savedRecord: UserSmtpSettings = {
       ...candidateSettings,
       verifiedAt: new Date().toISOString()
@@ -593,6 +732,7 @@ router.post('/verify-mailbox', requireAuth, async (req: any, res: any) => {
       success: true,
       message: verification.message,
       mailbox: {
+        provider: 'smtp',
         host: candidateSettings.host,
         port: candidateSettings.port,
         secure: candidateSettings.secure,

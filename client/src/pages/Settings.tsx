@@ -32,13 +32,11 @@ const Settings = () => {
   const [goals, setGoals] = useState(user?.goals || '');
   const [profilePicture, setProfilePicture] = useState(user?.profile_picture || '');
 
-  // SMTP & Mail Transport State
-  const [smtpHost, setSmtpHost] = useState((user as any)?.smtp_settings?.host || 'smtp.ethereal.email');
-  const [smtpPort, setSmtpPort] = useState((user as any)?.smtp_settings?.port || '587');
-  const [smtpUser, setSmtpUser] = useState((user as any)?.smtp_settings?.user || 'leadpulse-dispatcher@ethereal.email');
-  const [smtpPass, setSmtpPass] = useState((user as any)?.smtp_settings?.pass || '••••••••••••');
+  // SendGrid & Mail Transport State
+  const [sendgridApiKey, setSendgridApiKey] = useState((user as any)?.smtp_settings?.apiKey || '');
   const [fromName, setFromName] = useState((user as any)?.smtp_settings?.fromName || user?.name || 'LeadPulse Outreach');
   const [fromEmail, setFromEmail] = useState((user as any)?.smtp_settings?.fromEmail || user?.email || 'outreach@leadpulse.io');
+  const [replyTo, setReplyTo] = useState((user as any)?.smtp_settings?.replyTo || '');
   const [complianceFooter, setComplianceFooter] = useState(true);
 
   // WhatsApp & Outreach Defaults State
@@ -46,9 +44,10 @@ const Settings = () => {
   const [defaultFallbackBusiness, setDefaultFallbackBusiness] = useState('Business Owner');
   const [defaultFallbackLocation, setDefaultFallbackLocation] = useState('your area');
 
-  // Test SMTP state
+  // Test Outbox state
   const [testEmailSending, setTestEmailSending] = useState(false);
   const [testEmailSuccess, setTestEmailSuccess] = useState(false);
+  const [testResultMsg, setTestResultMsg] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -60,6 +59,13 @@ const Settings = () => {
       setTargetAudience(user.target_audience || '');
       setGoals(user.goals || '');
       setProfilePicture(user.profile_picture || '');
+      if ((user as any)?.smtp_settings) {
+        const s = (user as any).smtp_settings;
+        if (s.apiKey) setSendgridApiKey(s.apiKey);
+        if (s.fromName) setFromName(s.fromName);
+        if (s.fromEmail) setFromEmail(s.fromEmail);
+        if (s.replyTo) setReplyTo(s.replyTo);
+      }
     }
   }, [user]);
 
@@ -81,12 +87,11 @@ const Settings = () => {
         goals,
         profile_picture: profilePicture,
         smtp_settings: {
-          host: smtpHost,
-          port: smtpPort,
-          user: smtpUser,
-          pass: smtpPass,
+          provider: 'sendgrid',
+          apiKey: sendgridApiKey,
           fromName,
           fromEmail,
+          replyTo: replyTo || fromEmail,
           complianceFooter
         },
         outreach_defaults: {
@@ -115,15 +120,47 @@ const Settings = () => {
     }
   };
 
-  // Test SMTP Dispatch
+  // Test SendGrid HTTPS Dispatch
   const handleTestSmtp = async () => {
+    const keyToTest = sendgridApiKey || (user as any)?.smtp_settings?.apiKey;
+    if (!keyToTest) {
+      setErrorMsg('Please enter your SendGrid API Key before sending a test message.');
+      return;
+    }
+    if (!fromEmail) {
+      setErrorMsg('Please enter your verified sender email address.');
+      return;
+    }
+
     setTestEmailSending(true);
     setTestEmailSuccess(false);
-    setTimeout(() => {
+    setTestResultMsg(null);
+    setErrorMsg('');
+
+    try {
+      const res = await axios.post('http://localhost:3001/api/outreach/verify-mailbox', {
+        apiKey: keyToTest,
+        fromEmail,
+        fromName,
+        replyTo: replyTo || fromEmail,
+        sendTestPing: true,
+        testRecipient: user?.email || fromEmail
+      }, {
+        headers: { userid: user?._id }
+      });
+
+      if (res.data?.success) {
+        setTestEmailSuccess(true);
+        setTestResultMsg(res.data.message || 'Real test message delivered via SendGrid HTTPS (Port 443)!');
+        setTimeout(() => setTestEmailSuccess(false), 5000);
+      } else {
+        setErrorMsg(res.data?.error || 'Test delivery failed.');
+      }
+    } catch (err: any) {
+      setErrorMsg(err.response?.data?.error || err.response?.data?.details || err.message || 'Test delivery failed.');
+    } finally {
       setTestEmailSending(false);
-      setTestEmailSuccess(true);
-      setTimeout(() => setTestEmailSuccess(false), 4000);
-    }, 1200);
+    }
   };
 
   // Export CSV
@@ -228,8 +265,8 @@ const Settings = () => {
                 activeTab === 'smtp' ? 'bg-slate-900 text-white border border-slate-900 shadow-xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
               }`}
             >
-              <Server className="w-3.5 h-3.5 text-blue-500" />
-              <span>Mail Delivery & SMTP</span>
+              <Send className="w-3.5 h-3.5 text-blue-500" />
+              <span>Outbox &amp; SendGrid (Render)</span>
             </button>
 
             <button
@@ -432,160 +469,99 @@ const Settings = () => {
             </div>
           )}
 
-          {/* TAB 2: MAIL DELIVERY & SMTP */}
+          {/* TAB 2: MAIL DELIVERY & SENDGRID (RENDER OPTIMIZED) */}
           {activeTab === 'smtp' && (
             <div className="bg-white rounded-md border border-slate-200 p-5 sm:p-6 shadow-none space-y-5">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900 font-delight">Outbox Mail Transport Configuration</h3>
-                  <p className="text-xs text-slate-500 font-delight">Connect your standard outbound SMTP server or custom domain to dispatch verified outreach campaigns.</p>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-bold text-slate-900 font-delight">Outbox Mail Transport Configuration</h3>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      Render Cloud Ready (Port 443 HTTPS)
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 font-delight mt-0.5">
+                    Twilio SendGrid REST Web API over secure HTTPS. Zero socket timeouts, no port 587/465 blocks.
+                  </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setIsEmailModalOpen(true)}
-                  className="px-3 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-delight font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+                  className="px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-delight font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
                 >
-                  <Server className="w-3.5 h-3.5 text-indigo-600" />
-                  <span>Interactive Outbox Setup &amp; Test</span>
+                  <Send className="w-3.5 h-3.5 text-blue-600" />
+                  <span>Interactive SendGrid Guide</span>
                 </button>
               </div>
 
-              {/* Domain Preset Selector & Setup Guide */}
-              <div className="p-3.5 bg-slate-50/80 rounded-xl border border-slate-200 space-y-2.5 font-delight">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                    <BookOpen className="w-3.5 h-3.5 text-indigo-600" />
-                    <span>Domain Quick Presets &amp; Setup Guidelines</span>
-                  </span>
-                  <span className="text-[11px] text-slate-500 font-medium">Click to auto-apply recommended host &amp; port</span>
-                </div>
-
-                <div className="flex flex-wrap gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const domain = (fromEmail || smtpUser || user?.email || '').split('@')[1] || 'yourdomain.com';
-                      setSmtpHost(`mail.${domain}`);
-                      setSmtpPort('587');
-                    }}
-                    className="px-2.5 py-1 bg-white hover:bg-indigo-50 border border-slate-200 text-slate-700 rounded-lg text-xs font-bold transition-colors cursor-pointer"
-                  >
-                    Custom Domain (mail.domain:587)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSmtpHost('smtp.gmail.com');
-                      setSmtpPort('587');
-                    }}
-                    className="px-2.5 py-1 bg-white hover:bg-indigo-50 border border-slate-200 text-slate-700 rounded-lg text-xs font-bold transition-colors cursor-pointer"
-                  >
-                    Google Workspace (smtp.gmail.com:587)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSmtpHost('smtp.office365.com');
-                      setSmtpPort('587');
-                    }}
-                    className="px-2.5 py-1 bg-white hover:bg-indigo-50 border border-slate-200 text-slate-700 rounded-lg text-xs font-bold transition-colors cursor-pointer"
-                  >
-                    Microsoft 365 (smtp.office365.com:587)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSmtpHost('smtppro.zoho.com');
-                      setSmtpPort('465');
-                    }}
-                    className="px-2.5 py-1 bg-white hover:bg-indigo-50 border border-slate-200 text-slate-700 rounded-lg text-xs font-bold transition-colors cursor-pointer"
-                  >
-                    Zoho Mail (smtppro.zoho.com:465)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSmtpHost('smtp.sendgrid.net');
-                      setSmtpPort('587');
-                    }}
-                    className="px-2.5 py-1 bg-white hover:bg-indigo-50 border border-slate-200 text-slate-700 rounded-lg text-xs font-bold transition-colors cursor-pointer"
-                  >
-                    Cloud Relay (smtp.sendgrid.net:587)
-                  </button>
-                </div>
-
-                <div className="text-[11px] text-slate-600 leading-relaxed bg-white p-3 rounded-lg border border-slate-200/60 space-y-1.5">
-                  <p><strong>Google Workspace / Gmail:</strong> Requires a 16-character Google App Password (not your regular login password). Generate in Google Account &gt; Security &gt; 2-Step Verification &gt; App Passwords.</p>
-                  <p><strong>Microsoft 365 / Outlook:</strong> Use Port 587 (STARTTLS). Corporate accounts must have Authenticated Client SMTP enabled in Microsoft 365 Admin Center.</p>
-                  <p><strong>Zoho Mail:</strong> Custom domains use smtppro.zoho.com on Port 465 (SSL/TLS). Requires a Zoho Application-Specific Password.</p>
-                  <p><strong>Custom Domains (cPanel / Webmail):</strong> Username is always your full email address (e.g. name@yourdomain.com). Default host is usually mail.yourdomain.com on Port 587 or 465.</p>
+              {/* Render Cloud Architecture Alert */}
+              <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 flex items-start gap-3 text-xs font-delight">
+                <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <span className="text-xs font-bold text-slate-900 block">Render Cloud Egress Architecture</span>
+                  <p className="text-slate-600 text-[11px] leading-relaxed">
+                    Render blocks standard SMTP ports 587 and 465 to prevent spam. LeadPulse routes all cold outreach campaigns through Twilio SendGrid's Web API over standard HTTPS (Port 443). Connect your free SendGrid API key below (includes 100 free emails per day).
+                  </p>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+              {testResultMsg && (
+                <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-medium flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>{testResultMsg}</span>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-delight">
                 <div className="sm:col-span-2 space-y-1">
-                  <label className="font-delight text-[11px] font-medium text-slate-600">SMTP Host Server</label>
-                  <input
-                    type="text"
-                    value={smtpHost}
-                    onChange={(e) => setSmtpHost(e.target.value)}
-                    placeholder="e.g. smtp.sendgrid.net or smtp.gmail.com"
-                    className="w-full h-8 px-2.5 bg-white border border-slate-200 rounded-md font-delight font-medium text-xs text-slate-900 outline-none focus:border-slate-400"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="font-delight text-[11px] font-medium text-slate-600">Port</label>
-                  <input
-                    type="text"
-                    value={smtpPort}
-                    onChange={(e) => setSmtpPort(e.target.value)}
-                    placeholder="587 (TLS) or 465 (SSL)"
-                    className="w-full h-8 px-2.5 bg-white border border-slate-200 rounded-md font-delight font-medium text-xs text-slate-900 outline-none focus:border-slate-400"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="font-delight text-[11px] font-medium text-slate-600">SMTP Username / API Key</label>
-                  <input
-                    type="text"
-                    value={smtpUser}
-                    onChange={(e) => setSmtpUser(e.target.value)}
-                    placeholder="apikey or username"
-                    className="w-full h-8 px-2.5 bg-white border border-slate-200 rounded-md font-delight font-medium text-xs text-slate-900 outline-none focus:border-slate-400"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="font-delight text-[11px] font-medium text-slate-600">SMTP Password</label>
+                  <label className="text-[11px] font-medium text-slate-600 flex items-center justify-between">
+                    <span>SendGrid API Key</span>
+                    <span className="text-[10px] text-slate-400 font-mono">Starts with "SG."</span>
+                  </label>
                   <input
                     type="password"
-                    value={smtpPass}
-                    onChange={(e) => setSmtpPass(e.target.value)}
-                    placeholder="Password or API secret"
-                    className="w-full h-8 px-2.5 bg-white border border-slate-200 rounded-md font-delight font-medium text-xs text-slate-900 outline-none focus:border-slate-400"
+                    value={sendgridApiKey}
+                    onChange={(e) => setSendgridApiKey(e.target.value)}
+                    placeholder="e.g. SG.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                    className="w-full h-8 px-2.5 bg-white border border-slate-200 rounded-md font-mono text-xs text-slate-900 outline-none focus:border-slate-400"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="font-delight text-[11px] font-medium text-slate-600">Sender Display Name</label>
-                  <input
-                    type="text"
-                    value={fromName}
-                    onChange={(e) => setFromName(e.target.value)}
-                    placeholder="Alex Rivera | LeadPulse"
-                    className="w-full h-8 px-2.5 bg-white border border-slate-200 rounded-md font-delight font-medium text-xs text-slate-900 outline-none focus:border-slate-400"
-                  />
-                </div>
-
-                <div className="sm:col-span-3 space-y-1">
-                  <label className="font-delight text-[11px] font-medium text-slate-600">Sender "From" Email Address</label>
+                  <label className="text-[11px] font-medium text-slate-600">Verified Sender Email</label>
                   <input
                     type="email"
                     value={fromEmail}
                     onChange={(e) => setFromEmail(e.target.value)}
                     placeholder="alex@yourdomain.com"
-                    className="w-full h-8 px-2.5 bg-white border border-slate-200 rounded-md font-delight font-medium text-xs text-slate-900 outline-none focus:border-slate-400"
+                    className="w-full h-8 px-2.5 bg-white border border-slate-200 rounded-md text-xs text-slate-900 outline-none focus:border-slate-400"
+                  />
+                  <span className="text-[10px] text-slate-400">Must be verified in SendGrid Single Sender Verification.</span>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[11px] font-medium text-slate-600">Sender Display Name</label>
+                  <input
+                    type="text"
+                    value={fromName}
+                    onChange={(e) => setFromName(e.target.value)}
+                    placeholder="Alex Rivera | LeadPulse"
+                    className="w-full h-8 px-2.5 bg-white border border-slate-200 rounded-md text-xs text-slate-900 outline-none focus:border-slate-400"
+                  />
+                  <span className="text-[10px] text-slate-400">Name prospects see in their email inbox.</span>
+                </div>
+
+                <div className="sm:col-span-2 space-y-1">
+                  <label className="text-[11px] font-medium text-slate-600 flex items-center justify-between">
+                    <span>Reply-To Email Address</span>
+                    <span className="text-[10px] text-slate-400">Defaults to sender email</span>
+                  </label>
+                  <input
+                    type="email"
+                    value={replyTo}
+                    onChange={(e) => setReplyTo(e.target.value)}
+                    placeholder="replies@yourdomain.com"
+                    className="w-full h-8 px-2.5 bg-white border border-slate-200 rounded-md text-xs text-slate-900 outline-none focus:border-slate-400"
                   />
                 </div>
               </div>
@@ -607,24 +583,24 @@ const Settings = () => {
                 />
               </div>
 
-              <div className="pt-3 border-t border-slate-200 flex flex-wrap items-center justify-between gap-3">
+              <div className="pt-3 border-t border-slate-200 flex flex-wrap items-center justify-between gap-3 font-delight">
                 <button
                   type="button"
                   onClick={handleTestSmtp}
                   disabled={testEmailSending}
-                  className="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 h-8 px-3.5 rounded-md text-xs font-delight font-medium transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  className="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 h-8 px-3.5 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                 >
-                  <Mail className="w-3.5 h-3.5 text-blue-600" />
-                  <span>{testEmailSending ? 'Sending Test Message...' : testEmailSuccess ? 'Test Delivered to Inbox!' : 'Send Test SMTP Ping'}</span>
+                  <Send className="w-3.5 h-3.5 text-blue-600" />
+                  <span>{testEmailSending ? 'Sending Test Message...' : testEmailSuccess ? 'Test Delivered to Inbox!' : 'Send Test SendGrid Ping'}</span>
                 </button>
 
                 <button
                   onClick={handleSaveSettings}
                   disabled={saving}
-                  className="bg-slate-900 hover:bg-slate-800 text-white h-8 px-4 rounded-md text-xs font-delight font-medium transition-all flex items-center gap-1.5 cursor-pointer border border-slate-900 disabled:opacity-50"
+                  className="bg-slate-900 hover:bg-slate-800 text-white h-8 px-4 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer border border-slate-900 disabled:opacity-50"
                 >
                   <Save className="w-3.5 h-3.5" />
-                  <span>{saving ? 'Saving...' : 'Save SMTP Settings'}</span>
+                  <span>{saving ? 'Saving...' : 'Save SendGrid Settings'}</span>
                 </button>
               </div>
             </div>

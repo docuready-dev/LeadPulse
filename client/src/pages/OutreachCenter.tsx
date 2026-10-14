@@ -818,21 +818,21 @@ const OutreachCenter = () => {
                     type="button"
                     onClick={() => setIsProviderModalOpen(true)}
                     className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200/80 transition-colors cursor-pointer"
-                    title="Click to view SMTP outbox settings"
+                    title="Click to view SendGrid outbox settings"
                   >
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                     <span>{connectedMailbox.fromEmail || connectedMailbox.user}</span>
-                    <span className="text-[10px] text-emerald-600 font-bold">({connectedMailbox.host})</span>
+                    <span className="text-[10px] text-emerald-600 font-bold">(SendGrid Web API)</span>
                   </button>
                 ) : (
                   <button
                     type="button"
                     onClick={() => setIsProviderModalOpen(true)}
                     className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200/90 transition-colors cursor-pointer"
-                    title="No SMTP server connected. Click to configure."
+                    title="No SendGrid outbox connected. Click to configure."
                   >
                     <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                    <span>Outbox: Disconnected (Setup Required)</span>
+                    <span>Outbox: Disconnected (SendGrid Setup Required)</span>
                     <span className="underline font-bold ml-0.5">+ Connect</span>
                   </button>
                 )}
@@ -1047,10 +1047,10 @@ const OutreachCenter = () => {
                         ? 'bg-emerald-50/70 border-emerald-200 text-emerald-800 hover:bg-emerald-100/70' 
                         : 'bg-amber-50/80 border-amber-200 text-amber-900 hover:bg-amber-100/80'
                     }`}
-                    title={connectedMailbox ? `Outbox: ${connectedMailbox.fromEmail || connectedMailbox.user} (${connectedMailbox.host})` : "No SMTP Outbox Connected - Click to configure"}
+                    title={connectedMailbox ? `Outbox: ${connectedMailbox.fromEmail || connectedMailbox.user} (SendGrid Web API)` : "No SendGrid Outbox Connected - Click to configure"}
                   >
                     <span className={`w-1.5 h-1.5 rounded-full ${connectedMailbox ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
-                    <span>Outbox: {connectedMailbox ? `${connectedMailbox.fromEmail || connectedMailbox.user}` : 'Disconnected (Setup Required)'}</span>
+                    <span>Outbox: {connectedMailbox ? `${connectedMailbox.fromEmail || connectedMailbox.user}` : 'Disconnected (SendGrid Setup Required)'}</span>
                   </button>
                 </div>
 

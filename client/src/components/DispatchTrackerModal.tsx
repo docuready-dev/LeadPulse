@@ -97,7 +97,7 @@ const DispatchTrackerModal = ({
   const handleStartDispatch = async () => {
     // Mailbox Connection Check
     if (!connectedMailbox) {
-      setErrorMessage('No verified sending mailbox connected. Please configure your standard SMTP credentials in Outbox settings before launching outreach.');
+      setErrorMessage('No verified sending mailbox connected. Please configure your SendGrid credentials in Outbox settings before launching outreach.');
       setDispatchState('error');
       return;
     }
@@ -380,7 +380,7 @@ const DispatchTrackerModal = ({
                   Executing Direct-to-Inbox Dispatch...
                 </h3>
                 <p className="text-xs text-slate-500 max-w-md mx-auto">
-                  Server is compiling individual merge tags, attaching compliance headers, and opening direct SMTP delivery sockets for {selectedLeadsToDispatch.length} recipient inboxes.
+                  Server is compiling individual merge tags, attaching compliance headers, and transmitting via SendGrid Web API (Port 443 HTTPS) for {selectedLeadsToDispatch.length} recipient inboxes.
                 </p>
               </div>
 
