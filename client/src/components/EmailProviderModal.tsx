@@ -14,15 +14,16 @@ interface EmailProviderModalProps {
   onSaved?: () => void;
 }
 
-export type MailProviderType = 'gmail' | 'brevo' | 'outlook' | 'yahoo' | 'zoho' | 'icloud' | 'custom' | 'resend';
+export type MailProviderType = 'leadpulse_cloud' | 'gmail' | 'brevo' | 'outlook' | 'yahoo' | 'zoho' | 'icloud' | 'custom' | 'resend';
 
 const EmailProviderModal = ({ isOpen, onClose, user, onSaved }: EmailProviderModalProps) => {
   if (!isOpen) return null;
 
-  const [provider, setProvider] = useState<MailProviderType>('gmail');
+  const [provider, setProvider] = useState<MailProviderType>('leadpulse_cloud');
   
-  // Credentials
+  // Credentials & Settings
   const [emailAccount, setEmailAccount] = useState(user?.email || '');
+  const [replyTo, setReplyTo] = useState(user?.email || '');
   const [accountPassword, setAccountPassword] = useState('');
   const [fromName, setFromName] = useState(user?.name || 'LeadPulse Growth Director');
   const [showPassword, setShowPassword] = useState(false);
@@ -137,8 +138,9 @@ const EmailProviderModal = ({ isOpen, onClose, user, onSaved }: EmailProviderMod
         });
         if (res.data?.isConnected && res.data.mailbox) {
           setConnectedMailbox(res.data.mailbox);
-          setProvider(res.data.mailbox.provider || 'gmail');
+          setProvider(res.data.mailbox.provider || 'leadpulse_cloud');
           setEmailAccount(res.data.mailbox.user || user?.email || '');
+          setReplyTo(res.data.mailbox.replyTo || res.data.mailbox.user || user?.email || '');
           setFromName(res.data.mailbox.fromName || user?.name || '');
           if (res.data.mailbox.host) setSmtpHost(res.data.mailbox.host);
           if (res.data.mailbox.port) setSmtpPort(String(res.data.mailbox.port));
@@ -176,6 +178,38 @@ const EmailProviderModal = ({ isOpen, onClose, user, onSaved }: EmailProviderMod
     setVerificationSuccess(null);
     setVerificationError(null);
 
+    // 1. LeadPulse Cloud Outbox Relay (Default & Zero Setup)
+    if (provider === 'leadpulse_cloud') {
+      try {
+        const payload: any = {
+          provider: 'leadpulse_cloud',
+          fromName: fromName.trim() || user?.name || 'LeadPulse Growth Director',
+          fromEmail: 'outreach@leadpulse.io',
+          replyTo: (replyTo || emailAccount || user?.email || '').trim(),
+          sendTestPing: sendTestEmail,
+          testRecipient: testRecipient.trim() || replyTo.trim() || user?.email
+        };
+
+        const res = await axios.post('http://localhost:3001/api/outreach/verify-mailbox', payload, {
+          headers: { userid: user?._id }
+        });
+
+        if (res.data.success) {
+          setVerificationSuccess(res.data.message || 'LeadPulse Cloud Outbox activated successfully!');
+          setConnectedMailbox(res.data.mailbox);
+          if (onSaved) onSaved();
+        } else {
+          setVerificationError(res.data.error || 'Failed to activate Cloud Outbox.');
+        }
+      } catch (err: any) {
+        setVerificationError(err.response?.data?.error || err.message || 'Cloud Outbox activation failed.');
+      } finally {
+        setIsVerifying(false);
+      }
+      return;
+    }
+
+    // 2. Custom SMTP or Third-Party Provider
     const cleanPass = accountPassword.replace(/\s+/g, '').trim();
 
     if (provider === 'gmail' && cleanPass.length !== 16) {
@@ -193,6 +227,7 @@ const EmailProviderModal = ({ isOpen, onClose, user, onSaved }: EmailProviderMod
         pass: cleanPass,
         fromName: fromName.trim() || 'LeadPulse Growth Director',
         fromEmail: emailAccount.trim(),
+        replyTo: replyTo.trim() || emailAccount.trim(),
         sendTestPing: sendTestEmail,
         testRecipient: testRecipient.trim() || emailAccount.trim()
       };
@@ -323,14 +358,14 @@ const EmailProviderModal = ({ isOpen, onClose, user, onSaved }: EmailProviderMod
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {[
-                { id: 'gmail', label: 'Gmail', sub: 'Google Workspace', highlight: 'Featured (500/day)' },
+                { id: 'leadpulse_cloud', label: 'LeadPulse Cloud', sub: 'Zero-Setup Relay', highlight: 'Recommended (Instant)' },
                 { id: 'brevo', label: 'Brevo Free', sub: 'Single Free Platform', highlight: '300/Day Free' },
+                { id: 'resend', label: 'Resend API', sub: 'Cloud REST API', highlight: 'Developer API' },
+                { id: 'custom', label: 'Custom SMTP', sub: 'Any Domain Host', highlight: 'Standard SMTP' },
+                { id: 'gmail', label: 'Gmail', sub: 'App Password', highlight: 'Personal SMTP' },
                 { id: 'outlook', label: 'Outlook', sub: 'Office 365 / Hotmail', highlight: 'Microsoft' },
                 { id: 'yahoo', label: 'Yahoo Mail', sub: 'App Password', highlight: 'Yahoo SMTP' },
-                { id: 'zoho', label: 'Zoho Mail', sub: 'App Password', highlight: 'Business Email' },
-                { id: 'icloud', label: 'iCloud', sub: 'Apple ID Password', highlight: 'iCloud SMTP' },
-                { id: 'custom', label: 'Custom SMTP', sub: 'Any Domain Host', highlight: 'Standard SMTP' },
-                { id: 'resend', label: 'Resend API', sub: 'Cloud REST API', highlight: 'Developer API' }
+                { id: 'zoho', label: 'Zoho Mail', sub: 'App Password', highlight: 'Business Email' }
               ].map((p) => {
                 const active = provider === p.id;
                 return (
@@ -362,6 +397,20 @@ const EmailProviderModal = ({ isOpen, onClose, user, onSaved }: EmailProviderMod
 
           {/* Provider Specific Helper Box */}
           <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/90 text-xs font-delight leading-relaxed space-y-1.5">
+            {provider === 'leadpulse_cloud' && (
+              <>
+                <div className="flex items-center gap-1.5 text-slate-900 font-bold">
+                  <Sparkles className="w-4 h-4 text-emerald-600" />
+                  <span>LeadPulse Managed Cloud Outbox (Zero Setup Required)</span>
+                </div>
+                <p className="text-slate-600 text-[11px]">
+                  Direct outbound outreach engine running over secure HTTPS (Port 443). No email passwords, no Google 2FA, and zero connection timeouts.
+                </p>
+                <div className="mt-2 p-2.5 bg-emerald-50/70 border border-emerald-200/80 rounded-lg text-[11px] text-emerald-950">
+                  <strong>How Replies Work:</strong> Outbound emails send through LeadPulse's authenticated domain, but include your personal email in the <code className="bg-emerald-100/70 px-1 py-0.5 rounded font-mono font-bold">Reply-To</code> header. When prospects hit "Reply", responses land straight in your personal inbox!
+                </div>
+              </>
+            )}
             {provider === 'gmail' && (
               <>
                 <div className="flex items-center gap-1.5 text-slate-900 font-bold">
@@ -496,7 +545,37 @@ const EmailProviderModal = ({ isOpen, onClose, user, onSaved }: EmailProviderMod
               />
             </div>
 
-            {provider !== 'resend' ? (
+            {provider === 'leadpulse_cloud' ? (
+              <div className="space-y-3 pt-1">
+                <div>
+                  <label className="block text-xs font-delight font-bold text-slate-700 mb-1">
+                    Direct Reply-To Email Address
+                  </label>
+                  <input 
+                    type="email"
+                    value={replyTo}
+                    onChange={(e) => setReplyTo(e.target.value)}
+                    placeholder="yourname@gmail.com or contact@yourcompany.com"
+                    className="w-full h-9 px-3 bg-white border border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 rounded-xl text-xs font-delight font-medium text-slate-900 outline-none transition-all"
+                  />
+                  <span className="text-[10px] text-slate-500 font-delight mt-1 block">
+                    When prospects click "Reply" to your outreach, their emails land directly in this inbox.
+                  </span>
+                </div>
+
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] font-delight font-bold text-slate-400 uppercase tracking-wider block">Outbound Envelope</span>
+                    <span className="text-xs font-mono font-bold text-slate-800">
+                      "{fromName || 'LeadPulse Growth Director'} via LeadPulse" &lt;outreach@leadpulse.io&gt;
+                    </span>
+                  </div>
+                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-full border border-emerald-200">
+                    SPF &amp; DKIM Ready
+                  </span>
+                </div>
+              </div>
+            ) : provider !== 'resend' ? (
               <>
                 <div>
                   <label className="block text-xs font-delight font-bold text-slate-700 mb-1">
@@ -775,18 +854,18 @@ const EmailProviderModal = ({ isOpen, onClose, user, onSaved }: EmailProviderMod
           <button
             type="button"
             onClick={handleVerifyAndConnect}
-            disabled={isVerifying || !emailAccount || (provider !== 'resend' && !accountPassword)}
+            disabled={isVerifying || (provider === 'leadpulse_cloud' ? !replyTo : (!emailAccount || (provider !== 'resend' && !accountPassword)))}
             className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 disabled:opacity-50 text-white px-5 py-2 rounded-xl text-xs font-delight font-bold transition-all flex items-center gap-2 shadow-sm shadow-indigo-200 cursor-pointer"
           >
             {isVerifying ? (
               <>
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                <span>Verifying &amp; Delivering Test...</span>
+                <span>{provider === 'leadpulse_cloud' ? 'Activating Cloud Outbox...' : 'Verifying & Delivering Test...'}</span>
               </>
             ) : (
               <>
                 <Send className="w-3.5 h-3.5" />
-                <span>Verify &amp; Connect Mailbox</span>
+                <span>{provider === 'leadpulse_cloud' ? 'Activate LeadPulse Cloud Outbox' : 'Verify & Connect Mailbox'}</span>
               </>
             )}
           </button>

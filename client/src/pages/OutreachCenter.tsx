@@ -1026,24 +1026,11 @@ const OutreachCenter = () => {
 
                   <button
                     onClick={() => setIsProviderModalOpen(true)}
-                    className={`border px-2.5 py-1.5 rounded-lg text-xs font-delight font-semibold transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs ${
-                      connectedMailbox 
-                        ? 'bg-emerald-50/70 border-emerald-200 text-emerald-800 hover:bg-emerald-100/70' 
-                        : 'bg-amber-50 border-amber-200 text-amber-800 hover:bg-amber-100'
-                    }`}
-                    title={connectedMailbox ? `Connected: ${connectedMailbox.email}` : "Connect your Gmail, Brevo Free Relay, or Custom Mailbox"}
+                    className="border px-2.5 py-1.5 rounded-lg text-xs font-delight font-semibold transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs bg-emerald-50/70 border-emerald-200 text-emerald-800 hover:bg-emerald-100/70"
+                    title={connectedMailbox ? `Outbox: ${connectedMailbox.replyTo || connectedMailbox.fromEmail}` : "LeadPulse Cloud Outbox Relay Active"}
                   >
-                    {connectedMailbox ? (
-                      <>
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                        <span>Mailbox: {connectedMailbox.provider ? connectedMailbox.provider.toUpperCase() : 'Connected'}</span>
-                      </>
-                    ) : (
-                      <>
-                        <Key className="w-3 h-3 text-amber-600" />
-                        <span>+ Connect Mailbox</span>
-                      </>
-                    )}
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <span>Outbox: {connectedMailbox?.provider === 'leadpulse_cloud' || !connectedMailbox ? 'Cloud Relay (Ready)' : connectedMailbox.provider.toUpperCase()}</span>
                   </button>
                 </div>
 
@@ -2734,16 +2721,7 @@ const OutreachCenter = () => {
                     )}
                   </button>
                   <button 
-                    onClick={async () => {
-                      if (!connectedMailbox) {
-                        await alertDialog({
-                          title: 'No Sending Mailbox Connected',
-                          message: 'To dispatch campaign emails directly to prospects, connect your sending mailbox (Gmail, Brevo Free Relay, Outlook, or Custom SMTP).',
-                          variant: 'warning'
-                        });
-                        setIsProviderModalOpen(true);
-                        return;
-                      }
+                    onClick={() => {
                       setIsDispatchModalOpen(true);
                     }}
                     className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white px-5 py-1.5 rounded-xl text-xs font-delight font-bold shadow-sm shadow-indigo-200 transition-all flex items-center gap-1.5 cursor-pointer"
