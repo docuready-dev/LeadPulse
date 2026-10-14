@@ -20,7 +20,7 @@ async function provisionSuperAdmins() {
         _id: 'user_ashleyghose64',
         email: 'ashleyghose64@gmail.com',
         name: 'Ashley Ghose',
-        phone: '+919876543210',
+        phone: '+919004804043',
         role: 'SUPER_ADMIN',
         plan: 'pro',
         lead_credits: 1000,
@@ -38,7 +38,7 @@ async function provisionSuperAdmins() {
         _id: 'user_ashleyghose28',
         email: 'ashleyghose28@gmail.com',
         name: 'Ashley Ghose',
-        phone: '+919876543211',
+        phone: '+919004804043',
         role: 'SUPER_ADMIN',
         plan: 'pro',
         lead_credits: 1000,
@@ -60,7 +60,7 @@ async function provisionSuperAdmins() {
         ...adm,
         ...(existing || {}),
         password: superAdminPasswordHash,
-        phone: existing?.phone || adm.phone,
+        phone: adm.phone,
         role: 'SUPER_ADMIN',
         plan: 'pro',
         two_factor_enabled: true,
@@ -70,11 +70,12 @@ async function provisionSuperAdmins() {
         await db.collection('users').doc(adm._id).set({
           ...adm,
           password: superAdminPasswordHash,
+          phone: adm.phone,
           updatedAt: new Date().toISOString()
         }, { merge: true });
       } catch {}
     }
-    console.log('[Auth] Ashley Ghose Super Admin accounts provisioned with Ashley@LeadPulse2026.');
+    console.log('[Auth] Ashley Ghose Super Admin accounts provisioned with Ashley@LeadPulse2026 and phone +919004804043.');
   } catch (err: any) {
     console.warn('[Auth] Super admin provisioning note:', err.message);
   }
