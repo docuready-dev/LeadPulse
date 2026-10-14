@@ -2,6 +2,8 @@ import express from 'express';
 import { db } from '../index';
 import { scraperQueue } from '../services/scraperQueue';
 import { syncUserPoolCredits } from './auth';
+import { leadStore } from '../services/leadStore';
+import { userStore } from '../services/userStore';
 
 const router = express.Router();
 
@@ -9,17 +11,29 @@ router.get('/', async (req, res) => {
   const userId = req.headers.userid as string;
   if (!userId) return res.status(401).json({ error: 'Unauthorized' });
   
+  let firestoreLeads: any[] = [];
   try {
     const leadsRef = db.collection('leads');
     const snapshot = await leadsRef.where('userId', '==', userId).limit(300).get();
-    
-    const leads = snapshot.docs.map(doc => ({ _id: doc.id, ...doc.data() }));
-    leads.sort((a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
-    res.json(leads);
-  } catch (err) {
-    console.error('[Leads] Error fetching leads:', err);
-    res.status(500).json({ error: 'Server error' });
+    firestoreLeads = snapshot.docs.map(doc => ({ _id: doc.id, ...doc.data() }));
+  } catch (err: any) {
+    console.warn('[Leads] Firestore unauthenticated or offline, serving from local store:', err.message);
   }
+
+  // Merge with local persistent store
+  const localLeads = leadStore.getLeads(userId);
+  const seenIds = new Set(firestoreLeads.map(l => l._id));
+  const merged = [...firestoreLeads];
+
+  for (const lead of localLeads) {
+    if (!seenIds.has(lead._id)) {
+      seenIds.add(lead._id);
+      merged.push(lead);
+    }
+  }
+
+  merged.sort((a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+  res.json(merged);
 });
 
 // Manual Contact / Lead Creation
@@ -32,30 +46,33 @@ router.post('/', async (req, res) => {
     return res.status(400).json({ error: 'Business Name or Email is required' });
   }
 
+  const newLead = {
+    userId,
+    businessName: businessName || (email ? email.split('@')[0] : 'New Contact'),
+    email: email || '',
+    phone: phone || '',
+    category: category || 'General B2B',
+    location: location || '',
+    website: website || '',
+    status: status || 'New',
+    tags: Array.isArray(tags) ? tags : [tags].filter(Boolean),
+    source,
+    saved: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+
+  let savedId = `lead_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
   try {
     const leadsRef = db.collection('leads');
-    const newLead = {
-      userId,
-      businessName: businessName || (email ? email.split('@')[0] : 'New Contact'),
-      email: email || '',
-      phone: phone || '',
-      category: category || 'General B2B',
-      location: location || '',
-      website: website || '',
-      status: status || 'New',
-      tags: Array.isArray(tags) ? tags : [tags].filter(Boolean),
-      source,
-      saved: true,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-
     const docRef = await leadsRef.add(newLead);
-    res.json({ _id: docRef.id, ...newLead });
+    savedId = docRef.id;
   } catch (err: any) {
-    console.error('Failed to create lead:', err);
-    res.status(500).json({ error: err.message || 'Failed to create lead' });
+    console.warn('[Leads] Firestore write failed, stored in local persistent store:', err.message);
   }
+
+  const savedLead = leadStore.addLead({ ...newLead, _id: savedId });
+  res.json(savedLead);
 });
 
 // Public Form Capture Endpoint (No auth header required so external website forms can submit!)
@@ -65,30 +82,33 @@ router.post('/form-submit/:userId', async (req, res) => {
 
   if (!email) return res.status(400).json({ error: 'Email is required' });
 
+  const newLead = {
+    userId,
+    businessName: company || name || email.split('@')[0],
+    email,
+    phone: phone || '',
+    category: 'Inbound Form',
+    location: 'Website Inbound',
+    website: '',
+    status: 'New',
+    tags: ['Inbound Lead', formId],
+    source: `Form: ${formId}`,
+    saved: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+
+  let savedId = `lead_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
   try {
     const leadsRef = db.collection('leads');
-    const newLead = {
-      userId,
-      businessName: company || name || email.split('@')[0],
-      email,
-      phone: phone || '',
-      category: 'Inbound Form',
-      location: 'Website Inbound',
-      website: '',
-      status: 'New',
-      tags: ['Inbound Lead', formId],
-      source: `Form: ${formId}`,
-      saved: true,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-
     const docRef = await leadsRef.add(newLead);
-    res.json({ success: true, message: 'Lead captured successfully!', id: docRef.id });
+    savedId = docRef.id;
   } catch (err: any) {
-    console.error('Failed to capture lead via form:', err);
-    res.status(500).json({ error: 'Failed to capture lead' });
+    console.warn('[Leads] Firestore form capture write failed, stored in local persistent store:', err.message);
   }
+
+  leadStore.addLead({ ...newLead, _id: savedId });
+  res.json({ success: true, message: 'Lead captured successfully!', id: savedId });
 });
 
 // ============================================================================
@@ -124,7 +144,19 @@ router.get('/serpapi/status', async (req, res) => {
           }
         }
       } catch (dbErr) {
-        // Continue with memory store
+        const localUser = userStore.getUserById(userId);
+        if (localUser && localUser.serpapi_key) {
+          apiKey = localUser.serpapi_key;
+          serpInfo = {
+            apiKey,
+            plan_id: localUser.serpapi_plan || 'free',
+            plan_name: localUser.serpapi_plan_name || 'Free',
+            searches_per_month: localUser.serpapi_searches_per_month || 100,
+            plan_searches_left: localUser.serpapi_searches_left ?? 100,
+            this_month_usage: localUser.serpapi_this_month_usage || 0
+          };
+          memorySerpApiStore.set(userId, serpInfo);
+        }
       }
     }
 
@@ -202,6 +234,16 @@ router.post('/serpapi/connect', async (req, res) => {
     };
 
     memorySerpApiStore.set(userId, accountRecord);
+    userStore.updateUser(userId, {
+      serpapi_key: cleanKey,
+      serpapi_connected: true,
+      serpapi_plan: accountRecord.plan_id,
+      serpapi_plan_name: accountRecord.plan_name,
+      serpapi_searches_left: accountRecord.plan_searches_left,
+      serpapi_searches_per_month: accountRecord.searches_per_month,
+      serpapi_this_month_usage: accountRecord.this_month_usage,
+      serpapi_updated_at: new Date().toISOString()
+    });
 
     await db.collection('users').doc(userId).update({
       serpapi_key: cleanKey,
@@ -233,6 +275,13 @@ router.delete('/serpapi/disconnect', async (req, res) => {
   if (!userId) return res.status(401).json({ error: 'Unauthorized' });
 
   memorySerpApiStore.delete(userId);
+  userStore.updateUser(userId, {
+    serpapi_key: undefined,
+    serpapi_connected: false,
+    serpapi_plan: undefined,
+    serpapi_plan_name: undefined,
+    serpapi_searches_left: undefined
+  });
 
   try {
     await db.collection('users').doc(userId).update({
@@ -265,6 +314,13 @@ router.post('/scrape', async (req, res) => {
       }
     } catch (dbErr) {
       console.warn('[Leads] Could not fetch user doc from Firestore:', dbErr);
+    }
+
+    if (!userData) {
+      const localU = userStore.getUserById(userId);
+      if (localU) {
+        userData = { ...localU };
+      }
     }
 
     // Check SerpApi engine requirement
@@ -336,6 +392,7 @@ router.post('/scrape', async (req, res) => {
       limit = Math.min(maxPerQuery, creditsRemaining > 0 ? creditsRemaining : maxPerQuery);
       tokensUsed = limit;
       creditsRemaining = Math.max(0, creditsRemaining - tokensUsed);
+      userStore.updateUser(userId, { lead_credits: creditsRemaining });
     }
     
     const jobId = `job_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
@@ -390,30 +447,35 @@ router.post('/batch-save', async (req, res) => {
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
     const { ids, all, saved = true } = req.body;
 
-    const leadsRef = db.collection('leads');
-    let docRefs: FirebaseFirestore.DocumentReference[] = [];
+    const localCount = leadStore.batchSaveStatus(Array.isArray(ids) ? ids : [], saved, userId);
 
-    if (all) {
-      const snapshot = await leadsRef.where('userId', '==', userId).get();
-      docRefs = snapshot.docs.map(d => d.ref);
-    } else if (Array.isArray(ids) && ids.length > 0) {
-      docRefs = ids.map(id => leadsRef.doc(id));
-    }
+    try {
+      const leadsRef = db.collection('leads');
+      let docRefs: FirebaseFirestore.DocumentReference[] = [];
 
-    if (docRefs.length > 0) {
-      // Chunk in 400s for Firestore batch limit
-      const chunkSize = 400;
-      for (let i = 0; i < docRefs.length; i += chunkSize) {
-        const chunk = docRefs.slice(i, i + chunkSize);
-        const batch = db.batch();
-        chunk.forEach(ref => {
-          batch.update(ref, { saved, updatedAt: new Date().toISOString() });
-        });
-        await batch.commit();
+      if (all) {
+        const snapshot = await leadsRef.where('userId', '==', userId).get();
+        docRefs = snapshot.docs.map(d => d.ref);
+      } else if (Array.isArray(ids) && ids.length > 0) {
+        docRefs = ids.map(id => leadsRef.doc(id));
       }
+
+      if (docRefs.length > 0) {
+        const chunkSize = 400;
+        for (let i = 0; i < docRefs.length; i += chunkSize) {
+          const chunk = docRefs.slice(i, i + chunkSize);
+          const batch = db.batch();
+          chunk.forEach(ref => {
+            batch.update(ref, { saved, updatedAt: new Date().toISOString() });
+          });
+          await batch.commit();
+        }
+      }
+    } catch (fsErr: any) {
+      console.warn('[Leads] Firestore batch save failed (saved locally):', fsErr.message);
     }
 
-    res.json({ success: true, count: docRefs.length });
+    res.json({ success: true, count: localCount || (Array.isArray(ids) ? ids.length : 0) });
   } catch (err: any) {
     console.error('Failed to batch save leads:', err);
     res.status(500).json({ error: err.message || 'Failed to batch save leads' });
@@ -431,18 +493,24 @@ router.post('/batch-delete', async (req, res) => {
       return res.status(400).json({ error: 'No lead IDs provided' });
     }
 
-    const leadsRef = db.collection('leads');
-    const chunkSize = 400;
-    for (let i = 0; i < ids.length; i += chunkSize) {
-      const chunk = ids.slice(i, i + chunkSize);
-      const batch = db.batch();
-      chunk.forEach(id => {
-        batch.delete(leadsRef.doc(id));
-      });
-      await batch.commit();
+    const localDeleted = leadStore.batchDelete(ids);
+
+    try {
+      const leadsRef = db.collection('leads');
+      const chunkSize = 400;
+      for (let i = 0; i < ids.length; i += chunkSize) {
+        const chunk = ids.slice(i, i + chunkSize);
+        const batch = db.batch();
+        chunk.forEach(id => {
+          batch.delete(leadsRef.doc(id));
+        });
+        await batch.commit();
+      }
+    } catch (fsErr: any) {
+      console.warn('[Leads] Firestore batch delete failed (deleted locally):', fsErr.message);
     }
 
-    res.json({ success: true, deleted: ids.length });
+    res.json({ success: true, deleted: localDeleted || ids.length });
   } catch (err: any) {
     console.error('Failed to batch delete leads:', err);
     res.status(500).json({ error: err.message || 'Failed to batch delete leads' });
@@ -455,22 +523,28 @@ router.delete('/all', async (req, res) => {
     const userId = req.headers.userid as string;
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
 
-    const leadsRef = db.collection('leads');
-    const snapshot = await leadsRef.where('userId', '==', userId).get();
-    
-    if (snapshot.docs.length > 0) {
-      const chunkSize = 400;
-      for (let i = 0; i < snapshot.docs.length; i += chunkSize) {
-        const chunk = snapshot.docs.slice(i, i + chunkSize);
-        const batch = db.batch();
-        chunk.forEach(doc => {
-          batch.delete(doc.ref);
-        });
-        await batch.commit();
+    const localDeleted = leadStore.deleteAll(userId);
+
+    try {
+      const leadsRef = db.collection('leads');
+      const snapshot = await leadsRef.where('userId', '==', userId).get();
+      
+      if (snapshot.docs.length > 0) {
+        const chunkSize = 400;
+        for (let i = 0; i < snapshot.docs.length; i += chunkSize) {
+          const chunk = snapshot.docs.slice(i, i + chunkSize);
+          const batch = db.batch();
+          chunk.forEach(doc => {
+            batch.delete(doc.ref);
+          });
+          await batch.commit();
+        }
       }
+    } catch (fsErr: any) {
+      console.warn('[Leads] Firestore delete all failed (deleted locally):', fsErr.message);
     }
 
-    res.json({ success: true, deleted: snapshot.docs.length });
+    res.json({ success: true, deleted: localDeleted });
   } catch (err: any) {
     console.error('Failed to delete all leads:', err);
     res.status(500).json({ error: err.message || 'Failed to delete all leads' });
@@ -484,14 +558,23 @@ router.patch('/:id', async (req, res) => {
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
 
     const updates = req.body;
-    const docRef = db.collection('leads').doc(id);
-    await docRef.update({
-      ...updates,
-      updatedAt: new Date().toISOString()
-    });
+    const localUpdated = leadStore.updateLead(id, updates);
 
-    const updatedDoc = await docRef.get();
-    res.json({ success: true, lead: { _id: id, ...updatedDoc.data() }, message: 'Lead updated successfully' });
+    try {
+      const docRef = db.collection('leads').doc(id);
+      await docRef.update({
+        ...updates,
+        updatedAt: new Date().toISOString()
+      });
+    } catch (fsErr: any) {
+      console.warn('[Leads] Firestore patch failed (updated locally):', fsErr.message);
+    }
+
+    res.json({ 
+      success: true, 
+      lead: localUpdated || { _id: id, ...updates }, 
+      message: 'Lead updated successfully' 
+    });
   } catch (err: any) {
     console.error('Failed to update lead:', err);
     res.status(500).json({ error: err.message || 'Failed to update lead' });
@@ -504,7 +587,14 @@ router.delete('/:id', async (req, res) => {
     const userId = req.headers.userid;
     if (!userId) return res.status(401).json({ error: 'Unauthorized' });
     
-    await db.collection('leads').doc(id).delete();
+    leadStore.deleteLead(id);
+
+    try {
+      await db.collection('leads').doc(id).delete();
+    } catch (fsErr: any) {
+      console.warn('[Leads] Firestore delete failed (deleted locally):', fsErr.message);
+    }
+
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: 'Failed to delete' });

@@ -1,6 +1,8 @@
 import { db } from '../index';
 import fs from 'fs';
 import { crawlWebsiteForEmails } from './fastCrawler';
+import { leadStore } from './leadStore';
+import { userStore } from './userStore';
 
 export interface ScrapeJob {
   id: string;
@@ -485,16 +487,24 @@ class InMemScraperQueue {
         finalLeads = processedItems;
       }
 
-      // Query existing leads for deduplication before saving
-      const existingSnap = await db.collection('leads')
-        .where('userId', '==', job.userId)
-        .limit(300)
-        .get()
-        .catch(() => ({ docs: [] } as any));
-
+      // Query existing leads from both Firestore and local persistent store for deduplication
+      const localExisting = leadStore.getLeads(job.userId);
       const existingNames = new Set<string>(
-        existingSnap.docs.map((d: any) => String(d.data().businessName || '').toLowerCase().trim())
+        localExisting.map(l => (l.businessName || '').toLowerCase().trim())
       );
+
+      try {
+        const existingSnap = await db.collection('leads')
+          .where('userId', '==', job.userId)
+          .limit(300)
+          .get();
+        existingSnap.docs.forEach((d: any) => {
+          const bName = String(d.data().businessName || '').toLowerCase().trim();
+          if (bName) existingNames.add(bName);
+        });
+      } catch {
+        // Continue with local deduplication
+      }
 
       // Filter out any already-saved leads from results
       finalLeads = finalLeads.filter(l => !existingNames.has(l.businessName.toLowerCase().trim()));
@@ -505,16 +515,15 @@ class InMemScraperQueue {
         stageMessage: `Deduplicating & committing ${finalLeads.length} authentic leads to database...`
       });
 
-      // Write batch to Firestore
-      const batch = db.collection('leads').firestore.batch();
-      let addedCount = 0;
-
+      // Prepare lead objects with deterministic IDs
+      const leadsToSave: any[] = [];
       finalLeads.forEach((lead, index) => {
         const normalizedName = lead.businessName.toLowerCase().trim();
         if (!existingNames.has(normalizedName)) {
           existingNames.add(normalizedName);
-          const leadRef = db.collection('leads').doc();
-          batch.set(leadRef, {
+          const leadId = `lead_${Date.now()}_${index}_${Math.random().toString(36).substring(2, 7)}`;
+          leadsToSave.push({
+            _id: leadId,
             userId: job.userId,
             businessName: lead.businessName,
             category: lead.category,
@@ -529,21 +538,54 @@ class InMemScraperQueue {
             scope: lead.scope,
             status: lead.status,
             tags: lead.tags,
-            createdAt: new Date(Date.now() - index * 1000).toISOString()
+            saved: true,
+            source: 'Harvest Engine',
+            createdAt: new Date(Date.now() - index * 1000).toISOString(),
+            updatedAt: new Date().toISOString()
           });
-          addedCount++;
         }
       });
 
+      const addedCount = leadsToSave.length;
+
+      // 1. ALWAYS persist to local leadStore so leads are 100% saved and never lost!
       if (addedCount > 0) {
-        await batch.commit();
-        console.log(`[Scraper] Successfully saved ${addedCount} authentic deduplicated leads in Firestore for user ${job.userId}.`);
+        leadStore.saveBatch(leadsToSave);
+        console.log(`[Scraper] Successfully saved ${addedCount} authentic deduplicated leads to persistent LeadStore.`);
+      }
+
+      // 2. Also sync to Firestore (safely caught if unauthenticated/offline)
+      if (addedCount > 0) {
+        try {
+          const batch = db.collection('leads').firestore.batch();
+          for (const item of leadsToSave) {
+            const leadRef = db.collection('leads').doc(item._id);
+            const { _id, ...firestoreData } = item;
+            batch.set(leadRef, firestoreData);
+          }
+          await batch.commit();
+          console.log(`[Scraper] Synchronized ${addedCount} leads to Firestore.`);
+        } catch (fsErr: any) {
+          console.warn(`[Scraper] Firestore unauthenticated or offline (${fsErr.message}). Leads safely saved in local LeadStore.`);
+        }
       }
 
       // Enforce 1 Token = 1 Contact: if fewer contacts were added than reserved (maxItems), refund unused tokens
-      const userRef = db.collection('users').doc(job.userId);
       let latestCredits: number | undefined = undefined;
+
+      const localUser = userStore.getUserById(job.userId);
+      if (localUser) {
+        let currentCreds = localUser.lead_credits ?? 0;
+        const unusedTokens = Math.max(0, maxItems - addedCount);
+        if (unusedTokens > 0) {
+          currentCreds += unusedTokens;
+        }
+        latestCredits = currentCreds;
+        userStore.updateUser(job.userId, { lead_credits: currentCreds });
+      }
+
       try {
+        const userRef = db.collection('users').doc(job.userId);
         const userSnap = await userRef.get();
         if (userSnap.exists) {
           const uData = userSnap.data() || {};
@@ -556,7 +598,7 @@ class InMemScraperQueue {
           latestCredits = currentCreds;
         }
       } catch (creditErr) {
-        console.warn('[Scraper] Could not verify post-scrape credits:', creditErr);
+        console.warn('[Scraper] Could not verify post-scrape credits in Firestore:', creditErr);
       }
 
       this.updateStatus(job.id, {
@@ -577,6 +619,12 @@ class InMemScraperQueue {
       }
 
       // Refund reserved tokens on total job failure
+      const localUser = userStore.getUserById(job.userId);
+      if (localUser) {
+        const currentCreds = (localUser.lead_credits ?? 0) + maxItems;
+        userStore.updateUser(job.userId, { lead_credits: currentCreds });
+      }
+
       try {
         const userRef = db.collection('users').doc(job.userId);
         const userSnap = await userRef.get();

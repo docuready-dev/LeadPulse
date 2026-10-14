@@ -52,4 +52,6 @@ Thumbs.db
 # /screenshots/
 /fonts/
 /integrations-icons/
-
+# Local persistent data storage
+server/data/*.json
+!server/data/.gitkeep
