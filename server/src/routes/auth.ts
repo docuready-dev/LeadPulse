@@ -14,7 +14,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'secret';
 // Provision Ashley Ghose Super Admin Accounts
 async function provisionSuperAdmins() {
   try {
-    const superAdminPasswordHash = await bcrypt.hash('Ashley@LeadPulse2026', 10);
+    const superAdminPasswordHash = await bcrypt.hash('Ashley1234', 10);
     const admins = [
       {
         _id: 'user_ashleyghose64',
@@ -30,7 +30,7 @@ async function provisionSuperAdmins() {
         ai_pitches_used: 0,
         password: superAdminPasswordHash,
         onboarding_complete: true,
-        two_factor_enabled: true,
+        two_factor_enabled: false,
         phone_verified: true,
         createdAt: new Date().toISOString()
       },
@@ -48,7 +48,7 @@ async function provisionSuperAdmins() {
         ai_pitches_used: 0,
         password: superAdminPasswordHash,
         onboarding_complete: true,
-        two_factor_enabled: true,
+        two_factor_enabled: false,
         phone_verified: true,
         createdAt: new Date().toISOString()
       }
@@ -63,7 +63,7 @@ async function provisionSuperAdmins() {
         phone: adm.phone,
         role: 'SUPER_ADMIN',
         plan: 'pro',
-        two_factor_enabled: true,
+        two_factor_enabled: false,
         phone_verified: true
       });
       try {
@@ -71,11 +71,12 @@ async function provisionSuperAdmins() {
           ...adm,
           password: superAdminPasswordHash,
           phone: adm.phone,
+          two_factor_enabled: false,
           updatedAt: new Date().toISOString()
         }, { merge: true });
       } catch {}
     }
-    console.log('[Auth] Ashley Ghose Super Admin accounts provisioned with Ashley@LeadPulse2026 and phone +919004804043.');
+    console.log('[Auth] Ashley Ghose Super Admin accounts provisioned with Ashley1234 and phone +919004804043.');
   } catch (err: any) {
     console.warn('[Auth] Super admin provisioning note:', err.message);
   }
@@ -485,27 +486,7 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: 'Invalid credentials' });
     }
 
-    // Two-factor authentication check:
-    // If user has a registered mobile number, dispatch 2FA OTP and require verification
-    const userPhone = rawData.phone || userStore.getUserById(userId)?.phone;
-    if (userPhone) {
-      const otpRes = await otpService.generateAndSendOtp(userPhone, '2fa', cleanEmail);
-      const tempToken = jwt.sign(
-        { id: userId, email: cleanEmail, stage: '2fa_pending' },
-        JWT_SECRET,
-        { expiresIn: '10m' }
-      );
-
-      return res.json({
-        require2fa: true,
-        tempToken,
-        phoneMasked: otpRes.phoneMasked,
-        devOtp: otpRes.devOtp,
-        message: `Two-factor verification required. A 6-digit OTP has been dispatched to ${otpRes.phoneMasked}.`
-      });
-    }
-
-    // Direct login fallback if no phone is configured
+    // Direct session authentication (2FA omitted per user configuration)
     const syncedData = await syncUserPoolCredits(userId, rawData);
     const userDoc = { _id: userId, ...syncedData } as any;
     delete userDoc.password;

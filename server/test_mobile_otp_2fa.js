@@ -1,5 +1,5 @@
 // server/test_mobile_otp_2fa.js
-// Comprehensive verification of Mobile OTP Registration, 2FA Sign-in, and Password Recovery
+// Verification of Ashley Super Admin logins with Ashley1234, Mobile OTP Registration, and Password Recovery
 
 const API_BASE = 'http://localhost:3001';
 
@@ -15,7 +15,7 @@ async function request(path, options = {}) {
 
 async function runTests() {
   console.log('========================================================');
-  console.log('STARTING AUTOMATED VERIFICATION: MOBILE OTP & 2FA SUITE');
+  console.log('STARTING AUTOMATED VERIFICATION SUITE');
   console.log('========================================================\n');
 
   let passed = 0;
@@ -31,48 +31,33 @@ async function runTests() {
     }
   }
 
-  // --- TEST 1: Ashley Super Admin Accounts Provisioning & 2FA ---
-  console.log('--- 1. Testing Ashley Ghose Super Admin Accounts (28 & 64) ---');
+  // --- TEST 1: Ashley Super Admin Accounts Provisioning with Ashley1234 ---
+  console.log('--- 1. Testing Ashley Ghose Super Admin Accounts (28 & 64) with Ashley1234 ---');
   for (const email of ['ashleyghose64@gmail.com', 'ashleyghose28@gmail.com']) {
     const loginRes = await request('/api/auth/login', {
       method: 'POST',
       body: JSON.stringify({
         email,
-        password: 'Ashley@LeadPulse2026'
+        password: 'Ashley1234'
       })
     });
 
     assert(
-      loginRes.status === 200 && loginRes.data?.require2fa === true,
-      `Super Admin ${email} password accepted and triggers 2FA`,
+      loginRes.status === 200 && !!loginRes.data?.token,
+      `Super Admin ${email} logs in directly with Ashley1234 (no 2FA required)`,
       JSON.stringify(loginRes.data)
     );
 
     assert(
-      !!loginRes.data?.tempToken && !!loginRes.data?.devOtp,
-      `Super Admin ${email} received tempToken and devOtp for 2FA`,
-      `tempToken: ${!!loginRes.data?.tempToken}, devOtp: ${loginRes.data?.devOtp}`
-    );
-
-    // Verify 2FA code
-    const verify2faRes = await request('/api/auth/verify-2fa', {
-      method: 'POST',
-      body: JSON.stringify({
-        tempToken: loginRes.data?.tempToken,
-        otp: loginRes.data?.devOtp
-      })
-    });
-
-    assert(
-      verify2faRes.status === 200 && !!verify2faRes.data?.token,
-      `Super Admin ${email} 2FA verification succeeds and yields full session token`,
-      JSON.stringify(verify2faRes.data)
-    );
-
-    assert(
-      verify2faRes.data?.user?.role === 'SUPER_ADMIN' && verify2faRes.data?.user?.plan === 'pro',
+      loginRes.data?.user?.role === 'SUPER_ADMIN' && loginRes.data?.user?.plan === 'pro',
       `Super Admin ${email} has SUPER_ADMIN role and pro plan`,
-      `Role: ${verify2faRes.data?.user?.role}, Plan: ${verify2faRes.data?.user?.plan}`
+      `Role: ${loginRes.data?.user?.role}, Plan: ${loginRes.data?.user?.plan}`
+    );
+
+    assert(
+      loginRes.data?.user?.phone === '+919004804043',
+      `Super Admin ${email} has phone set to +919004804043`,
+      `Phone: ${loginRes.data?.user?.phone}`
     );
   }
 
@@ -146,8 +131,8 @@ async function runTests() {
     JSON.stringify(regSuccess.data)
   );
 
-  // --- TEST 3: Login with 2FA for newly registered user ---
-  console.log('\n--- 3. Testing 2FA Login for Registered User ---');
+  // --- TEST 3: Login for newly registered user ---
+  console.log('\n--- 3. Testing Direct Login for Registered User ---');
   const userLoginRes = await request('/api/auth/login', {
     method: 'POST',
     body: JSON.stringify({
@@ -157,23 +142,9 @@ async function runTests() {
   });
 
   assert(
-    userLoginRes.status === 200 && userLoginRes.data?.require2fa === true,
-    'Login requires 2FA OTP for user with registered phone',
+    userLoginRes.status === 200 && !!userLoginRes.data?.token,
+    'Login authenticates directly without 2FA challenge',
     JSON.stringify(userLoginRes.data)
-  );
-
-  const user2faRes = await request('/api/auth/verify-2fa', {
-    method: 'POST',
-    body: JSON.stringify({
-      tempToken: userLoginRes.data?.tempToken,
-      otp: userLoginRes.data?.devOtp
-    })
-  });
-
-  assert(
-    user2faRes.status === 200 && !!user2faRes.data?.token,
-    '2FA verification completes successfully and logs in user',
-    JSON.stringify(user2faRes.data)
   );
 
   // --- TEST 4: Forgot Password via Mobile OTP ---
@@ -220,8 +191,8 @@ async function runTests() {
   });
 
   assert(
-    loginNewPwd.status === 200 && loginNewPwd.data?.require2fa === true,
-    'Sign in with updated password succeeds and initiates 2FA flow',
+    loginNewPwd.status === 200 && !!loginNewPwd.data?.token,
+    'Sign in with updated password succeeds directly',
     JSON.stringify(loginNewPwd.data)
   );
 
