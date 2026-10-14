@@ -33,6 +33,8 @@ export interface UserRecord {
   serpapi_searches_per_month?: number;
   serpapi_this_month_usage?: number;
   serpapi_updated_at?: string;
+  reset_password_token?: string | null;
+  reset_password_expires_at?: string | null;
   has_topup?: boolean;
   createdAt: string;
   updatedAt?: string;

@@ -1,9 +1,11 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
+import crypto from 'crypto';
 import { db } from '../index';
 import { userStore } from '../services/userStore';
 import { leadStore } from '../services/leadStore';
+import { sendPasswordResetEmail } from '../services/mailer';
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'secret';
@@ -406,6 +408,219 @@ router.patch('/profile', async (req, res) => {
   } catch (err) {
     console.error('Failed to update profile:', err);
     res.status(500).json({ error: 'Failed to update profile' });
+  }
+});
+
+// POST /api/auth/forgot-password - Dispatches a secure verification link to user's email
+router.post('/forgot-password', async (req, res) => {
+  const { email } = req.body;
+  if (!email || typeof email !== 'string') {
+    return res.status(400).json({ error: 'Valid email address is required' });
+  }
+
+  const normalizedEmail = email.toLowerCase().trim();
+
+  try {
+    let rawUser: any = null;
+    let userId: string = '';
+
+    // 1. Check Firestore
+    try {
+      const usersRef = db.collection('users');
+      const snapshot = await usersRef.where('email', '==', normalizedEmail).get();
+      if (!snapshot.empty) {
+        const doc = snapshot.docs[0];
+        userId = doc.id;
+        rawUser = doc.data();
+      }
+    } catch (fsErr: any) {
+      console.warn('[Auth] Firestore query error in forgot-password:', fsErr.message);
+    }
+
+    // 2. Check local userStore
+    if (!rawUser) {
+      const localUser = userStore.getUserByEmail(normalizedEmail);
+      if (localUser) {
+        userId = localUser._id;
+        rawUser = { ...localUser };
+      }
+    }
+
+    // If account not found, return 200 with standard response to prevent user enumeration
+    if (!rawUser || !userId) {
+      return res.json({
+        success: true,
+        message: 'If an account with that email exists, a password reset verification link has been dispatched.'
+      });
+    }
+
+    // Generate secure 32-byte hex token (64 characters)
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // 1 hour expiration window
+
+    const updates = {
+      reset_password_token: resetToken,
+      reset_password_expires_at: expiresAt
+    };
+
+    userStore.updateUser(userId, updates);
+    try {
+      await db.collection('users').doc(userId).update(updates);
+    } catch {}
+
+    // Resolve base client URL for the verification link
+    const origin = req.headers.origin || req.headers.referer || process.env.CLIENT_URL || 'https://leadpulse-n4q2.onrender.com';
+    const cleanOrigin = String(origin).replace(/\/+$/, '').split('?')[0].split('#')[0];
+    const resetVerificationLink = `${cleanOrigin}/reset-password?token=${resetToken}&email=${encodeURIComponent(normalizedEmail)}`;
+
+    console.log(`[Auth] Dispatched password reset verification link for ${normalizedEmail}: ${resetVerificationLink}`);
+
+    // Dispatch verification link via email (SendGrid Web API over HTTPS)
+    await sendPasswordResetEmail(normalizedEmail, rawUser.name || 'LeadPulse User', resetVerificationLink);
+
+    return res.json({
+      success: true,
+      message: 'Password reset verification link has been dispatched to your email address.',
+      // In dev or test environments, previewUrl is returned for convenience
+      previewUrl: process.env.NODE_ENV !== 'production' ? resetVerificationLink : undefined
+    });
+  } catch (err: any) {
+    console.error('[Auth] forgot-password error:', err);
+    res.status(500).json({ error: 'Failed to process password reset request' });
+  }
+});
+
+// POST /api/auth/verify-reset-token - Verifies that the reset token is valid and unexpired
+router.post('/verify-reset-token', async (req, res) => {
+  const { email, token } = req.body;
+  if (!email || !token) {
+    return res.status(400).json({ valid: false, error: 'Email and verification token are required' });
+  }
+
+  const normalizedEmail = String(email).toLowerCase().trim();
+
+  try {
+    let rawUser: any = null;
+
+    // Check Firestore
+    try {
+      const usersRef = db.collection('users');
+      const snapshot = await usersRef.where('email', '==', normalizedEmail).get();
+      if (!snapshot.empty) {
+        rawUser = snapshot.docs[0].data();
+      }
+    } catch {}
+
+    // Fallback to local store
+    if (!rawUser) {
+      const localUser = userStore.getUserByEmail(normalizedEmail);
+      if (localUser) rawUser = { ...localUser };
+    }
+
+    if (!rawUser) {
+      return res.status(400).json({ valid: false, error: 'User account not found' });
+    }
+
+    if (!rawUser.reset_password_token || rawUser.reset_password_token !== token) {
+      return res.status(400).json({ valid: false, error: 'Invalid or expired password reset verification token' });
+    }
+
+    const expiresAt = new Date(rawUser.reset_password_expires_at || 0).getTime();
+    if (Date.now() > expiresAt) {
+      return res.status(400).json({ valid: false, error: 'This verification link has expired (1-hour window exceeded). Please request a new link.' });
+    }
+
+    return res.json({ valid: true, email: normalizedEmail });
+  } catch (err: any) {
+    console.error('[Auth] verify-reset-token error:', err);
+    res.status(500).json({ valid: false, error: 'Server error while verifying token' });
+  }
+});
+
+// POST /api/auth/reset-password - Sets a new password using verified token
+router.post('/reset-password', async (req, res) => {
+  const { email, token, newPassword } = req.body;
+  if (!email || !token || !newPassword) {
+    return res.status(400).json({ error: 'Email, token, and new password are required' });
+  }
+
+  if (typeof newPassword !== 'string' || newPassword.length < 6) {
+    return res.status(400).json({ error: 'New password must be at least 6 characters long' });
+  }
+
+  const normalizedEmail = String(email).toLowerCase().trim();
+
+  try {
+    let rawUser: any = null;
+    let userId: string = '';
+
+    // Check Firestore
+    try {
+      const usersRef = db.collection('users');
+      const snapshot = await usersRef.where('email', '==', normalizedEmail).get();
+      if (!snapshot.empty) {
+        const doc = snapshot.docs[0];
+        userId = doc.id;
+        rawUser = doc.data();
+      }
+    } catch {}
+
+    // Fallback to local store
+    if (!rawUser) {
+      const localUser = userStore.getUserByEmail(normalizedEmail);
+      if (localUser) {
+        userId = localUser._id;
+        rawUser = { ...localUser };
+      }
+    }
+
+    if (!rawUser || !userId) {
+      return res.status(400).json({ error: 'User account not found' });
+    }
+
+    if (!rawUser.reset_password_token || rawUser.reset_password_token !== token) {
+      return res.status(400).json({ error: 'Invalid or already used verification token' });
+    }
+
+    const expiresAt = new Date(rawUser.reset_password_expires_at || 0).getTime();
+    if (Date.now() > expiresAt) {
+      return res.status(400).json({ error: 'This verification link has expired. Please request a new link.' });
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update password and clear reset token
+    const updates = {
+      password: hashedPassword,
+      reset_password_token: null,
+      reset_password_expires_at: null,
+      updatedAt: new Date().toISOString()
+    };
+
+    userStore.updateUser(userId, updates);
+    try {
+      await db.collection('users').doc(userId).update(updates);
+    } catch {}
+
+    // Authenticate user directly and return new session token
+    const syncedData = await syncUserPoolCredits(userId, { ...rawUser, ...updates });
+    const userDoc = { _id: userId, ...syncedData } as any;
+    delete userDoc.password;
+
+    const authToken = jwt.sign({ id: userDoc._id, role: userDoc.role }, JWT_SECRET, { expiresIn: '1d' });
+
+    console.log(`[Auth] Password successfully reset for user ${normalizedEmail}`);
+
+    return res.json({
+      success: true,
+      message: 'Password successfully updated. You are now logged in.',
+      token: authToken,
+      user: userDoc
+    });
+  } catch (err: any) {
+    console.error('[Auth] reset-password error:', err);
+    res.status(500).json({ error: 'Server error while resetting password' });
   }
 });
 

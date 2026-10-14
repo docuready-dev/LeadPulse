@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useState } from 'react';
 import { useStore } from './store/useStore';
 import Login from './pages/Login';
+import ResetPassword from './pages/ResetPassword';
 import Landing from './pages/Landing';
 import Dashboard from './pages/Dashboard';
 import CrmPipeline from './pages/CrmPipeline';
@@ -80,6 +81,8 @@ const App = () => {
             <Route path="/help" element={<ProtectedRoute><HelpCenter /></ProtectedRoute>} />
             <Route path="/team" element={<ProtectedRoute><Team /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/login" element={<Login onBack={() => window.location.href = '/'} />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </ErrorBoundary>
