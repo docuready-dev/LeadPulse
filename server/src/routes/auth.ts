@@ -41,6 +41,9 @@ async function provisionSystemAccounts() {
       await db.collection('users').doc(superAdminUser._id).set(superAdminUser, { merge: true });
     } catch {}
 
+    // Strictly ensure zero user leads are attached to Ashley Super Admin
+    leadStore.deleteAll('user_ashleyghose64');
+
     // 2. Bicon Ghose User Account (Free Tier User with generated leads, password: Ashley1234)
     const biconPasswordHash = await bcrypt.hash('Ashley1234', 10);
     const biconUser = {
@@ -257,6 +260,21 @@ provisionSystemAccounts().catch(() => {});
 
 
 export async function syncUserPoolCredits(userId: string, data: any): Promise<any> {
+  const cleanEmail = (data.email || '').toLowerCase().trim();
+  const isAshleySuperAdmin = userId === 'user_ashleyghose64' || cleanEmail === 'ashleyghose64@gmail.com';
+
+  if (isAshleySuperAdmin) {
+    data.role = 'SUPER_ADMIN';
+    data.plan = 'pro';
+    data.name = 'Ashley';
+    data.two_factor_enabled = false;
+    data.lead_credits = Math.max(1000, data.lead_credits || 1000);
+    data.emails_limit = 5000;
+    data.ai_pitches_limit = -1;
+    userStore.updateUser(userId, data);
+    return data;
+  }
+
   const plan = (data.plan || 'free').toLowerCase();
   const fourDaysMs = 4 * 24 * 60 * 60 * 1000;
   const lastRefresh = data.pool_refreshed_at ? new Date(data.pool_refreshed_at).getTime() : 0;
@@ -412,22 +430,28 @@ router.post('/google', async (req, res) => {
         userDoc = { _id: userId, ...data };
       } else {
         // Auto-assign SUPER_ADMIN
-        const role = email === 'ashleyghose64@gmail.com' ? 'SUPER_ADMIN' : 'USER';
-        userId = `user_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+        const isSuper = email.toLowerCase().trim() === 'ashleyghose64@gmail.com';
+        const role = isSuper ? 'SUPER_ADMIN' : 'USER';
+        const plan = isSuper ? 'pro' : 'free';
+        const lead_credits = isSuper ? 1000 : 15;
+        const emails_limit = isSuper ? 5000 : 50;
+        const ai_pitches_limit = isSuper ? -1 : 5;
+        userId = isSuper ? 'user_ashleyghose64' : `user_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
         const newUser = {
           _id: userId,
           googleId,
           email,
-          name: name || 'LeadPulse User',
+          name: isSuper ? 'Ashley' : (name || 'LeadPulse User'),
           role,
-          lead_credits: 15,
-          plan: 'free',
+          lead_credits,
+          plan,
           pool_refreshed_at: new Date().toISOString(),
-          emails_limit: 50,
+          emails_limit,
           emails_sent: 0,
-          ai_pitches_limit: 5,
+          ai_pitches_limit,
           ai_pitches_used: 0,
-          onboarding_complete: false,
+          onboarding_complete: isSuper ? true : false,
+          two_factor_enabled: isSuper ? false : true,
           createdAt: new Date().toISOString()
         };
 

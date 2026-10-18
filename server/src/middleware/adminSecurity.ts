@@ -1,5 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
+import jwt from 'jsonwebtoken';
 import { db } from '../index';
+import { userStore } from '../services/userStore';
 
 export const adminSecurity = async (req: Request, res: Response, next: NextFunction) => {
   // 1. Secret Gateway Header Check
@@ -25,20 +27,43 @@ export const adminSecurity = async (req: Request, res: Response, next: NextFunct
   }
 
   // 3. Role & Token Validation
-  // We'll assume the client sends userId in headers for now, or use a proper bearer token.
-  // The existing code uses req.headers.userid
-  const userId = req.headers.userid as string;
+  let userId = (req.headers.userid as string) || '';
+  if (!userId && req.headers.authorization) {
+    try {
+      const authHeader = req.headers.authorization;
+      const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : authHeader;
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as any;
+      if (decoded && decoded.id) userId = decoded.id;
+    } catch {}
+  }
+
   if (!userId) {
     return res.status(401).json({ error: 'Unauthorized: Missing User ID' });
   }
 
   try {
-    const userDoc = await db.collection('users').doc(userId).get();
-    if (!userDoc.exists) {
+    let role: string | undefined;
+
+    // Check local store first
+    const localUser = userStore.getUserById(userId);
+    if (localUser) {
+      role = localUser.role;
+    }
+
+    // Fallback to Firestore
+    if (!role) {
+      try {
+        const userDoc = await db.collection('users').doc(userId).get();
+        if (userDoc.exists) {
+          role = userDoc.data()?.role;
+        }
+      } catch {}
+    }
+
+    if (!role) {
       return res.status(403).json({ error: 'Access Denied: User not found.' });
     }
     
-    const role = userDoc.data()?.role;
     if (role !== 'superadmin' && role !== 'SUPER_ADMIN') {
       return res.status(403).json({ error: 'Access Denied: Super Admin privileges required.' });
     }

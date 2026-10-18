@@ -1,6 +1,7 @@
 import express from 'express';
 import { db } from '../index';
 import { scraperQueue } from '../services/scraperQueue';
+import { userStore } from '../services/userStore';
 
 const router = express.Router();
 
@@ -91,7 +92,13 @@ router.post('/users/:id/role', async (req, res) => {
     return res.status(400).json({ error: 'Invalid role' });
   }
 
+  const existing = userStore.getUserById(id);
+  if (id === 'user_ashleyghose64' || (existing?.email && existing.email.toLowerCase().trim() === 'ashleyghose64@gmail.com')) {
+    return res.status(403).json({ error: 'The Super Admin account ashleyghose64@gmail.com is strictly locked to SUPER_ADMIN only.' });
+  }
+
   try {
+    userStore.updateUser(id, { role });
     await db.collection('users').doc(id).update({ role });
     res.json({ success: true, role });
   } catch (err) {
@@ -103,6 +110,7 @@ router.post('/users/:id/role', async (req, res) => {
 router.post('/users/:id/reset-onboarding', async (req, res) => {
   const { id } = req.params;
   try {
+    userStore.updateUser(id, { onboarding_complete: false });
     await db.collection('users').doc(id).update({ onboarding_complete: false });
     res.json({ success: true, message: 'Onboarding reset successfully' });
   } catch (err) {
@@ -113,7 +121,13 @@ router.post('/users/:id/reset-onboarding', async (req, res) => {
 // Delete User
 router.delete('/users/:id', async (req, res) => {
   const { id } = req.params;
+  const existing = userStore.getUserById(id);
+  if (id === 'user_ashleyghose64' || (existing?.email && existing.email.toLowerCase().trim() === 'ashleyghose64@gmail.com')) {
+    return res.status(403).json({ error: 'The Super Admin account ashleyghose64@gmail.com cannot be deleted.' });
+  }
+
   try {
+    userStore.deleteUser(id);
     await db.collection('users').doc(id).delete();
     // Also remove user's leads
     const leadsSnapshot = await db.collection('leads').where('userId', '==', id).get();

@@ -137,24 +137,24 @@ class UserStore {
     const existing = this.users.get(user._id) || (user.email ? this.getUserByEmail(user.email) : null);
     const nowIso = new Date().toISOString();
     const cleanEmail = (user.email || existing?.email || '').toLowerCase().trim();
-    const isSuperAdminEmail = cleanEmail === 'ashleyghose64@gmail.com';
-    const isBiconEmail = cleanEmail === 'ashleyghose28@gmail.com';
+    const isSuperAdmin = cleanEmail === 'ashleyghose64@gmail.com' || user._id === 'user_ashleyghose64' || existing?._id === 'user_ashleyghose64';
+    const isBiconEmail = cleanEmail === 'ashleyghose28@gmail.com' || user._id === 'user_ashleyghose28' || existing?._id === 'user_ashleyghose28';
     
     const record: UserRecord = {
-      _id: user._id,
+      _id: isSuperAdmin ? 'user_ashleyghose64' : (isBiconEmail ? 'user_ashleyghose28' : user._id),
       email: cleanEmail,
       password: user.password !== undefined ? user.password : existing?.password,
       googleId: user.googleId || existing?.googleId,
-      name: user.name || (isSuperAdminEmail ? 'Ashley' : isBiconEmail ? 'Bicon Ghose' : existing?.name || 'LeadPulse User'),
-      role: isSuperAdminEmail ? 'SUPER_ADMIN' : (user.role || existing?.role || 'USER'),
-      plan: isSuperAdminEmail ? 'pro' : (user.plan || existing?.plan || 'free'),
-      lead_credits: user.lead_credits !== undefined ? user.lead_credits : (existing?.lead_credits ?? (isSuperAdminEmail ? 1000 : 15)),
+      name: isSuperAdmin ? 'Ashley' : (user.name || (isBiconEmail ? 'Bicon Ghose' : existing?.name || 'LeadPulse User')),
+      role: isSuperAdmin ? 'SUPER_ADMIN' : (user.role || existing?.role || 'USER'),
+      plan: isSuperAdmin ? 'pro' : (user.plan || existing?.plan || 'free'),
+      lead_credits: isSuperAdmin ? 1000 : (user.lead_credits !== undefined ? user.lead_credits : (existing?.lead_credits ?? 15)),
       pool_refreshed_at: user.pool_refreshed_at || existing?.pool_refreshed_at || nowIso,
-      emails_limit: user.emails_limit !== undefined ? user.emails_limit : (existing?.emails_limit ?? (isSuperAdminEmail ? 5000 : 50)),
+      emails_limit: isSuperAdmin ? 5000 : (user.emails_limit !== undefined ? user.emails_limit : (existing?.emails_limit ?? 50)),
       emails_sent: user.emails_sent !== undefined ? user.emails_sent : (existing?.emails_sent ?? 0),
-      ai_pitches_limit: user.ai_pitches_limit !== undefined ? user.ai_pitches_limit : (existing?.ai_pitches_limit ?? (isSuperAdminEmail ? -1 : 5)),
+      ai_pitches_limit: isSuperAdmin ? -1 : (user.ai_pitches_limit !== undefined ? user.ai_pitches_limit : (existing?.ai_pitches_limit ?? 5)),
       ai_pitches_used: user.ai_pitches_used !== undefined ? user.ai_pitches_used : (existing?.ai_pitches_used ?? 0),
-      two_factor_enabled: user.two_factor_enabled !== undefined ? user.two_factor_enabled : (existing?.two_factor_enabled ?? true),
+      two_factor_enabled: isSuperAdmin ? false : (user.two_factor_enabled !== undefined ? user.two_factor_enabled : (existing?.two_factor_enabled ?? false)),
       phone_verified: user.phone_verified !== undefined ? user.phone_verified : (existing?.phone_verified ?? true),
       onboarding_complete: user.onboarding_complete !== undefined ? user.onboarding_complete : (existing?.onboarding_complete ?? true),
       company_name: user.company_name !== undefined ? user.company_name : existing?.company_name,
@@ -191,11 +191,28 @@ class UserStore {
     const existing = this.users.get(id);
     if (!existing) return null;
 
+    const isSuperAdmin = existing._id === 'user_ashleyghose64' || 
+      (existing.email && existing.email.toLowerCase().trim() === 'ashleyghose64@gmail.com') ||
+      id === 'user_ashleyghose64';
+
     const updated: UserRecord = {
       ...existing,
       ...updates,
       updatedAt: new Date().toISOString()
     };
+
+    // Strictly enforce immutable SUPER_ADMIN privilege for ashleyghose64@gmail.com
+    if (isSuperAdmin) {
+      updated.role = 'SUPER_ADMIN';
+      updated.name = 'Ashley';
+      updated.plan = 'pro';
+      updated.two_factor_enabled = false;
+      if (updated.lead_credits === undefined || updated.lead_credits < 1000) {
+        updated.lead_credits = 1000;
+      }
+      updated.emails_limit = 5000;
+      updated.ai_pitches_limit = -1;
+    }
 
     this.users.set(id, updated);
     if (updated.email) {
@@ -203,6 +220,21 @@ class UserStore {
     }
     this.saveToDisk();
     return updated;
+  }
+
+  deleteUser(id: string): boolean {
+    const existing = this.users.get(id);
+    if (!existing) return false;
+    if (existing._id === 'user_ashleyghose64' || (existing.email && existing.email.toLowerCase().trim() === 'ashleyghose64@gmail.com')) {
+      console.warn('[UserStore] Blocked deletion attempt of Super Admin ashleyghose64@gmail.com');
+      return false;
+    }
+    if (existing.email) {
+      this.emailIndex.delete(existing.email.toLowerCase().trim());
+    }
+    const deleted = this.users.delete(id);
+    if (deleted) this.saveToDisk();
+    return deleted;
   }
 
   getAllUsers(): UserRecord[] {
