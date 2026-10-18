@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useStore } from '../store/useStore';
 import { alertDialog } from './AppConfirmModal';
 import axios from 'axios';
+import API_URL from '../config/api';
 import { 
   X, Check, Lock, Zap, Sparkles, 
   ArrowRight, CreditCard, ChevronRight, CheckCircle2 
@@ -56,7 +57,7 @@ const TopUpModal = () => {
     
     try {
       // 1. Initiate checkout session
-      const checkoutRes = await axios.post('http://localhost:3001/api/billing/checkout', {
+      const checkoutRes = await axios.post(`${API_URL}/api/billing/checkout`, {
         userId: user._id,
         itemKey
       });
@@ -65,19 +66,26 @@ const TopUpModal = () => {
 
       // 2. Simulate PhonePe Gateway redirection & Instant Webhook callback
       setTimeout(async () => {
-        const webhookRes = await axios.post('http://localhost:3001/api/billing/webhook', {
+        const webhookRes = await axios.post(`${API_URL}/api/billing/webhook`, {
           transactionId,
           userId: user._id,
           itemKey,
           status: 'SUCCESS'
         });
 
-        // 3. Update local state
-        setUser({
-          ...user,
-          lead_credits: webhookRes.data.credits,
-          plan: webhookRes.data.plan || user.plan
-        });
+        // 3. Update local state and refresh user profile across entire app
+        if (webhookRes.data.user) {
+          useStore.getState().setUser(webhookRes.data.user);
+        } else {
+          useStore.getState().setUser({
+            ...user,
+            lead_credits: webhookRes.data.credits !== undefined ? webhookRes.data.credits : user.lead_credits,
+            plan: webhookRes.data.plan || user.plan,
+            emails_limit: webhookRes.data.emails_limit || (webhookRes.data.plan === 'pro' ? 5000 : 1500),
+            ai_pitches_limit: webhookRes.data.ai_pitches_limit !== undefined ? webhookRes.data.ai_pitches_limit : 250
+          });
+        }
+        await useStore.getState().refreshUserProfile(user._id);
 
         setSuccessItemName(itemName);
         setPhonePeStep('success');

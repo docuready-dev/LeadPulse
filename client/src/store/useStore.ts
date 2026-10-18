@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import axios from 'axios';
+import API_URL from '../config/api';
 
 export interface User {
   _id: string;
@@ -54,21 +55,32 @@ const INITIAL_WORKSPACE_INTEGRATIONS: WorkspaceIntegration[] = [];
 
 const normalizeUserCredits = (user: User | null): User | null => {
   if (!user) return null;
-  const plan = (user.plan || 'free').toLowerCase();
+  const plan = (user.plan || 'free').toLowerCase() as 'free' | 'basic' | 'pro';
   
   // Lead Credits: respect actual user lead_credits balance
   const leadCredits = user.lead_credits !== undefined ? user.lead_credits : 15;
 
-  // Email limits by tier
-  const emailsLimit = plan === 'pro' ? 5000 : plan === 'basic' ? 1500 : 50;
-  const aiPitchesLimit = plan === 'pro' ? -1 : plan === 'basic' ? 250 : 5;
+  // Tier minimums
+  const minEmailsLimit = plan === 'pro' ? 5000 : plan === 'basic' ? 1500 : 50;
+  const targetAiLimit = plan === 'pro' ? -1 : plan === 'basic' ? 250 : 5;
+
+  const emailsLimit = (user.emails_limit !== undefined && user.emails_limit >= minEmailsLimit) 
+    ? user.emails_limit 
+    : minEmailsLimit;
+
+  const aiPitchesLimit = plan === 'pro' 
+    ? -1 
+    : (user.ai_pitches_limit !== undefined && user.ai_pitches_limit >= targetAiLimit) 
+      ? user.ai_pitches_limit 
+      : targetAiLimit;
 
   return {
     ...user,
+    plan,
     lead_credits: leadCredits,
-    emails_limit: user.emails_limit || emailsLimit,
+    emails_limit: emailsLimit,
     emails_sent: user.emails_sent || 0,
-    ai_pitches_limit: user.ai_pitches_limit !== undefined ? user.ai_pitches_limit : aiPitchesLimit,
+    ai_pitches_limit: aiPitchesLimit,
     ai_pitches_used: user.ai_pitches_used || 0
   };
 };
@@ -136,8 +148,9 @@ export const useStore = create<AppState>()(
         try {
           const headers: Record<string, string> = {};
           if (uid) headers.userid = uid;
+          if (get().user?.email) headers.useremail = get().user?.email;
           if (token) headers.authorization = `Bearer ${token}`;
-          const res = await axios.get('http://localhost:3001/api/auth/me', { headers });
+          const res = await axios.get(`${API_URL}/api/auth/me`, { headers });
           if (res.data?.user) {
             set({ user: normalizeUserCredits(res.data.user) });
           }
@@ -154,7 +167,7 @@ export const useStore = create<AppState>()(
         const uid = overrideUserId || get().user?._id;
         if (!uid) return;
         try {
-          const res = await axios.get('http://localhost:3001/api/integrations', {
+          const res = await axios.get(`${API_URL}/api/integrations`, {
             headers: { userid: uid }
           });
           if (res.data?.integrations) {
@@ -172,7 +185,7 @@ export const useStore = create<AppState>()(
         if (!uid) return null;
         try {
           const res = await axios.post(
-            'http://localhost:3001/api/integrations/sync-leads',
+            `${API_URL}/api/integrations/sync-leads`,
             { appId, leadIds },
             { headers: { userid: uid } }
           );
@@ -222,7 +235,7 @@ export const useStore = create<AppState>()(
         if (!uid) return null;
         try {
           const res = await axios.post(
-            'http://localhost:3001/api/integrations/enrich-lead',
+            `${API_URL}/api/integrations/enrich-lead`,
             { appId, leadId },
             { headers: { userid: uid } }
           );
@@ -238,7 +251,7 @@ export const useStore = create<AppState>()(
         if (!uid) return null;
         try {
           const res = await axios.post(
-            'http://localhost:3001/api/integrations/notify',
+            `${API_URL}/api/integrations/notify`,
             { appId, eventType: 'notify', summary, payload },
             { headers: { userid: uid } }
           );

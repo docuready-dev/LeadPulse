@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useStore } from './store/useStore';
 import Login from './pages/Login';
 import ResetPassword from './pages/ResetPassword';
@@ -54,8 +54,21 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 const App = () => {
-  const { user, token } = useStore();
+  const { user, token, refreshUserProfile } = useStore();
   const [showLogin, setShowLogin] = useState(false);
+
+  useEffect(() => {
+    if (token) {
+      refreshUserProfile();
+    }
+    const handleFocus = () => {
+      if (token) {
+        refreshUserProfile();
+      }
+    };
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [token, refreshUserProfile]);
 
   return (
     <BrowserRouter>

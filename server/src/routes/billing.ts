@@ -84,21 +84,26 @@ router.post('/webhook', async (req, res) => {
     
     // Idempotency verification
     const txRef = db.collection('transactions');
-    const existing = await txRef.where('transactionId', '==', transactionId).get();
-    if (!existing.empty) {
-      return res.status(200).json({ message: 'Transaction already processed (Idempotency).' });
-    }
+    try {
+      const existing = await txRef.where('transactionId', '==', transactionId).get();
+      if (!existing.empty) {
+        return res.status(200).json({ message: 'Transaction already processed (Idempotency).' });
+      }
+    } catch {}
     
     if (status !== 'SUCCESS') {
       return res.status(400).json({ error: 'PhonePe payment reported unsuccessful' });
     }
 
+    // Resolve target account in userStore
+    const targetUser = userStore.getUserById(userId) || (userId.includes('@') ? userStore.getUserByEmail(userId) : null);
+    const targetId = targetUser?._id || userId;
+
     // Persist verified transaction
-    const targetUser = userStore.getUserById(userId);
     const txRecord = {
       transactionId,
-      userId,
-      userEmail: targetUser?.email || '',
+      userId: targetId,
+      userEmail: targetUser?.email || (userId.includes('@') ? userId : ''),
       userName: targetUser?.name || 'Customer',
       itemKey,
       itemName: item.name,
@@ -115,54 +120,59 @@ router.post('/webhook', async (req, res) => {
       await txRef.add(txRecord);
     } catch {}
 
-    // Update user subscription tier and credits in Firestore
-    const userRef = db.collection('users').doc(userId);
-    let updatedCredits = 0;
-    let newPlan = 'free';
+    // Calculate updated credits and tier
+    const baseCredits = (targetUser?.plan || 'free') === 'free' && !targetUser?.has_topup && (targetUser?.lead_credits || 0) > 15
+      ? 15
+      : (targetUser?.lead_credits || 0);
 
-    await db.runTransaction(async (t) => {
-      const doc = await t.get(userRef);
-      if (!doc.exists) throw new Error("User does not exist");
-      const current = doc.data()!;
-      
-      const updates: any = {};
-      
-      const baseCredits = (current.plan || 'free') === 'free' && !current.has_topup && (current.lead_credits || 0) > 15
-        ? 15
-        : (current.lead_credits || 0);
+    let updatedCredits = baseCredits;
+    let newPlan = targetUser?.plan || 'free';
+    const updates: any = {};
 
-      if (item.type === 'bundle') {
-        updatedCredits = baseCredits + (item.credits || 0);
-        updates.lead_credits = updatedCredits;
-        updates.has_topup = true;
-      } else if (item.type === 'subscription') {
-        newPlan = item.plan!;
-        updatedCredits = baseCredits + (item.credits || 0);
-        updates.plan = newPlan;
-        updates.daily_leads_limit = item.dailyLimit;
-        updates.lead_credits = updatedCredits;
-        updates.emails_limit = item.plan === 'pro' ? 5000 : 1500;
-        updates.emails_sent = 0;
-        updates.ai_pitches_limit = item.plan === 'pro' ? -1 : 250;
-        updates.ai_pitches_used = 0;
-        updates.subscribed_at = new Date().toISOString();
-      }
+    if (item.type === 'bundle') {
+      updatedCredits = baseCredits + (item.credits || 0);
+      updates.lead_credits = updatedCredits;
+      updates.has_topup = true;
+    } else if (item.type === 'subscription') {
+      newPlan = item.plan!;
+      updatedCredits = baseCredits + (item.credits || 0);
+      updates.plan = newPlan;
+      updates.daily_leads_limit = item.dailyLimit;
+      updates.lead_credits = updatedCredits;
+      updates.emails_limit = item.plan === 'pro' ? 5000 : 1500;
+      updates.emails_sent = 0;
+      updates.ai_pitches_limit = item.plan === 'pro' ? -1 : 250;
+      updates.ai_pitches_used = 0;
+      updates.has_topup = true;
+      updates.subscribed_at = new Date().toISOString();
+    }
 
-      t.update(userRef, updates);
-    });
+    // 1. Persist directly in userStore (the SaaS's central brain)
+    const updatedUser = userStore.updateUser(targetId, updates);
+
+    // 2. Persist in Firestore
+    try {
+      await db.collection('users').doc(targetId).set(updates, { merge: true });
+    } catch (fsErr: any) {
+      console.warn('[Billing] Firestore merge note:', fsErr.message);
+    }
+
+    const cleanUser = updatedUser ? { ...updatedUser } : null;
+    if (cleanUser) delete (cleanUser as any).password;
 
     res.json({ 
       success: true, 
       message: `${item.name} activated via PhonePe!`,
       credits: updatedCredits,
       plan: newPlan,
+      user: cleanUser,
       emails_limit: newPlan === 'pro' ? 5000 : newPlan === 'basic' ? 1500 : 50,
       emails_sent: 0,
       ai_pitches_limit: newPlan === 'pro' ? -1 : newPlan === 'basic' ? 250 : 5,
       ai_pitches_used: 0
     });
 
-  } catch (err) {
+  } catch (err: any) {
     console.error('Webhook error:', err);
     res.status(500).json({ error: 'PhonePe webhook processing failed' });
   }

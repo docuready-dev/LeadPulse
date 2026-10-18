@@ -665,25 +665,34 @@ router.post('/login', async (req, res) => {
     let rawData: any = null;
     let userId: string = '';
 
-    // Check Firestore
+    // 1. Look up in local userStore first (the SaaS's persistent brain)
+    const localUser = userStore.getUserByEmail(cleanEmail) || userStore.getUserById(cleanEmail);
+    if (localUser) {
+      userId = localUser._id;
+      rawData = { ...localUser };
+    }
+
+    // 2. Query Firestore and merge
     try {
       const usersRef = db.collection('users');
       const snapshot = await usersRef.where('email', '==', cleanEmail).get();
       if (!snapshot.empty) {
         const doc = snapshot.docs[0];
-        userId = doc.id;
-        rawData = doc.data();
+        const fsData = doc.data() || {};
+        if (!rawData) {
+          userId = doc.id;
+          rawData = { ...fsData };
+        } else {
+          // Preserve upgraded plan from userStore
+          const activePlan = (localUser?.plan && localUser.plan !== 'free') ? localUser.plan : (fsData.plan || 'free');
+          rawData = {
+            ...fsData,
+            ...rawData,
+            plan: activePlan
+          };
+        }
       }
     } catch {}
-
-    // Fallback to local store
-    if (!rawData) {
-      const localUser = userStore.getUserByEmail(cleanEmail);
-      if (localUser) {
-        userId = localUser._id;
-        rawData = { ...localUser };
-      }
-    }
 
     if (!rawData) {
       return res.status(400).json({ error: 'Invalid credentials' });
