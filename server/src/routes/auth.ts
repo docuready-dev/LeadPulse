@@ -268,7 +268,7 @@ export async function syncUserPoolCredits(userId: string, data: any): Promise<an
     data.plan = 'pro';
     data.name = 'Ashley';
     data.two_factor_enabled = false;
-    data.lead_credits = Math.max(1000, data.lead_credits || 1000);
+    data.lead_credits = data.lead_credits !== undefined ? data.lead_credits : 1000;
     data.emails_limit = 5000;
     data.ai_pitches_limit = -1;
     userStore.updateUser(userId, data);
@@ -280,7 +280,11 @@ export async function syncUserPoolCredits(userId: string, data: any): Promise<an
   const lastRefresh = data.pool_refreshed_at ? new Date(data.pool_refreshed_at).getTime() : 0;
 
   if (plan === 'free') {
-    if (lastRefresh > 0 && Date.now() - lastRefresh >= fourDaysMs) {
+    // If user has top-up tokens, admin-granted tokens, or balance above standard 15, preserve without capping
+    if (data.has_topup || data.admin_credits_granted || (data.lead_credits !== undefined && data.lead_credits > 15)) {
+      data.has_topup = true;
+      data.lead_credits = Math.max(0, data.lead_credits ?? 15);
+    } else if (lastRefresh > 0 && Date.now() - lastRefresh >= fourDaysMs) {
       // 4-day full refresh window reached
       const nowIso = new Date().toISOString();
       data.lead_credits = 15;
@@ -295,26 +299,10 @@ export async function syncUserPoolCredits(userId: string, data: any): Promise<an
       if (!data.pool_refreshed_at) {
         data.pool_refreshed_at = new Date().toISOString();
       }
-      if (!data.has_topup) {
-        // Enforce 1 Token = 1 Contact strictly: tally across local leadStore and Firestore
-        const localLeads = leadStore.getLeads(userId);
-        let leadsCount = localLeads.length;
-        try {
-          const leadsSnap = await db.collection('leads').where('userId', '==', userId).get();
-          leadsCount = Math.max(leadsCount, leadsSnap.size);
-        } catch {}
-
-        const expectedMaxCredits = Math.max(0, 15 - leadsCount);
-        if (data.lead_credits === undefined) {
-          data.lead_credits = expectedMaxCredits;
-        } else if (data.lead_credits > 15) {
-          data.lead_credits = Math.min(15, expectedMaxCredits);
-        } else if (data.lead_credits > expectedMaxCredits) {
-          data.lead_credits = expectedMaxCredits;
-        }
-        // If data.lead_credits <= 0, preserve exhausted state (0 tokens)
-        data.lead_credits = Math.max(0, data.lead_credits);
+      if (data.lead_credits === undefined) {
+        data.lead_credits = 15;
       }
+      data.lead_credits = Math.max(0, data.lead_credits);
     }
   }
 

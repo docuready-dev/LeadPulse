@@ -56,11 +56,8 @@ const normalizeUserCredits = (user: User | null): User | null => {
   if (!user) return null;
   const plan = (user.plan || 'free').toLowerCase();
   
-  // Lead Credits
-  let leadCredits = user.lead_credits;
-  if (plan === 'free' && !(user as any).has_topup && (leadCredits === undefined || leadCredits > 15)) {
-    leadCredits = 15;
-  }
+  // Lead Credits: respect actual user lead_credits balance
+  const leadCredits = user.lead_credits !== undefined ? user.lead_credits : 15;
 
   // Email limits by tier
   const emailsLimit = plan === 'pro' ? 5000 : plan === 'basic' ? 1500 : 50;
@@ -124,7 +121,7 @@ export const useStore = create<AppState>()(
       setToken: (token) => set({ token }),
       setActiveFilter: (filter) => set({ activeFilter: filter }),
       updateCredits: (credits) => set((state) => ({ 
-        user: state.user ? normalizeUserCredits({ ...state.user, lead_credits: credits }) : null 
+        user: state.user ? normalizeUserCredits({ ...state.user, lead_credits: credits, has_topup: true }) : null 
       })),
       recordEmailDispatch: (count: number) => set((state) => ({
         user: state.user ? { ...state.user, emails_sent: (state.user.emails_sent || 0) + count } : null

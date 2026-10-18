@@ -38,7 +38,7 @@ const Sidebar = () => {
   const isSuperAdmin = (user?.role || '').toUpperCase() === 'SUPER_ADMIN' || user?.email?.toLowerCase().trim() === 'ashleyghose64@gmail.com';
   const isTopTier = currentPlan === 'pro';
   const rawCredits = user?.lead_credits ?? 15;
-  const displayCredits = currentPlan === 'free' && !(user as any)?.has_topup ? Math.min(rawCredits, 15) : rawCredits;
+  const displayCredits = rawCredits;
   const maxPoolLabel = currentPlan === 'free' ? '15' : currentPlan === 'basic' ? '600' : '∞';
 
   const handleSignOut = () => {

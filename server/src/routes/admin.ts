@@ -111,6 +111,11 @@ router.post('/users/:id/credits', async (req, res) => {
   
   try {
     const existing = userStore.getUserById(id);
+    if (!existing) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const targetId = existing._id;
     let currentCredits = existing?.lead_credits ?? 0;
 
     let newCredits = currentCredits;
@@ -121,12 +126,24 @@ router.post('/users/:id/credits', async (req, res) => {
     }
     if (newCredits < 0) newCredits = 0;
 
-    userStore.updateUser(id, { lead_credits: newCredits });
+    const updatedUser = userStore.updateUser(targetId, { 
+      lead_credits: newCredits,
+      has_topup: true,
+      pool_refreshed_at: new Date().toISOString()
+    });
+
     try {
-      await db.collection('users').doc(id).update({ lead_credits: newCredits });
+      await db.collection('users').doc(targetId).set({ 
+        lead_credits: newCredits,
+        has_topup: true,
+        pool_refreshed_at: new Date().toISOString()
+      }, { merge: true });
     } catch {}
 
-    res.json({ success: true, lead_credits: newCredits });
+    const cleanUser = updatedUser ? { ...updatedUser } : null;
+    if (cleanUser) delete (cleanUser as any).password;
+
+    res.json({ success: true, lead_credits: newCredits, user: cleanUser });
   } catch (err) {
     res.status(500).json({ error: 'Failed to update credits' });
   }

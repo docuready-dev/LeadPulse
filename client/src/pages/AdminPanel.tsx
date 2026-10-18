@@ -172,14 +172,42 @@ const AdminPanel = () => {
   // Adjust User Credits
   const handleUpdateCredits = async (userId: string, amount: number, mode: 'add' | 'set' = 'add') => {
     try {
-      await axios.post(
+      const res = await axios.post(
         `${API_URL}/api/admin/users/${userId}/credits`,
         { amount, mode },
         { headers: getHeaders() }
       );
-      showNotification('Successfully updated credits balance.');
+      
+      const newCredits = res.data?.lead_credits !== undefined ? res.data.lead_credits : amount;
+      showNotification(`Successfully updated credits balance to ${newCredits}.`);
       setCreditModalUser(null);
-      fetchAllData();
+
+      // 1. Optimistically update local users table
+      setUsers((prevUsers) =>
+        prevUsers.map((u) =>
+          u._id === userId || u.email === userId || (creditModalUser && (u._id === creditModalUser._id || u.email === creditModalUser.email))
+            ? { ...u, lead_credits: newCredits, has_topup: true }
+            : u
+        )
+      );
+
+      // 2. If the user modified is the logged-in superadmin, reflect in global store and UI instantly
+      const currentUserId = user?._id || (user as any)?.id;
+      const currentUserEmail = (user?.email || '').toLowerCase().trim();
+      const targetEmail = (creditModalUser?.email || '').toLowerCase().trim();
+      const isSelf = 
+        userId === currentUserId || 
+        userId === currentUserEmail ||
+        targetEmail === currentUserEmail ||
+        (currentUserEmail === 'ashleyghose64@gmail.com' && (userId === 'user_ashleyghose64' || userId.includes('ashleyghose64')));
+
+      if (isSelf) {
+        useStore.getState().updateCredits(newCredits);
+        useStore.getState().refreshUserProfile(currentUserId);
+      }
+
+      // 3. Refresh all admin telemetry
+      await fetchAllData();
     } catch (err: any) {
       showNotification(err.response?.data?.error || 'Failed to update credits', true);
     }

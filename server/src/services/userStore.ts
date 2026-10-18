@@ -177,7 +177,7 @@ class UserStore {
       name: isSuperAdmin ? 'Ashley' : (user.name || (isBiconEmail ? 'Bicon Ghose' : existing?.name || 'LeadPulse User')),
       role: isSuperAdmin ? 'SUPER_ADMIN' : (user.role || existing?.role || 'USER'),
       plan: isSuperAdmin ? 'pro' : (user.plan || existing?.plan || 'free'),
-      lead_credits: isSuperAdmin ? 1000 : (user.lead_credits !== undefined ? user.lead_credits : (existing?.lead_credits ?? 15)),
+      lead_credits: user.lead_credits !== undefined ? user.lead_credits : (existing?.lead_credits !== undefined ? existing.lead_credits : (isSuperAdmin ? 1000 : 15)),
       pool_refreshed_at: user.pool_refreshed_at || existing?.pool_refreshed_at || nowIso,
       emails_limit: isSuperAdmin ? 5000 : (user.emails_limit !== undefined ? user.emails_limit : (existing?.emails_limit ?? 50)),
       emails_sent: user.emails_sent !== undefined ? user.emails_sent : (existing?.emails_sent ?? 0),
@@ -217,12 +217,13 @@ class UserStore {
   }
 
   updateUser(id: string, updates: Partial<UserRecord>): UserRecord | null {
-    const existing = this.users.get(id);
+    const existing = this.getUserById(id);
     if (!existing) return null;
+    const targetId = existing._id;
 
     const isSuperAdmin = existing._id === 'user_ashleyghose64' || 
       (existing.email && existing.email.toLowerCase().trim() === 'ashleyghose64@gmail.com') ||
-      id === 'user_ashleyghose64';
+      targetId === 'user_ashleyghose64';
 
     const updated: UserRecord = {
       ...existing,
@@ -236,16 +237,19 @@ class UserStore {
       updated.name = 'Ashley';
       updated.plan = 'pro';
       updated.two_factor_enabled = false;
-      if (updated.lead_credits === undefined || updated.lead_credits < 1000) {
+      if (updated.lead_credits === undefined) {
         updated.lead_credits = 1000;
       }
       updated.emails_limit = 5000;
       updated.ai_pitches_limit = -1;
     }
 
-    this.users.set(id, updated);
+    this.users.set(targetId, updated);
+    if (targetId !== id) {
+      this.users.delete(id);
+    }
     if (updated.email) {
-      this.emailIndex.set(updated.email.toLowerCase().trim(), id);
+      this.emailIndex.set(updated.email.toLowerCase().trim(), targetId);
     }
     this.saveToDisk();
     return updated;
