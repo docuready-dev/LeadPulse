@@ -98,6 +98,7 @@ app.use((req, res, next) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/leads', leadRoutes);
 app.use('/api/billing', billingRoutes);
+app.use('/api/admin', adminRoutes);
 app.use('/api/admin/v1', adminRoutes);
 app.use('/api/outreach', outreachRoutes);
 app.use('/api/automations', automationRoutes);

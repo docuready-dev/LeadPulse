@@ -2,6 +2,7 @@ import express from 'express';
 import { db } from '../index';
 import { scraperQueue } from '../services/scraperQueue';
 import { userStore } from '../services/userStore';
+import { leadStore } from '../services/leadStore';
 
 const router = express.Router();
 
@@ -12,20 +13,26 @@ router.use(adminSecurity);
 // 1. Mission Control Overview & Telemetry
 router.get('/stats', async (req, res) => {
   try {
-    const usersSnapshot = await db.collection('users').get();
-    const leadsSnapshot = await db.collection('leads').get();
-    const txSnapshot = await db.collection('transactions').where('status', '==', 'SUCCESS').get();
-    
+    let totalUsers = userStore.getAllUsers().length;
+    let totalLeads = leadStore.getLeads().length;
     let totalRevenue = 0;
-    txSnapshot.forEach(doc => {
-      totalRevenue += doc.data().amount || 0;
-    });
+
+    try {
+      const usersSnapshot = await db.collection('users').get();
+      if (!usersSnapshot.empty) totalUsers = Math.max(totalUsers, usersSnapshot.size);
+      const leadsSnapshot = await db.collection('leads').get();
+      if (!leadsSnapshot.empty) totalLeads = Math.max(totalLeads, leadsSnapshot.size);
+      const txSnapshot = await db.collection('transactions').where('status', '==', 'SUCCESS').get();
+      txSnapshot.forEach(doc => {
+        totalRevenue += doc.data().amount || 0;
+      });
+    } catch {}
 
     const queueStats = scraperQueue.getStats();
 
     res.json({
-      totalUsers: usersSnapshot.size,
-      totalLeads: leadsSnapshot.size,
+      totalUsers,
+      totalLeads,
       totalRevenue,
       scraper: {
         activeWorkers: queueStats.isProcessing ? 1 : 0,
@@ -34,7 +41,7 @@ router.get('/stats', async (req, res) => {
       },
       system: {
         database: 'Google Cloud Firestore',
-        uptime: process.uptime(),
+        uptime: Math.round(process.uptime()),
         nodeVersion: process.version,
         memoryUsage: Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + ' MB'
       }
@@ -47,13 +54,31 @@ router.get('/stats', async (req, res) => {
 // 2. User Management
 router.get('/users', async (req, res) => {
   try {
-    const usersSnapshot = await db.collection('users').get();
-    const users = usersSnapshot.docs.map(doc => {
-      const data = doc.data();
-      delete data.password; // Never expose hashed passwords
-      return { _id: doc.id, ...data };
+    let firestoreUsers: any[] = [];
+    try {
+      const usersSnapshot = await db.collection('users').get();
+      firestoreUsers = usersSnapshot.docs.map(doc => {
+        const data = doc.data();
+        delete data.password; // Never expose hashed passwords
+        return { _id: doc.id, ...data };
+      });
+    } catch {}
+
+    const localUsers = userStore.getAllUsers().map(u => {
+      const copy = { ...u };
+      delete (copy as any).password;
+      return copy;
     });
-    res.json(users);
+
+    const userMap = new Map<string, any>();
+    for (const u of localUsers) {
+      userMap.set(u._id, u);
+    }
+    for (const u of firestoreUsers) {
+      userMap.set(u._id, { ...(userMap.get(u._id) || {}), ...u });
+    }
+
+    res.json(Array.from(userMap.values()));
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch users' });
   }
@@ -186,8 +211,15 @@ router.post('/scraper/clear', (req, res) => {
 // 5. Global Leads Governance
 router.get('/leads', async (req, res) => {
   try {
-    const snapshot = await db.collection('leads').orderBy('createdAt', 'desc').limit(200).get();
-    const leads = snapshot.docs.map(doc => ({ _id: doc.id, ...doc.data() }));
+    let leads: any[] = [];
+    try {
+      const snapshot = await db.collection('leads').orderBy('createdAt', 'desc').limit(200).get();
+      leads = snapshot.docs.map(doc => ({ _id: doc.id, ...doc.data() }));
+    } catch {}
+
+    if (leads.length === 0) {
+      leads = leadStore.getLeads().slice(0, 200);
+    }
     res.json(leads);
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch global leads' });
