@@ -18,6 +18,7 @@ import Automations from './pages/Automations';
 import Integrations from './pages/Integrations';
 import Team from './pages/Team';
 import Appointments from './pages/Appointments';
+import AdminPanel from './pages/AdminPanel';
 
 import MeshBackground from './components/MeshBackground';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -26,6 +27,14 @@ import AppConfirmModal from './components/AppConfirmModal';
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { token } = useStore();
   if (!token) return <Navigate to="/" replace />;
+  return <div className="saas-platform min-h-screen w-full relative">{children}</div>;
+};
+
+const AdminRoute = ({ children }: { children: React.ReactNode }) => {
+  const { token, user } = useStore();
+  if (!token) return <Navigate to="/" replace />;
+  const isSuper = user?.role === 'SUPER_ADMIN' || user?.email?.toLowerCase().trim() === 'ashleyghose64@gmail.com';
+  if (!isSuper) return <Navigate to="/dashboard" replace />;
   return <div className="saas-platform min-h-screen w-full relative">{children}</div>;
 };
 
@@ -81,6 +90,7 @@ const App = () => {
             <Route path="/help" element={<ProtectedRoute><HelpCenter /></ProtectedRoute>} />
             <Route path="/team" element={<ProtectedRoute><Team /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+            <Route path="/admin" element={<AdminRoute><AdminPanel /></AdminRoute>} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/login" element={<Login onBack={() => window.location.href = '/'} />} />
             <Route path="*" element={<Navigate to="/" replace />} />

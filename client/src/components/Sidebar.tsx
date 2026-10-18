@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Users, BarChart3, Settings, 
   FolderKanban, HelpCircle, Search, Send, Users2, 
   Webhook, Waypoints, LogOut, Sparkles, Zap, ArrowUpRight,
-  Calendar
+  Calendar, ShieldCheck
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import docuReadyBlackLogo from '../assets/DocuReady-black.png';
@@ -35,6 +35,7 @@ const Sidebar = () => {
   const { user, setToken, setUser, setUpgradeModalOpen, setUpgradeTab, setTopUpOpen } = useStore();
 
   const currentPlan = (user?.plan || 'free').toLowerCase();
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN' || user?.email?.toLowerCase().trim() === 'ashleyghose64@gmail.com';
   const isTopTier = currentPlan === 'pro';
   const rawCredits = user?.lead_credits ?? 15;
   const displayCredits = currentPlan === 'free' && !(user as any)?.has_topup ? Math.min(rawCredits, 15) : rawCredits;
@@ -122,6 +123,32 @@ const Sidebar = () => {
 
       {/* Navigation Sections */}
       <div className="flex-1 overflow-y-auto custom-scrollbar px-3 py-5">
+        {isSuperAdmin && (
+          <div className="mb-5 pb-4 border-b border-[#E5E0D5]">
+            <div className="flex items-center justify-between px-3 mb-2">
+              <span className="text-[10px] font-bold text-[#C85A32] font-delight uppercase tracking-wider flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-[#C85A32]" />
+                Root Command
+              </span>
+              <span className="text-[8.5px] font-semibold bg-[#C85A32]/10 text-[#C85A32] px-1.5 py-0.5 rounded border border-[#C85A32]/20 font-mono">
+                SUPER_ADMIN
+              </span>
+            </div>
+            <Link 
+              to="/admin" 
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-delight transition-all group ${
+                location.pathname.startsWith('/admin')
+                  ? 'bg-[#191716] text-white font-semibold shadow-2xs' 
+                  : 'bg-white hover:bg-[#EBE5D8]/80 text-[#191716] border border-[#D6CFC2] font-semibold shadow-2xs'
+              }`}
+            >
+              <ShieldCheck className={`w-3.5 h-3.5 shrink-0 transition-colors ${location.pathname.startsWith('/admin') ? 'text-[#E07A5F]' : 'text-[#C85A32]'}`} /> 
+              <span className="flex-1 truncate">Control Room</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-[#E07A5F] shrink-0" />
+            </Link>
+          </div>
+        )}
+
         {renderNavSection('Main', mainNav)}
         {renderNavSection('Lead Gen & CRM', pipelineNav)}
         {renderNavSection('Tools', toolsNav)}

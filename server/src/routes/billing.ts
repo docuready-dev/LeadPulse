@@ -1,6 +1,8 @@
 import express from 'express';
 import { db } from '../index';
 import crypto from 'crypto';
+import { transactionStore } from '../services/transactionStore';
+import { userStore } from '../services/userStore';
 
 const router = express.Router();
 
@@ -92,17 +94,26 @@ router.post('/webhook', async (req, res) => {
     }
 
     // Persist verified transaction
-    await txRef.add({
+    const targetUser = userStore.getUserById(userId);
+    const txRecord = {
       transactionId,
       userId,
+      userEmail: targetUser?.email || '',
+      userName: targetUser?.name || 'Customer',
       itemKey,
       itemName: item.name,
       amount: item.amount,
+      currency: 'INR',
       type: item.type,
       status: 'SUCCESS',
       gateway: 'PhonePe',
       createdAt: new Date().toISOString()
-    });
+    };
+
+    transactionStore.addTransaction(txRecord);
+    try {
+      await txRef.add(txRecord);
+    } catch {}
 
     // Update user subscription tier and credits in Firestore
     const userRef = db.collection('users').doc(userId);

@@ -3,10 +3,10 @@ import { db } from '../index';
 import { scraperQueue } from '../services/scraperQueue';
 import { userStore } from '../services/userStore';
 import { leadStore } from '../services/leadStore';
+import { transactionStore } from '../services/transactionStore';
+import { adminSecurity } from '../middleware/adminSecurity';
 
 const router = express.Router();
-
-import { adminSecurity } from '../middleware/adminSecurity';
 
 router.use(adminSecurity);
 
@@ -15,7 +15,7 @@ router.get('/stats', async (req, res) => {
   try {
     let totalUsers = userStore.getAllUsers().length;
     let totalLeads = leadStore.getLeads().length;
-    let totalRevenue = 0;
+    let totalRevenue = transactionStore.getTotalRevenue();
 
     try {
       const usersSnapshot = await db.collection('users').get();
@@ -23,9 +23,11 @@ router.get('/stats', async (req, res) => {
       const leadsSnapshot = await db.collection('leads').get();
       if (!leadsSnapshot.empty) totalLeads = Math.max(totalLeads, leadsSnapshot.size);
       const txSnapshot = await db.collection('transactions').where('status', '==', 'SUCCESS').get();
+      let fsRevenue = 0;
       txSnapshot.forEach(doc => {
-        totalRevenue += doc.data().amount || 0;
+        fsRevenue += doc.data().amount || 0;
       });
+      if (fsRevenue > totalRevenue) totalRevenue = fsRevenue;
     } catch {}
 
     const queueStats = scraperQueue.getStats();
@@ -59,7 +61,7 @@ router.get('/users', async (req, res) => {
       const usersSnapshot = await db.collection('users').get();
       firestoreUsers = usersSnapshot.docs.map(doc => {
         const data = doc.data();
-        delete data.password; // Never expose hashed passwords
+        delete data.password;
         return { _id: doc.id, ...data };
       });
     } catch {}
@@ -90,11 +92,10 @@ router.post('/users/:id/credits', async (req, res) => {
   const { amount, mode } = req.body; // mode: 'add' or 'set'
   
   try {
-    const userRef = db.collection('users').doc(id);
-    const doc = await userRef.get();
-    if (!doc.exists) return res.status(404).json({ error: 'User not found' });
-    
-    let newCredits = doc.data()?.lead_credits || 0;
+    const existing = userStore.getUserById(id);
+    let currentCredits = existing?.lead_credits ?? 0;
+
+    let newCredits = currentCredits;
     if (mode === 'set') {
       newCredits = Number(amount);
     } else {
@@ -102,10 +103,51 @@ router.post('/users/:id/credits', async (req, res) => {
     }
     if (newCredits < 0) newCredits = 0;
 
-    await userRef.update({ lead_credits: newCredits });
+    userStore.updateUser(id, { lead_credits: newCredits });
+    try {
+      await db.collection('users').doc(id).update({ lead_credits: newCredits });
+    } catch {}
+
     res.json({ success: true, lead_credits: newCredits });
   } catch (err) {
     res.status(500).json({ error: 'Failed to update credits' });
+  }
+});
+
+// Change Plan / Tier (free, basic, pro)
+router.post('/users/:id/tier', async (req, res) => {
+  const { id } = req.params;
+  const { plan } = req.body;
+  if (!['free', 'basic', 'pro'].includes(plan?.toLowerCase())) {
+    return res.status(400).json({ error: 'Invalid tier/plan. Must be free, basic, or pro.' });
+  }
+
+  const existing = userStore.getUserById(id);
+  if (id === 'user_ashleyghose64' || (existing?.email && existing.email.toLowerCase().trim() === 'ashleyghose64@gmail.com')) {
+    if (plan.toLowerCase() !== 'pro') {
+      return res.status(403).json({ error: 'The Super Admin account ashleyghose64@gmail.com is strictly locked to pro plan.' });
+    }
+  }
+
+  try {
+    const normalizedPlan = plan.toLowerCase();
+    const emailLimits: Record<string, number> = { free: 50, basic: 1500, pro: 5000 };
+    const aiLimits: Record<string, number> = { free: 5, basic: 250, pro: -1 };
+
+    const updates: any = {
+      plan: normalizedPlan,
+      emails_limit: emailLimits[normalizedPlan] || 50,
+      ai_pitches_limit: aiLimits[normalizedPlan] !== undefined ? aiLimits[normalizedPlan] : 5
+    };
+
+    userStore.updateUser(id, updates);
+    try {
+      await db.collection('users').doc(id).update(updates);
+    } catch {}
+
+    res.json({ success: true, plan: normalizedPlan, updates });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to update user tier' });
   }
 });
 
@@ -124,7 +166,9 @@ router.post('/users/:id/role', async (req, res) => {
 
   try {
     userStore.updateUser(id, { role });
-    await db.collection('users').doc(id).update({ role });
+    try {
+      await db.collection('users').doc(id).update({ role });
+    } catch {}
     res.json({ success: true, role });
   } catch (err) {
     res.status(500).json({ error: 'Failed to update user role' });
@@ -136,7 +180,9 @@ router.post('/users/:id/reset-onboarding', async (req, res) => {
   const { id } = req.params;
   try {
     userStore.updateUser(id, { onboarding_complete: false });
-    await db.collection('users').doc(id).update({ onboarding_complete: false });
+    try {
+      await db.collection('users').doc(id).update({ onboarding_complete: false });
+    } catch {}
     res.json({ success: true, message: 'Onboarding reset successfully' });
   } catch (err) {
     res.status(500).json({ error: 'Failed to reset onboarding' });
@@ -153,40 +199,74 @@ router.delete('/users/:id', async (req, res) => {
 
   try {
     userStore.deleteUser(id);
-    await db.collection('users').doc(id).delete();
-    // Also remove user's leads
-    const leadsSnapshot = await db.collection('leads').where('userId', '==', id).get();
-    const batch = db.batch();
-    leadsSnapshot.docs.forEach(doc => batch.delete(doc.ref));
-    await batch.commit();
+    try {
+      await db.collection('users').doc(id).delete();
+      const leadsSnapshot = await db.collection('leads').where('userId', '==', id).get();
+      const batch = db.batch();
+      leadsSnapshot.docs.forEach(doc => batch.delete(doc.ref));
+      await batch.commit();
+    } catch {}
     res.json({ success: true, message: 'User and associated data purged' });
   } catch (err) {
     res.status(500).json({ error: 'Failed to delete user' });
   }
 });
 
-// 3. Platform Workflow Settings (A-to-Z Config)
+// 3. Payments & Financial Transactions Ledger
+router.get('/transactions', async (req, res) => {
+  try {
+    const localTxs = transactionStore.getAll();
+    let firestoreTxs: any[] = [];
+    try {
+      const snap = await db.collection('transactions').orderBy('createdAt', 'desc').limit(100).get();
+      firestoreTxs = snap.docs.map(doc => ({ _id: doc.id, ...doc.data() }));
+    } catch {}
+
+    const txMap = new Map<string, any>();
+    for (const t of localTxs) {
+      txMap.set(t.transactionId, t);
+    }
+    for (const t of firestoreTxs) {
+      if (t.transactionId) {
+        txMap.set(t.transactionId, { ...(txMap.get(t.transactionId) || {}), ...t });
+      }
+    }
+
+    const merged = Array.from(txMap.values()).sort(
+      (a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+    );
+
+    res.json(merged);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch transactions' });
+  }
+});
+
+// 4. Platform Workflow Settings (A-to-Z Config)
 router.get('/settings', async (req, res) => {
   try {
-    const configDoc = await db.collection('system').doc('config').get();
-    if (!configDoc.exists) {
-      // Default system workflow settings
-      const defaults = {
-        freeCreditsOnSignup: 15,
-        creditCostPerSearch: 1,
-        scraperConcurrency: 2,
-        scrapeTimeoutSecs: 30,
-        proxyRotation: false,
-        deepEnrichment: true,
-        smtpProvider: 'System Nodemailer / SendGrid',
-        maxOutreachPerHour: 50,
-        complianceFooterEnforced: true,
-        suppressionList: ['test@example.com', 'spam@domain.com']
-      };
+    const defaults = {
+      freeCreditsOnSignup: 15,
+      creditCostPerSearch: 1,
+      scraperConcurrency: 2,
+      scrapeTimeoutSecs: 30,
+      proxyRotation: false,
+      deepEnrichment: true,
+      smtpProvider: 'System Nodemailer / SendGrid',
+      maxOutreachPerHour: 50,
+      complianceFooterEnforced: true,
+      suppressionList: ['test@example.com', 'spam@domain.com']
+    };
+
+    try {
+      const configDoc = await db.collection('system').doc('config').get();
+      if (configDoc.exists) {
+        return res.json(configDoc.data());
+      }
       await db.collection('system').doc('config').set(defaults);
-      return res.json(defaults);
-    }
-    res.json(configDoc.data());
+    } catch {}
+
+    res.json(defaults);
   } catch (err) {
     res.status(500).json({ error: 'Failed to load system config' });
   }
@@ -195,20 +275,22 @@ router.get('/settings', async (req, res) => {
 router.post('/settings', async (req, res) => {
   try {
     const newConfig = req.body;
-    await db.collection('system').doc('config').set(newConfig, { merge: true });
+    try {
+      await db.collection('system').doc('config').set(newConfig, { merge: true });
+    } catch {}
     res.json({ success: true, settings: newConfig });
   } catch (err) {
     res.status(500).json({ error: 'Failed to save system config' });
   }
 });
 
-// 4. Scraper Engine Controls
+// 5. Scraper Engine Controls
 router.post('/scraper/clear', (req, res) => {
   const dropped = scraperQueue.clearQueue();
   res.json({ success: true, droppedJobs: dropped });
 });
 
-// 5. Global Leads Governance
+// 6. Global Leads Governance
 router.get('/leads', async (req, res) => {
   try {
     let leads: any[] = [];
@@ -228,11 +310,16 @@ router.get('/leads', async (req, res) => {
 
 router.delete('/leads/purge', async (req, res) => {
   try {
-    const snapshot = await db.collection('leads').get();
-    const batch = db.batch();
-    snapshot.docs.forEach(doc => batch.delete(doc.ref));
-    await batch.commit();
-    res.json({ success: true, deletedCount: snapshot.size });
+    let deletedCount = 0;
+    try {
+      const snapshot = await db.collection('leads').get();
+      const batch = db.batch();
+      snapshot.docs.forEach(doc => batch.delete(doc.ref));
+      await batch.commit();
+      deletedCount = snapshot.size;
+    } catch {}
+
+    res.json({ success: true, deletedCount });
   } catch (err) {
     res.status(500).json({ error: 'Failed to purge leads' });
   }

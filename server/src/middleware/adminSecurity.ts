@@ -4,25 +4,25 @@ import { db } from '../index';
 import { userStore } from '../services/userStore';
 
 export const adminSecurity = async (req: Request, res: Response, next: NextFunction) => {
-  // 1. Secret Gateway Header Check
+  // 1. Secret Gateway Header Check (if configured)
   const gatewayToken = req.headers['x-admin-gateway-token'];
-  const expectedToken = process.env.ADMIN_GATEWAY_SECRET || 'your_super_secret_cryptographic_gateway_token_here';
+  const expectedToken = process.env.ADMIN_GATEWAY_SECRET;
 
   if (expectedToken && gatewayToken !== expectedToken) {
     return res.status(403).json({ error: 'Forbidden: Invalid or missing gateway token' });
   }
 
-  // 2. IP Whitelisting Check
-  const clientIp = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || req.ip;
-  const allowedIps = (process.env.ALLOWED_ADMIN_IPS || '127.0.0.1,::1').split(',').map(ip => ip.trim());
-  
-  // Extract just the IP part if it's IPv4-mapped IPv6 (e.g. ::ffff:127.0.0.1)
-  const normalizedIp = clientIp?.includes('::ffff:') ? clientIp.split('::ffff:')[1] : clientIp;
+  // 2. IP Whitelisting Check (if configured)
+  if (process.env.ALLOWED_ADMIN_IPS) {
+    const clientIp = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || req.ip;
+    const allowedIps = process.env.ALLOWED_ADMIN_IPS.split(',').map(ip => ip.trim());
+    const normalizedIp = clientIp?.includes('::ffff:') ? clientIp.split('::ffff:')[1] : clientIp;
 
-  if (normalizedIp && !allowedIps.includes(normalizedIp) && !allowedIps.includes(clientIp as string)) {
-    // Also gracefully allow local loopback
-    if (normalizedIp !== '127.0.0.1' && normalizedIp !== '::1') {
-      return res.status(403).json({ error: 'Forbidden: IP not authorized' });
+    if (normalizedIp && !allowedIps.includes(normalizedIp) && !allowedIps.includes(clientIp as string)) {
+      // Also gracefully allow local loopback
+      if (normalizedIp !== '127.0.0.1' && normalizedIp !== '::1') {
+        return res.status(403).json({ error: 'Forbidden: IP not authorized' });
+      }
     }
   }
 

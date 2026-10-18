@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Search, Bell, Plus, Layers } from 'lucide-react';
+import { Search, Bell, Plus, Layers, ShieldCheck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 
@@ -21,6 +21,7 @@ const Header = ({ title: _title }: HeaderProps) => {
   const connectedApps = integrations.filter(a => a.connected);
   const previewNames = connectedApps.slice(0, 2).map(a => a.name.split(' ')[0]).join(', ');
   const extraCount = Math.max(0, connectedApps.length - 2);
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN' || user?.email?.toLowerCase().trim() === 'ashleyghose64@gmail.com';
 
   return (
     <header className="h-14 bg-[#FAF8F5] flex items-center justify-between px-8 border-b border-[#E5E0D5] select-none">
@@ -42,6 +43,18 @@ const Header = ({ title: _title }: HeaderProps) => {
 
       {/* Right actions */}
       <div className="flex items-center gap-3">
+        {isSuperAdmin && (
+          <button
+            onClick={() => navigate('/admin')}
+            title="Open Super Admin Control Room"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[#191716] hover:bg-[#2A2624] text-white text-[11px] font-delight font-medium transition-all shadow-2xs border border-[#3A3532] cursor-pointer"
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-[#E07A5F]" />
+            <span className="font-semibold text-white">Super Admin</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+          </button>
+        )}
+
         {/* Global Connected Integrations Pill */}
         <button
           onClick={() => navigate('/integrations')}
