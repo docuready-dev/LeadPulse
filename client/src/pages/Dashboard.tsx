@@ -555,55 +555,55 @@ const Dashboard = () => {
       case 'kpi-ledger':
         return (
           <div className="grid grid-cols-2 md:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-[#E5E0D5]">
-            <div className="p-4.5 flex flex-col justify-between">
+            <div className="p-6 lg:p-7 flex flex-col justify-between min-h-[145px]">
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-delight uppercase tracking-wider font-semibold text-[#6E675F]">Verified Leads</span>
-                <Users className="w-3.5 h-3.5 text-[#9C9488]" />
+                <Users className="w-4 h-4 text-[#9C9488]" />
               </div>
-              <div className="text-2xl font-bold font-delight tracking-tight text-[#191716] tabular-nums mt-2">{totalLeads}</div>
-              <div className="text-[11px] mt-1.5 flex items-center gap-1.5 font-delight font-medium text-[#6E675F]">
+              <div className="text-3xl font-bold font-delight tracking-tight text-[#191716] tabular-nums mt-3">{totalLeads}</div>
+              <div className="text-[11px] mt-2 flex items-center gap-1.5 font-delight font-medium text-[#6E675F]">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#C85A32]"></span>
                 <span className="text-[#191716] font-semibold">+100%</span>
                 <span>active pool</span>
               </div>
             </div>
 
-            <div className="p-4.5 flex flex-col justify-between">
+            <div className="p-6 lg:p-7 flex flex-col justify-between min-h-[145px]">
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-delight uppercase tracking-wider font-semibold text-[#6E675F]">Active Sequence</span>
-                <Activity className="w-3.5 h-3.5 text-[#9C9488]" />
+                <Activity className="w-4 h-4 text-[#9C9488]" />
               </div>
-              <div className="text-2xl font-bold font-delight tracking-tight text-[#191716] tabular-nums mt-2">{contactedLeads}</div>
-              <div className="text-[11px] mt-1.5 flex items-center gap-1.5 font-delight font-medium text-[#6E675F]">
+              <div className="text-3xl font-bold font-delight tracking-tight text-[#191716] tabular-nums mt-3">{contactedLeads}</div>
+              <div className="text-[11px] mt-2 flex items-center gap-1.5 font-delight font-medium text-[#6E675F]">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#C85A32]"></span>
                 <span className="text-[#191716] font-semibold">Multi-Channel</span>
                 <span>cadence</span>
               </div>
             </div>
 
-            <div className="p-4.5 flex flex-col justify-between">
+            <div className="p-6 lg:p-7 flex flex-col justify-between min-h-[145px]">
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-delight uppercase tracking-wider font-semibold text-[#6E675F]">Proposals &amp; Won</span>
-                <TrendingUp className="w-3.5 h-3.5 text-[#9C9488]" />
+                <TrendingUp className="w-4 h-4 text-[#9C9488]" />
               </div>
-              <div className="text-2xl font-bold font-delight tracking-tight text-[#191716] tabular-nums mt-2">{proposalLeads + wonLeads}</div>
-              <div className="text-[11px] mt-1.5 flex items-center gap-1.5 font-delight font-medium text-[#6E675F]">
+              <div className="text-3xl font-bold font-delight tracking-tight text-[#191716] tabular-nums mt-3">{proposalLeads + wonLeads}</div>
+              <div className="text-[11px] mt-2 flex items-center gap-1.5 font-delight font-medium text-[#6E675F]">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
                 <span className="text-[#191716] font-semibold">{wonLeads} Closed Won</span>
                 <span>converted</span>
               </div>
             </div>
 
-            <div className="p-4.5 flex flex-col justify-between">
+            <div className="p-6 lg:p-7 flex flex-col justify-between min-h-[145px]">
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-delight uppercase tracking-wider font-semibold text-[#6E675F]">Available Tokens</span>
-                <Compass className="w-3.5 h-3.5 text-[#9C9488]" />
+                <Compass className="w-4 h-4 text-[#9C9488]" />
               </div>
-              <div className="text-2xl font-bold font-delight tracking-tight text-[#191716] tabular-nums mt-2">
+              <div className="text-3xl font-bold font-delight tracking-tight text-[#191716] tabular-nums mt-3">
                 {availableTokens}
                 <span className="text-sm font-normal text-[#6E675F]"> / {maxPlanTokens}</span>
               </div>
-              <div className="text-[11px] mt-1.5 flex items-center gap-1.5 font-delight font-medium text-[#6E675F]">
+              <div className="text-[11px] mt-2 flex items-center gap-1.5 font-delight font-medium text-[#6E675F]">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#C85A32]"></span>
                 <span className="text-[#191716] font-semibold uppercase">Tier: {user?.plan || 'Free'}</span>
                 <span>• Quick: 1 Tok | Deep: 2 Tok</span>
@@ -1220,13 +1220,13 @@ const Dashboard = () => {
           </div>
         )}
 
-        <main className="flex-1 overflow-y-auto p-6 custom-scrollbar">
-          <div className="max-w-[1360px] mx-auto space-y-5 pb-12">
+        <main className="flex-1 overflow-y-auto px-7 py-7 lg:px-9 lg:py-8 custom-scrollbar">
+          <div className="max-w-[1540px] 2xl:max-w-[1720px] mx-auto space-y-6 pb-16">
             {/* Dashboard Command & Layout Bar */}
-            <div className="bg-white border border-[#E5E0D5] rounded-lg p-3.5 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+            <div className="bg-white border border-[#E5E0D5] rounded-xl p-4 lg:p-4.5 shadow-2xs flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
               {/* Prebuilt Layouts Strip (6 Prebuilt Layouts) */}
-              <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-1 lg:pb-0">
-                <div className="flex items-center gap-1.5 text-[11px] font-delight font-bold uppercase tracking-wider text-[#6E675F] shrink-0 pr-1">
+              <div className="flex items-center gap-2.5 overflow-x-auto custom-scrollbar pb-1 lg:pb-0">
+                <div className="flex items-center gap-1.5 text-[11px] font-delight font-bold uppercase tracking-wider text-[#6E675F] shrink-0 pr-1.5">
                   <Layout className="w-3.5 h-3.5 text-[#C85A32]" />
                   <span>Prebuilt Layouts:</span>
                 </div>
@@ -1237,15 +1237,15 @@ const Dashboard = () => {
                       key={preset.id}
                       onClick={() => handleSelectPreset(preset.id)}
                       title={preset.description}
-                      className={`px-2.5 py-1.5 rounded-md text-xs font-delight font-semibold transition-all flex items-center gap-1.5 shrink-0 cursor-pointer border ${
+                      className={`px-3 py-2 rounded-lg text-xs font-delight font-semibold transition-all flex items-center gap-2 shrink-0 cursor-pointer border ${
                         isActive
-                          ? 'bg-[#191716] text-white border-[#191716]'
+                          ? 'bg-[#191716] text-white border-[#191716] shadow-2xs'
                           : 'bg-[#FAF8F5] hover:bg-[#F5F2EB] text-[#57514B] border-[#E5E0D5]'
                       }`}
                     >
                       <span>{preset.name}</span>
                       <span
-                        className={`text-[9px] px-1.5 py-0.2 rounded-xs font-mono ${
+                        className={`text-[9px] px-1.5 py-0.5 rounded font-mono ${
                           isActive ? 'bg-[#C85A32] text-white' : 'bg-white text-[#6E675F] border border-[#E5E0D5]'
                         }`}
                       >
@@ -1257,10 +1257,10 @@ const Dashboard = () => {
               </div>
 
               {/* Edit Layout & Reset Buttons */}
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center gap-2.5 shrink-0">
                 <button
                   onClick={() => setIsEditMode(!isEditMode)}
-                  className={`px-3 py-1.5 rounded-md text-xs font-delight font-semibold flex items-center gap-1.5 cursor-pointer transition-all border ${
+                  className={`px-3.5 py-2 rounded-lg text-xs font-delight font-semibold flex items-center gap-2 cursor-pointer transition-all border ${
                     isEditMode
                       ? 'bg-[#C85A32] text-white border-[#C85A32] shadow-xs'
                       : 'bg-white hover:bg-[#FAF8F5] text-[#191716] border-[#E5E0D5]'
@@ -1272,7 +1272,7 @@ const Dashboard = () => {
                 <button
                   onClick={() => handleSelectPreset('executive')}
                   title="Reset Dashboard to Default Executive Command Layout"
-                  className="p-1.5 rounded-md bg-[#FAF8F5] hover:bg-[#F5F2EB] text-[#6E675F] hover:text-[#191716] border border-[#E5E0D5] cursor-pointer transition-colors"
+                  className="p-2 rounded-lg bg-[#FAF8F5] hover:bg-[#F5F2EB] text-[#6E675F] hover:text-[#191716] border border-[#E5E0D5] cursor-pointer transition-colors"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
                 </button>
@@ -1281,7 +1281,7 @@ const Dashboard = () => {
 
             {/* Interactive Edit Layout Tray (Visible when Edit Layout is active) */}
             {isEditMode && (
-              <div className="bg-[#FAF8F5] border-2 border-dashed border-[#C85A32] rounded-lg p-4 space-y-3">
+              <div className="bg-[#FAF8F5] border-2 border-dashed border-[#C85A32] rounded-xl p-5 space-y-3.5">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                   <div>
                     <div className="text-xs font-bold font-delight text-[#191716] flex items-center gap-2">
@@ -1295,7 +1295,7 @@ const Dashboard = () => {
                 </div>
 
                 {/* Widget Visibility Toggle Pills */}
-                <div className="flex flex-wrap items-center gap-2 pt-1">
+                <div className="flex flex-wrap items-center gap-2.5 pt-1">
                   <span className="text-[10px] font-delight uppercase font-bold text-[#6E675F] mr-1">
                     Active Widgets:
                   </span>
@@ -1303,7 +1303,7 @@ const Dashboard = () => {
                     <button
                       key={w.id}
                       onClick={() => handleToggleWidgetVisibility(w.id)}
-                      className={`px-2.5 py-1 rounded text-[11px] font-delight font-semibold flex items-center gap-1.5 border cursor-pointer transition-colors ${
+                      className={`px-3 py-1.5 rounded-md text-[11px] font-delight font-semibold flex items-center gap-1.5 border cursor-pointer transition-colors ${
                         w.visible
                           ? 'bg-white text-[#191716] border-[#191716]'
                           : 'bg-[#F5F2EB] text-[#9C9488] border-[#E5E0D5] line-through'
@@ -1318,40 +1318,40 @@ const Dashboard = () => {
             )}
 
             {/* Live Automations & 1-Click WhatsApp Action Radar */}
-            <div className="bg-white border border-[#E5E0D5] rounded-lg overflow-hidden shadow-xs">
-              <div className="p-4 bg-[#FAF8F5] border-b border-[#E5E0D5] flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-md bg-[#191716] text-white flex items-center justify-center shrink-0">
-                    <Activity className="w-4 h-4 text-[#C85A32]" />
+            <div className="bg-white border border-[#E5E0D5] rounded-xl overflow-hidden shadow-2xs">
+              <div className="p-5 lg:p-6 bg-[#FAF8F5] border-b border-[#E5E0D5] flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-9 h-9 rounded-lg bg-[#191716] text-white flex items-center justify-center shrink-0">
+                    <Activity className="w-4.5 h-4.5 text-[#C85A32]" />
                   </div>
                   <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold font-delight uppercase tracking-wider text-[#191716]">
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-sm font-bold font-delight uppercase tracking-wider text-[#191716]">
                         Automated Drip Engine &amp; 1-Click Action Queue
                       </span>
-                      <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      <span className="inline-flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                         Worker Active
                       </span>
                     </div>
-                    <p className="text-[11px] font-delight text-[#6E675F] mt-0.5">
+                    <p className="text-xs font-delight text-[#6E675F] mt-0.5">
                       Monitors delay intervals, weekend protection, SendGrid cold dispatch, and queued 1-click WhatsApp tasks.
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2.5">
                   <button
                     onClick={handleRunDripWorkerNow}
                     disabled={isRunningDrip}
-                    className="px-3 py-1.5 bg-[#191716] hover:bg-[#C85A32] text-white text-xs font-delight font-semibold rounded-md flex items-center gap-1.5 cursor-pointer transition-colors disabled:opacity-50"
+                    className="px-3.5 py-2 bg-[#191716] hover:bg-[#C85A32] text-white text-xs font-delight font-semibold rounded-lg flex items-center gap-2 cursor-pointer transition-colors disabled:opacity-50 shadow-2xs"
                   >
                     <RefreshCw className={`w-3.5 h-3.5 ${isRunningDrip ? 'animate-spin' : ''}`} />
                     <span>{isRunningDrip ? 'Evaluating Drips...' : 'Run Drips Now'}</span>
                   </button>
                   <button
                     onClick={() => navigate('/automations')}
-                    className="px-3 py-1.5 bg-white hover:bg-[#F5F2EB] border border-[#E5E0D5] text-[#191716] text-xs font-delight font-semibold rounded-md flex items-center gap-1.5 cursor-pointer transition-colors"
+                    className="px-3.5 py-2 bg-white hover:bg-[#F5F2EB] border border-[#E5E0D5] text-[#191716] text-xs font-delight font-semibold rounded-lg flex items-center gap-1.5 cursor-pointer transition-colors"
                   >
                     <span>Manage Blueprints</span>
                     <ArrowRight className="w-3.5 h-3.5 text-[#6E675F]" />
@@ -1361,44 +1361,44 @@ const Dashboard = () => {
 
               {/* 4 Telemetry Counters */}
               <div className="grid grid-cols-2 md:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-[#E5E0D5] bg-white border-b border-[#E5E0D5]">
-                <div className="p-3.5">
-                  <div className="text-[10px] font-delight uppercase tracking-wider font-semibold text-[#6E675F]">
+                <div className="p-5 lg:p-6">
+                  <div className="text-[10.5px] font-delight uppercase tracking-wider font-semibold text-[#6E675F]">
                     Active In-Flight Drips
                   </div>
-                  <div className="text-xl font-bold font-delight text-[#191716] tabular-nums mt-1">
+                  <div className="text-2xl lg:text-3xl font-bold font-delight text-[#191716] tabular-nums mt-2">
                     {queueData.stats.active}
                   </div>
-                  <div className="text-[10px] text-[#6E675F] mt-0.5">Prospects currently enrolled</div>
+                  <div className="text-[11px] text-[#6E675F] mt-1">Prospects currently enrolled</div>
                 </div>
 
-                <div className="p-3.5">
-                  <div className="text-[10px] font-delight uppercase tracking-wider font-semibold text-[#6E675F]">
+                <div className="p-5 lg:p-6">
+                  <div className="text-[10.5px] font-delight uppercase tracking-wider font-semibold text-[#6E675F]">
                     Pending 1-Click WhatsApp
                   </div>
-                  <div className="text-xl font-bold font-delight text-emerald-700 tabular-nums mt-1">
+                  <div className="text-2xl lg:text-3xl font-bold font-delight text-emerald-700 tabular-nums mt-2">
                     {queueData.stats.pendingTasks}
                   </div>
-                  <div className="text-[10px] text-[#6E675F] mt-0.5">Ready for instant operator ping</div>
+                  <div className="text-[11px] text-[#6E675F] mt-1">Ready for instant operator ping</div>
                 </div>
 
-                <div className="p-3.5">
-                  <div className="text-[10px] font-delight uppercase tracking-wider font-semibold text-[#6E675F]">
+                <div className="p-5 lg:p-6">
+                  <div className="text-[10.5px] font-delight uppercase tracking-wider font-semibold text-[#6E675F]">
                     Waiting In Delay
                   </div>
-                  <div className="text-xl font-bold font-delight text-[#C85A32] tabular-nums mt-1">
+                  <div className="text-2xl lg:text-3xl font-bold font-delight text-[#C85A32] tabular-nums mt-2">
                     {queueData.waitingDelays.length}
                   </div>
-                  <div className="text-[10px] text-[#6E675F] mt-0.5">Guarded by business hours</div>
+                  <div className="text-[11px] text-[#6E675F] mt-1">Guarded by business hours</div>
                 </div>
 
-                <div className="p-3.5">
-                  <div className="text-[10px] font-delight uppercase tracking-wider font-semibold text-[#6E675F]">
+                <div className="p-5 lg:p-6">
+                  <div className="text-[10.5px] font-delight uppercase tracking-wider font-semibold text-[#6E675F]">
                     Completed / Exited
                   </div>
-                  <div className="text-xl font-bold font-delight text-[#191716] tabular-nums mt-1">
+                  <div className="text-2xl lg:text-3xl font-bold font-delight text-[#191716] tabular-nums mt-2">
                     {queueData.stats.completed + queueData.stats.repliedExited}
                   </div>
-                  <div className="text-[10px] text-[#6E675F] mt-0.5">
+                  <div className="text-[11px] text-[#6E675F] mt-1">
                     {queueData.stats.repliedExited} exited on reply
                   </div>
                 </div>
@@ -1406,18 +1406,18 @@ const Dashboard = () => {
 
               {/* Pending 1-Click WhatsApp Action Tasks */}
               {queueData.pendingTasks.length > 0 ? (
-                <div className="p-4 bg-emerald-50/40 border-t border-[#E5E0D5] space-y-2.5">
+                <div className="p-5 lg:p-6 bg-emerald-50/40 border-t border-[#E5E0D5] space-y-3">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5 text-xs font-bold font-delight text-emerald-900">
-                      <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
+                    <div className="flex items-center gap-2 text-xs font-bold font-delight text-emerald-900">
+                      <MessageSquare className="w-4 h-4 text-emerald-600" />
                       <span>Action Required: {queueData.pendingTasks.length} WhatsApp Ping{queueData.pendingTasks.length > 1 ? 's' : ''} Pending</span>
                     </div>
-                    <span className="text-[10px] font-delight text-emerald-800">
+                    <span className="text-[11px] font-delight text-emerald-800">
                       Click below to open pre-filled chat in WhatsApp Web / App
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
                     {queueData.pendingTasks.slice(0, 3).map((task: any) => {
                       const waLink =
                         task.pendingManualTask?.waLink ||
@@ -1488,7 +1488,7 @@ const Dashboard = () => {
             </div>
 
             {/* Dynamic 12-Column Draggable Widget Grid */}
-            <div className="grid grid-cols-12 gap-5">
+            <div className="grid grid-cols-12 gap-6">
               {widgets
                 .filter(w => w.visible)
                 .map(widget => {
@@ -1506,7 +1506,7 @@ const Dashboard = () => {
                         setDraggedWidgetId(null);
                         setDragOverWidgetId(null);
                       }}
-                      className={`${colSpanClassMap[widget.colSpan]} bg-white border rounded-lg overflow-hidden transition-all flex flex-col ${
+                      className={`${colSpanClassMap[widget.colSpan]} bg-white border rounded-xl overflow-hidden shadow-2xs transition-all flex flex-col ${
                         isDragged
                           ? 'opacity-40 border-dashed border-[#C85A32]'
                           : isDragOver
@@ -1518,7 +1518,7 @@ const Dashboard = () => {
                     >
                       {/* Widget Header */}
                       <div
-                        className={`px-4.5 py-3 bg-[#F5F2EB] border-b border-[#E5E0D5] flex items-center justify-between gap-2 ${
+                        className={`px-5 py-3.5 bg-[#F5F2EB] border-b border-[#E5E0D5] flex items-center justify-between gap-2.5 ${
                           isEditMode ? 'cursor-grab active:cursor-grabbing' : ''
                         }`}
                       >

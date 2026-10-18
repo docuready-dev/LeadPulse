@@ -23,25 +23,25 @@ const Header = ({ title: _title }: HeaderProps) => {
   const extraCount = Math.max(0, connectedApps.length - 2);
 
   return (
-    <header className="h-13 bg-[#FAF8F5] flex items-center justify-between px-6 border-b border-[#E5E0D5] select-none">
+    <header className="h-14 bg-[#FAF8F5] flex items-center justify-between px-8 border-b border-[#E5E0D5] select-none">
       
       {/* Search Input */}
-      <div className="flex-1 max-w-sm">
+      <div className="flex-1 max-w-md">
         <div className="relative flex items-center w-full">
-          <Search className="w-3.5 h-3.5 text-[#6E675F] absolute left-3" />
+          <Search className="w-3.5 h-3.5 text-[#6E675F] absolute left-3.5" />
           <input 
             type="text" 
             placeholder="Search commands, leads, workflows..." 
-            className="w-full bg-[#F5F2EB] border border-[#E5E0D5] rounded-md pl-8 pr-12 py-1.5 text-xs text-[#191716] outline-none focus:bg-white transition-all placeholder:text-[#9C9488] font-delight font-normal"
+            className="w-full bg-[#F5F2EB] border border-[#E5E0D5] rounded-lg pl-9 pr-14 py-2 text-xs text-[#191716] outline-none focus:bg-white transition-all placeholder:text-[#9C9488] font-delight font-normal"
           />
-          <kbd className="absolute right-2.5 text-[10px] font-delight font-medium text-[#6E675F] bg-white border border-[#E5E0D5] rounded px-1.5 py-0.5">
+          <kbd className="absolute right-3 text-[10px] font-delight font-medium text-[#6E675F] bg-white border border-[#E5E0D5] rounded px-1.5 py-0.5">
             ⌘K
           </kbd>
         </div>
       </div>
 
       {/* Right actions */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3">
         {/* Global Connected Integrations Pill */}
         <button
           onClick={() => navigate('/integrations')}

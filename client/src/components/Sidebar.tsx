@@ -57,9 +57,9 @@ const Sidebar = () => {
   };
 
   const renderNavSection = (title: string, items: any[]) => (
-    <div className="mb-5">
-      <p className="px-2.5 text-[10px] font-semibold text-[#6E675F] font-delight uppercase tracking-wider mb-1.5">{title}</p>
-      <nav className="space-y-0.5">
+    <div className="mb-6">
+      <p className="px-3 text-[10.5px] font-semibold text-[#6E675F] font-delight uppercase tracking-wider mb-2">{title}</p>
+      <nav className="space-y-1">
         {items.map((item) => {
           const Icon = item.icon;
           const isActive = location.pathname.startsWith(item.path);
@@ -67,10 +67,10 @@ const Sidebar = () => {
             <Link 
               key={item.name} 
               to={item.path} 
-              className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-xs font-delight transition-all group ${
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-delight transition-all group ${
                 isActive 
                   ? 'bg-[#191716] text-white font-semibold shadow-2xs' 
-                  : 'text-[#57514B] hover:text-[#191716] hover:bg-[#EBE5D8]/60 font-medium'
+                  : 'text-[#57514B] hover:text-[#191716] hover:bg-[#EBE5D8]/70 font-medium'
               }`}
             >
               <Icon className={`w-3.5 h-3.5 shrink-0 transition-colors ${isActive ? 'text-[#E07A5F]' : 'text-[#6E675F] group-hover:text-[#191716]'}`} /> 
@@ -84,16 +84,16 @@ const Sidebar = () => {
   );
 
   return (
-    <aside className="w-[224px] flex flex-col h-screen border-r border-[#E5E0D5] bg-[#F5F2EB] text-[#191716] shrink-0 select-none">
+    <aside className="w-[244px] flex flex-col h-screen border-r border-[#E5E0D5] bg-[#F5F2EB] text-[#191716] shrink-0 select-none">
       
       {/* Brand & Workspace Header */}
-      <div className="h-13 px-4 flex items-center justify-between border-b border-[#E5E0D5] bg-[#F5F2EB]">
+      <div className="h-14 px-4.5 flex items-center justify-between border-b border-[#E5E0D5] bg-[#F5F2EB]">
         <Link 
           to="/" 
           className="flex items-center gap-2.5 group cursor-pointer hover:opacity-90 transition-all select-none"
           title="Go to Landing Page"
         >
-          <div className="w-7 h-7 rounded-md overflow-hidden bg-[#191716] flex items-center justify-center p-0.5 border border-[#D6CFC2] shadow-2xs group-hover:border-[#C85A32] group-hover:scale-105 transition-all shrink-0">
+          <div className="w-8 h-8 rounded-lg overflow-hidden bg-[#191716] flex items-center justify-center p-0.5 border border-[#D6CFC2] shadow-2xs group-hover:border-[#C85A32] group-hover:scale-105 transition-all shrink-0">
             <img 
               src={leadPulseLogo} 
               alt="LeadPulse Logo" 
@@ -101,15 +101,15 @@ const Sidebar = () => {
             />
           </div>
           <div className="flex flex-col">
-            <span className="font-bold text-sm tracking-tight text-[#191716] group-hover:text-[#C85A32] transition-colors font-delight leading-none">
+            <span className="font-bold text-[15px] tracking-tight text-[#191716] group-hover:text-[#C85A32] transition-colors font-delight leading-none">
               LeadPulse
             </span>
-            <span className="text-[9px] font-delight font-medium text-[#6E675F] uppercase tracking-wider mt-0.5">
+            <span className="text-[9.5px] font-delight font-medium text-[#6E675F] uppercase tracking-wider mt-0.5">
               Workspace
             </span>
           </div>
         </Link>
-        <div className="w-6 h-6 rounded-md overflow-hidden border border-[#D6CFC2] bg-white">
+        <div className="w-6.5 h-6.5 rounded-md overflow-hidden border border-[#D6CFC2] bg-white">
            {user?.profile_picture ? (
              <img src={user?.profile_picture} className="w-full h-full object-cover" alt="Profile" />
            ) : (
@@ -121,15 +121,15 @@ const Sidebar = () => {
       </div>
 
       {/* Navigation Sections */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar px-2.5 py-4">
+      <div className="flex-1 overflow-y-auto custom-scrollbar px-3 py-5">
         {renderNavSection('Main', mainNav)}
         {renderNavSection('Lead Gen & CRM', pipelineNav)}
         {renderNavSection('Tools', toolsNav)}
       </div>
 
       {/* Plan Quota & Dynamic Upgrade / Top-Up Box */}
-      <div className="px-2.5 pb-2">
-        <div className="p-2.5 rounded-lg bg-white border border-[#E5E0D5] shadow-2xs space-y-2">
+      <div className="px-3 pb-3">
+        <div className="p-3 rounded-xl bg-white border border-[#E5E0D5] shadow-2xs space-y-2.5">
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-delight font-bold uppercase tracking-wider text-[#191716] flex items-center gap-1">
               <span className={`w-1.5 h-1.5 rounded-full ${isTopTier ? 'bg-emerald-600' : 'bg-[#C85A32]'}`} />

@@ -507,7 +507,7 @@ const CrmPipeline = () => {
       <div className="flex-1 flex flex-col h-full overflow-hidden">
         <Header title="Unified B2B Pipeline & Smart WhatsApp Bridge" />
 
-        <div className="flex-1 flex flex-col p-6 sm:p-8 overflow-hidden space-y-6">
+        <div className="flex-1 flex flex-col px-7 py-7 lg:px-9 lg:py-8 overflow-hidden space-y-6">
           
           {toastMessage && (
             <div className="fixed top-6 right-6 z-50 bg-slate-900 text-white px-3.5 py-2 rounded-md shadow-xl border border-slate-800 text-xs font-delight font-medium flex items-center gap-2 animate-in fade-in">
@@ -517,7 +517,7 @@ const CrmPipeline = () => {
           )}
 
           {/* Top Stage Progression Bar */}
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 shrink-0">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3.5 shrink-0">
             {KANBAN_STAGES.map((stage) => {
               const count = leads.filter(l => mapStageToQuickSheets(l.status) === stage).length;
               const theme = getStageColorTheme(stage);
@@ -526,7 +526,7 @@ const CrmPipeline = () => {
                 .reduce((sum, l) => sum + getEstimatedValue(l), 0);
 
               return (
-                <div key={stage} className="bg-white border border-slate-200/90 rounded-lg p-2.5 shadow-[0_1px_2px_rgba(0,0,0,0.01)] hover:border-slate-300 transition-colors">
+                <div key={stage} className="bg-white border border-slate-200/90 rounded-xl p-3 shadow-2xs hover:border-slate-300 transition-colors">
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-[10px] text-slate-500 font-delight font-bold uppercase tracking-wider truncate">{stage}</span>
                     <span className={`w-2 h-2 rounded-full ${theme.bg}`}></span>

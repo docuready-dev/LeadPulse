@@ -549,8 +549,8 @@ const Automations = () => {
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
         <Header />
         
-        <div className="flex-1 overflow-y-auto p-6 lg:p-8 custom-scrollbar">
-          <div className="max-w-6xl mx-auto w-full space-y-6">
+        <div className="flex-1 overflow-y-auto px-7 py-7 lg:px-9 lg:py-8 custom-scrollbar">
+          <div className="max-w-[1540px] 2xl:max-w-[1720px] mx-auto w-full space-y-6">
             
             {/* Toast Notification */}
             {toastMessage && (
