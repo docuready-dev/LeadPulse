@@ -4,12 +4,14 @@ import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
+import API_URL from '../config/api';
 import {
   Layout, ArrowRight, TrendingUp, Users, Compass, Activity,
   Clock, Calendar as CalendarIcon, GripVertical, Check, Plus,
   Trash2, RotateCcw, Eye, EyeOff, Play, Pause, Sparkles,
   ChevronLeft, ChevronRight, CheckSquare, Square, Sliders,
-  Maximize2, Zap, ShieldCheck, BookOpen
+  Maximize2, Zap, ShieldCheck, BookOpen, MessageSquare, Send, Mail,
+  RefreshCw, ExternalLink
 } from 'lucide-react';
 
 type WidgetId =
@@ -303,20 +305,79 @@ const Dashboard = () => {
   });
   const [newTaskText, setNewTaskText] = useState('');
 
+  const [queueData, setQueueData] = useState<{
+    enrollments: any[];
+    pendingTasks: any[];
+    waitingDelays: any[];
+    stats: { total: number; active: number; pendingTasks: number; completed: number; repliedExited: number };
+  }>({
+    enrollments: [],
+    pendingTasks: [],
+    waitingDelays: [],
+    stats: { total: 0, active: 0, pendingTasks: 0, completed: 0, repliedExited: 0 }
+  });
+  const [isRunningDrip, setIsRunningDrip] = useState(false);
+
   useEffect(() => {
     if (user) {
       fetchLeads();
+      fetchQueue();
     }
+    const interval = setInterval(() => {
+      if (user) fetchQueue();
+    }, 30000);
+    return () => clearInterval(interval);
   }, [user]);
 
   const fetchLeads = async () => {
     try {
-      const res = await axios.get('http://localhost:3001/api/leads', {
+      const res = await axios.get(`${API_URL}/api/leads`, {
         headers: { userid: user?._id }
       });
       setLeads(res.data);
     } catch (err) {
       console.error('Failed to fetch leads', err);
+    }
+  };
+
+  const fetchQueue = async () => {
+    if (!user?._id) return;
+    try {
+      const res = await axios.get(`${API_URL}/api/automations/queue`, {
+        headers: { userid: user._id }
+      });
+      setQueueData(res.data);
+    } catch (err) {
+      console.warn('Failed to fetch automation queue:', err);
+    }
+  };
+
+  const handleCompleteWhatsAppTask = async (enrollmentId: string) => {
+    try {
+      await axios.post(`${API_URL}/api/automations/queue/${enrollmentId}/complete-task`, {}, {
+        headers: { userid: user?._id }
+      });
+      showToast('WhatsApp touch logged. Prospect advanced to next cadence step.');
+      fetchQueue();
+    } catch (err) {
+      console.error('Failed to complete WhatsApp task', err);
+    }
+  };
+
+  const handleRunDripWorkerNow = async () => {
+    if (!user?._id) return;
+    setIsRunningDrip(true);
+    try {
+      const res = await axios.post(`${API_URL}/api/automations/worker/run-now`, {}, {
+        headers: { userid: user._id }
+      });
+      showToast(res.data.message || 'Automation drip engine evaluated!');
+      fetchQueue();
+    } catch (err) {
+      console.error('Failed to trigger drip cycle', err);
+      showToast('Error evaluating drip engine');
+    } finally {
+      setIsRunningDrip(false);
     }
   };
 
@@ -1255,6 +1316,176 @@ const Dashboard = () => {
                 </div>
               </div>
             )}
+
+            {/* Live Automations & 1-Click WhatsApp Action Radar */}
+            <div className="bg-white border border-[#E5E0D5] rounded-lg overflow-hidden shadow-xs">
+              <div className="p-4 bg-[#FAF8F5] border-b border-[#E5E0D5] flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-md bg-[#191716] text-white flex items-center justify-center shrink-0">
+                    <Activity className="w-4 h-4 text-[#C85A32]" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold font-delight uppercase tracking-wider text-[#191716]">
+                        Automated Drip Engine &amp; 1-Click Action Queue
+                      </span>
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        Worker Active
+                      </span>
+                    </div>
+                    <p className="text-[11px] font-delight text-[#6E675F] mt-0.5">
+                      Monitors delay intervals, weekend protection, SendGrid cold dispatch, and queued 1-click WhatsApp tasks.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleRunDripWorkerNow}
+                    disabled={isRunningDrip}
+                    className="px-3 py-1.5 bg-[#191716] hover:bg-[#C85A32] text-white text-xs font-delight font-semibold rounded-md flex items-center gap-1.5 cursor-pointer transition-colors disabled:opacity-50"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${isRunningDrip ? 'animate-spin' : ''}`} />
+                    <span>{isRunningDrip ? 'Evaluating Drips...' : 'Run Drips Now'}</span>
+                  </button>
+                  <button
+                    onClick={() => navigate('/automations')}
+                    className="px-3 py-1.5 bg-white hover:bg-[#F5F2EB] border border-[#E5E0D5] text-[#191716] text-xs font-delight font-semibold rounded-md flex items-center gap-1.5 cursor-pointer transition-colors"
+                  >
+                    <span>Manage Blueprints</span>
+                    <ArrowRight className="w-3.5 h-3.5 text-[#6E675F]" />
+                  </button>
+                </div>
+              </div>
+
+              {/* 4 Telemetry Counters */}
+              <div className="grid grid-cols-2 md:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-[#E5E0D5] bg-white border-b border-[#E5E0D5]">
+                <div className="p-3.5">
+                  <div className="text-[10px] font-delight uppercase tracking-wider font-semibold text-[#6E675F]">
+                    Active In-Flight Drips
+                  </div>
+                  <div className="text-xl font-bold font-delight text-[#191716] tabular-nums mt-1">
+                    {queueData.stats.active}
+                  </div>
+                  <div className="text-[10px] text-[#6E675F] mt-0.5">Prospects currently enrolled</div>
+                </div>
+
+                <div className="p-3.5">
+                  <div className="text-[10px] font-delight uppercase tracking-wider font-semibold text-[#6E675F]">
+                    Pending 1-Click WhatsApp
+                  </div>
+                  <div className="text-xl font-bold font-delight text-emerald-700 tabular-nums mt-1">
+                    {queueData.stats.pendingTasks}
+                  </div>
+                  <div className="text-[10px] text-[#6E675F] mt-0.5">Ready for instant operator ping</div>
+                </div>
+
+                <div className="p-3.5">
+                  <div className="text-[10px] font-delight uppercase tracking-wider font-semibold text-[#6E675F]">
+                    Waiting In Delay
+                  </div>
+                  <div className="text-xl font-bold font-delight text-[#C85A32] tabular-nums mt-1">
+                    {queueData.waitingDelays.length}
+                  </div>
+                  <div className="text-[10px] text-[#6E675F] mt-0.5">Guarded by business hours</div>
+                </div>
+
+                <div className="p-3.5">
+                  <div className="text-[10px] font-delight uppercase tracking-wider font-semibold text-[#6E675F]">
+                    Completed / Exited
+                  </div>
+                  <div className="text-xl font-bold font-delight text-[#191716] tabular-nums mt-1">
+                    {queueData.stats.completed + queueData.stats.repliedExited}
+                  </div>
+                  <div className="text-[10px] text-[#6E675F] mt-0.5">
+                    {queueData.stats.repliedExited} exited on reply
+                  </div>
+                </div>
+              </div>
+
+              {/* Pending 1-Click WhatsApp Action Tasks */}
+              {queueData.pendingTasks.length > 0 ? (
+                <div className="p-4 bg-emerald-50/40 border-t border-[#E5E0D5] space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-xs font-bold font-delight text-emerald-900">
+                      <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Action Required: {queueData.pendingTasks.length} WhatsApp Ping{queueData.pendingTasks.length > 1 ? 's' : ''} Pending</span>
+                    </div>
+                    <span className="text-[10px] font-delight text-emerald-800">
+                      Click below to open pre-filled chat in WhatsApp Web / App
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                    {queueData.pendingTasks.slice(0, 3).map((task: any) => {
+                      const waLink =
+                        task.pendingManualTask?.waLink ||
+                        `https://wa.me/${(task.leadPhone || '').replace(/[^0-9]/g, '')}?text=${encodeURIComponent(task.pendingManualTask?.message || '')}`;
+
+                      return (
+                        <div
+                          key={task.id}
+                          className="bg-white border border-emerald-200 rounded-md p-3 flex flex-col justify-between gap-2.5 shadow-2xs"
+                        >
+                          <div>
+                            <div className="flex items-center justify-between gap-1">
+                              <span className="font-bold text-xs text-[#191716] truncate font-delight">
+                                {task.leadName}
+                              </span>
+                              <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 font-semibold shrink-0">
+                                {task.leadPhone}
+                              </span>
+                            </div>
+                            <div className="text-[10px] text-[#6E675F] truncate font-delight mt-0.5">
+                              {task.leadCompany || 'Prospect Company'} • {task.journeyName}
+                            </div>
+                            <p className="text-[11px] text-[#191716] bg-[#FAF8F5] p-2 rounded border border-[#E5E0D5] mt-1.5 line-clamp-2 italic">
+                              "{task.pendingManualTask?.message || 'Quick follow up message'}"
+                            </p>
+                          </div>
+
+                          <div className="flex items-center gap-1.5 pt-1 border-t border-[#E5E0D5]">
+                            <a
+                              href={waLink}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="flex-1 py-1.5 px-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[11px] font-delight font-bold flex items-center justify-center gap-1 cursor-pointer transition-colors"
+                            >
+                              <MessageSquare className="w-3 h-3" />
+                              <span>1-Click Ping</span>
+                              <ExternalLink className="w-2.5 h-2.5 opacity-75" />
+                            </a>
+                            <button
+                              onClick={() => handleCompleteWhatsAppTask(task.id)}
+                              title="Mark touch completed and proceed"
+                              className="py-1.5 px-2.5 bg-[#191716] hover:bg-[#C85A32] text-white rounded text-[11px] font-delight font-semibold flex items-center gap-1 cursor-pointer transition-colors"
+                            >
+                              <Check className="w-3 h-3" />
+                              <span>Done</span>
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : (
+                <div className="px-4 py-2.5 bg-[#FAF8F5] flex items-center justify-between text-[11px] font-delight text-[#6E675F]">
+                  <div className="flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-[#C85A32]" />
+                    <span>Drip timing guard active: Emails dispatch between 9:00 AM and 6:00 PM, Monday through Friday.</span>
+                  </div>
+                  <button
+                    onClick={() => navigate('/automations')}
+                    className="text-[#C85A32] hover:underline font-semibold flex items-center gap-1 cursor-pointer"
+                  >
+                    <span>Inspect live queue</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
+            </div>
 
             {/* Dynamic 12-Column Draggable Widget Grid */}
             <div className="grid grid-cols-12 gap-5">

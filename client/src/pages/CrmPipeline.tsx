@@ -798,7 +798,21 @@ const CrmPipeline = () => {
                               {/* Bottom Row: Contact Status Badge + Synced Indicator + Click hint */}
                               <div className="pt-1.5 border-t border-slate-100 flex items-center justify-between text-[10px] gap-1">
                                 <div className="flex items-center gap-1 min-w-0">
-                                  {isPhoneOnly ? (
+                                  {lead.tags?.includes('Pending WhatsApp Task') ? (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        const cleanPhone = (lead.phone || '').replace(/[^0-9]/g, '');
+                                        const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(`Hi ${lead.businessName}, wanted to follow up regarding our earlier message!`)}`;
+                                        window.open(url, '_blank');
+                                      }}
+                                      className="font-delight font-bold text-[9px] text-white bg-emerald-600 hover:bg-emerald-700 px-1.5 py-0.5 rounded-sm flex items-center gap-1 shadow-2xs transition-colors cursor-pointer"
+                                      title="Open WhatsApp with pre-filled outreach message"
+                                    >
+                                      <MessageCircle className="w-2.5 h-2.5" />
+                                      <span>WA Ping</span>
+                                    </button>
+                                  ) : isPhoneOnly ? (
                                     <span className="font-delight font-medium text-[9px] text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded-sm border border-amber-200 flex items-center gap-1 truncate max-w-[90px]">
                                       <Phone className="w-2.5 h-2.5 shrink-0" />
                                       <span className="truncate">WA</span>
@@ -807,6 +821,11 @@ const CrmPipeline = () => {
                                     <span className="font-delight font-medium text-[9px] text-slate-700 bg-slate-50 px-1.5 py-0.5 rounded-sm border border-slate-200 flex items-center gap-1 truncate max-w-[90px]">
                                       <ShieldCheck className="w-2.5 h-2.5 text-slate-500 shrink-0" />
                                       <span className="truncate">Email</span>
+                                    </span>
+                                  )}
+                                  {lead.tags?.includes('Inbound Lead') && (
+                                    <span className="font-delight font-medium text-[8px] text-blue-700 bg-blue-50 px-1 py-0.5 rounded-sm border border-blue-200 truncate max-w-[60px]">
+                                      Inbound
                                     </span>
                                   )}
                                   {Array.isArray(lead.syncedTo) && lead.syncedTo.length > 0 && (

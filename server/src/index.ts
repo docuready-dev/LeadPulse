@@ -51,6 +51,7 @@ import automationRoutes from './routes/automations';
 import integrationRoutes from './routes/integrations';
 import teamRoutes from './routes/team';
 import bookingRoutes from './routes/booking';
+import { automationWorker } from './services/automationWorker';
 
 const app = express();
 
@@ -126,4 +127,6 @@ if (fs.existsSync(path.join(clientDistPath, 'index.html'))) {
 const PORT = Number(process.env.PORT) || 3001;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`LeadPulse Server listening on 0.0.0.0:${PORT} (${process.env.NODE_ENV || 'development'})`);
+  // Start the background automation & drip worker
+  automationWorker.start();
 });

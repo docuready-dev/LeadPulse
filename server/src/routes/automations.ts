@@ -1,5 +1,6 @@
 import express from 'express';
 import { db } from '../index';
+import { automationWorker } from '../services/automationWorker';
 
 const router = express.Router();
 
@@ -261,7 +262,68 @@ router.post('/:id/trigger', async (req, res) => {
   }
 });
 
-// Helper to trigger active automations when events fire (e.g. Inbound Form, Webhook, Lead Creation)
+// GET /api/automations/queue - List active enrollments and pending tasks for current user
+router.get('/queue', async (req, res) => {
+  const userId = req.headers.userid as string;
+  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+  const enrollments = automationWorker.getEnrollmentsForUser(userId);
+  const pendingTasks = enrollments.filter(e => e.status === 'pending_task');
+  const waitingDelays = enrollments.filter(e => e.status === 'waiting_delay');
+  const activeCount = enrollments.filter(e => e.status === 'active' || e.status === 'waiting_delay').length;
+
+  res.json({
+    enrollments,
+    pendingTasks,
+    waitingDelays,
+    stats: {
+      total: enrollments.length,
+      active: activeCount,
+      pendingTasks: pendingTasks.length,
+      completed: enrollments.filter(e => e.status === 'completed').length,
+      repliedExited: enrollments.filter(e => e.status === 'replied_exited').length
+    }
+  });
+});
+
+// POST /api/automations/worker/run-now - On-demand evaluation trigger
+router.post('/worker/run-now', async (req, res) => {
+  const userId = req.headers.userid as string;
+  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+  try {
+    const result = await automationWorker.runTick(userId);
+    const updated = automationWorker.getEnrollmentsForUser(userId);
+    res.json({
+      success: true,
+      message: `Drip engine executed: evaluated ${result.processed} prospects, executed ${result.executedSteps} steps.`,
+      result,
+      enrollments: updated
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Worker execution failed' });
+  }
+});
+
+// POST /api/automations/queue/:id/cancel - Stop/Cancel active sequence
+router.post('/queue/:id/cancel', async (req, res) => {
+  const userId = req.headers.userid as string;
+  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+  const ok = automationWorker.cancel(req.params.id);
+  res.json({ success: ok });
+});
+
+// POST /api/automations/queue/:id/complete-task - Complete a pending WhatsApp task
+router.post('/queue/:id/complete-task', async (req, res) => {
+  const userId = req.headers.userid as string;
+  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+  const ok = automationWorker.completeTask(req.params.id);
+  res.json({ success: ok });
+});
+
+// Helper to trigger active automations when events fire (Inbound Form, Webhook, Lead Creation)
 export async function triggerMatchingAutomations(userId: string, eventName: string, leadData: any) {
   try {
     const automationsRef = db.collection('automations');
@@ -289,6 +351,9 @@ export async function triggerMatchingAutomations(userId: string, eventName: stri
           totalEnrolled: newEnrolled,
           updatedAt: new Date().toISOString()
         });
+
+        // Actively enroll lead into the background drip scheduler
+        await automationWorker.enroll(userId, { _id: doc.id, ...data }, leadData);
         triggeredCount++;
         console.log(`[Automations] Auto-enrolled lead (${leadData.email || leadData.businessName}) into journey "${data.name}"`);
       }
