@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   X, Globe, Mail, Phone, ExternalLink, Calendar,
   Clock, CheckCircle2, MessageCircle, Send, MoreVertical,
@@ -26,22 +26,20 @@ export const CrmFlowluDetailModal: React.FC<CrmFlowluModalProps> = ({
   onOpenOutreachStudio,
   currentUser
 }) => {
-  if (!isOpen || !lead) return null;
-
   const [activeTab, setActiveTab] = useState<'Main' | 'Tasks' | 'Documents' | 'Opportunities' | 'Events' | 'Calls' | 'Notes' | 'Email'>('Main');
   const [activityFilter, setActivityFilter] = useState<'All' | 'Tasks' | 'Email' | 'Comments' | 'Events' | 'Calls' | 'Documents' | 'Interactions'>('All');
   
   // Local state for editable fields
   const [isEditingContact, setIsEditingContact] = useState(false);
-  const [editEmail, setEditEmail] = useState(lead.email || '');
-  const [editPhone, setEditPhone] = useState(lead.phone || '');
-  const [editWebsite, setEditWebsite] = useState(lead.website || '');
-  const [editStage, setEditStage] = useState(lead.status || 'New');
-  const [editPriority, setEditPriority] = useState(lead.priority || 'Medium');
-  const [editValue, setEditValue] = useState(lead.dealValue || getEstimatedValue(lead));
+  const [editEmail, setEditEmail] = useState(lead?.email || '');
+  const [editPhone, setEditPhone] = useState(lead?.phone || '');
+  const [editWebsite, setEditWebsite] = useState(lead?.website || '');
+  const [editStage, setEditStage] = useState(lead?.status || 'New');
+  const [editPriority, setEditPriority] = useState(lead?.priority || 'Medium');
+  const [editValue, setEditValue] = useState(lead ? (lead.dealValue || getEstimatedValue(lead)) : 1000);
 
   // Requirements List state
-  const defaultReqs = Array.isArray(lead.requirements) && lead.requirements.length > 0 
+  const defaultReqs = Array.isArray(lead?.requirements) && lead.requirements.length > 0 
     ? lead.requirements 
     : ['promotional outreach sequence', 'high-deliverability inbox routing', 'social & review enrichment'];
   const [requirements, setRequirements] = useState<string[]>(defaultReqs);
@@ -91,14 +89,29 @@ export const CrmFlowluDetailModal: React.FC<CrmFlowluModalProps> = ({
       date: '2 days ago',
       author: currentUser?.name || 'Lisa Jones',
       status: 'Logged',
-      notes: `${lead.businessName} has strong existing reputation with ${lead.rating || '4.8'} stars. Ideal candidate for the ₹699/mo Basic Growth tier.`,
+      notes: `${lead?.businessName || 'Lead'} has strong existing reputation with ${lead?.rating || '4.8'} stars. Ideal candidate for the ₹699/mo Basic Growth tier.`,
       isPlanned: false
     }
   ];
 
   const [activities, setActivities] = useState<any[]>(
-    Array.isArray(lead.activities) && lead.activities.length > 0 ? lead.activities : defaultActivities
+    Array.isArray(lead?.activities) && lead.activities.length > 0 ? lead.activities : defaultActivities
   );
+
+  useEffect(() => {
+    if (lead) {
+      setEditEmail(lead.email || '');
+      setEditPhone(lead.phone || '');
+      setEditWebsite(lead.website || '');
+      setEditStage(lead.status || 'New');
+      setEditPriority(lead.priority || 'Medium');
+      setEditValue(lead.dealValue || getEstimatedValue(lead));
+      setRequirements(Array.isArray(lead.requirements) && lead.requirements.length > 0 ? lead.requirements : defaultReqs);
+      setActivities(Array.isArray(lead.activities) && lead.activities.length > 0 ? lead.activities : defaultActivities);
+    }
+  }, [lead]);
+
+  if (!isOpen || !lead) return null;
 
   const contactName = lead.firstName || (lead.businessName ? lead.businessName.split(' ')[0] : 'Decision Maker');
   const ownerName = lead.dealOwner || currentUser?.name || 'Molly Bates';

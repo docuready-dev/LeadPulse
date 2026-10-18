@@ -16,8 +16,6 @@ interface EmailProviderModalProps {
 }
 
 const EmailProviderModal = ({ isOpen, onClose, user, onSaved }: EmailProviderModalProps) => {
-  if (!isOpen) return null;
-
   // Form Fields for SendGrid Web API on Render
   const [apiKey, setApiKey] = useState('');
   const [showKey, setShowKey] = useState(false);
@@ -40,8 +38,8 @@ const EmailProviderModal = ({ isOpen, onClose, user, onSaved }: EmailProviderMod
 
   // Load active mailbox status on open
   useEffect(() => {
+    if (!isOpen || !user?._id) return;
     const fetchStatus = async () => {
-      if (!user?._id) return;
       setIsLoadingStatus(true);
       try {
         const res = await axios.get('http://localhost:3001/api/outreach/mailbox', {
@@ -64,7 +62,9 @@ const EmailProviderModal = ({ isOpen, onClose, user, onSaved }: EmailProviderMod
       }
     };
     fetchStatus();
-  }, [user?._id]);
+  }, [isOpen, user?._id]);
+
+  if (!isOpen) return null;
 
   const handleVerifyAndConnect = async () => {
     const cleanKey = apiKey.trim();

@@ -64,7 +64,6 @@ const DispatchTrackerModal = ({
   onCampaignDispatched
 }: DispatchTrackerModalProps) => {
   const { setUpgradeModalOpen, recordEmailDispatch } = useStore();
-  if (!isOpen) return null;
 
   // Target audience mode
   const [audienceMode, setAudienceMode] = useState<'all' | 'single' | 'custom'>('all');
@@ -77,19 +76,21 @@ const DispatchTrackerModal = ({
   const [errorMessage, setErrorMessage] = useState('');
   const [activeTab, setActiveTab] = useState<'table' | 'terminal'>('table');
 
+  if (!isOpen) return null;
+
   const selectedLeadsToDispatch: LeadItem[] = 
     audienceMode === 'all' 
-      ? availableLeads 
+      ? (availableLeads || []) 
       : audienceMode === 'single'
-        ? [currentPreviewLead]
+        ? (currentPreviewLead ? [currentPreviewLead] : [])
         : [{
             _id: 'custom-lead',
-            businessName: currentPreviewLead.businessName || 'Direct Test Recipient',
-            location: currentPreviewLead.location || 'Local Area',
-            category: currentPreviewLead.category || 'Direct Outreach',
-            fieldOfWork: currentPreviewLead.fieldOfWork || 'Technology',
+            businessName: currentPreviewLead?.businessName || 'Direct Test Recipient',
+            location: currentPreviewLead?.location || 'Local Area',
+            category: currentPreviewLead?.category || 'Direct Outreach',
+            fieldOfWork: currentPreviewLead?.fieldOfWork || 'Technology',
             firstName: 'Ashley',
-            phone: currentPreviewLead.phone || '+91 98000 00000',
+            phone: currentPreviewLead?.phone || '+91 98000 00000',
             rating: '5.0',
             email: customEmail
           }];

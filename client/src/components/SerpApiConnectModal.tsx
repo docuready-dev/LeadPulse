@@ -19,8 +19,6 @@ const SerpApiConnectModal: React.FC<SerpApiConnectModalProps> = ({
   user,
   onConnected
 }) => {
-  if (!isOpen) return null;
-
   const [apiKey, setApiKey] = useState('');
   const [showApiKey, setShowApiKey] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
@@ -35,8 +33,8 @@ const SerpApiConnectModal: React.FC<SerpApiConnectModalProps> = ({
 
   // Load active connection status on mount
   useEffect(() => {
+    if (!isOpen || !user?._id) return;
     const fetchStatus = async () => {
-      if (!user?._id) return;
       setIsLoadingStatus(true);
       try {
         const res = await axios.get('http://localhost:3001/api/leads/serpapi/status', {
@@ -55,7 +53,9 @@ const SerpApiConnectModal: React.FC<SerpApiConnectModalProps> = ({
       }
     };
     fetchStatus();
-  }, [user?._id]);
+  }, [isOpen, user?._id]);
+
+  if (!isOpen) return null;
 
   // Open small browser popup window for registration or login
   const handleOpenSerpApiWindow = (mode: 'register' | 'login') => {

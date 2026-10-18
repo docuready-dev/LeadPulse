@@ -68,19 +68,17 @@ const AppointmentMobileWhatsAppModal = ({
   appointment,
   user
 }: AppointmentMobileWhatsAppModalProps) => {
-  if (!isOpen || !appointment) return null;
-
-  const clientName = appointment.customerName || appointment.leadName || appointment.businessName || 'Valued Client';
-  const rawPhone = appointment.customerPhone || appointment.leadPhone || appointment.phone || '';
-  const serviceName = appointment.serviceName || appointment.title || 'Strategy Consultation';
+  const clientName = appointment?.customerName || appointment?.leadName || appointment?.businessName || 'Valued Client';
+  const rawPhone = appointment?.customerPhone || appointment?.leadPhone || appointment?.phone || '';
+  const serviceName = appointment?.serviceName || appointment?.title || 'Strategy Consultation';
   const hostName = user?.company_name || user?.name || 'LeadPulse';
-  const meetLink = appointment.meetLink || '';
+  const meetLink = appointment?.meetLink || '';
 
-  const formattedDate = appointment.appointmentDate 
+  const formattedDate = appointment?.appointmentDate 
     ? new Date(appointment.appointmentDate).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' })
     : 'Upcoming Scheduled Date';
 
-  const timeSlot = appointment.timeSlot || 'Scheduled Time';
+  const timeSlot = appointment?.timeSlot || 'Scheduled Time';
 
   const [activePreset, setActivePreset] = useState<MessagePreset>('standard');
   const [phoneNumber, setPhoneNumber] = useState(rawPhone);
@@ -89,11 +87,13 @@ const AppointmentMobileWhatsAppModal = ({
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    if (appointment) {
+    if (isOpen && appointment) {
       setPhoneNumber(rawPhone);
       setCustomMessage(generateCleanMessage(activePreset, clientName, serviceName, hostName, formattedDate, timeSlot, meetLink));
     }
-  }, [appointment, user, activePreset, clientName, serviceName, hostName, formattedDate, timeSlot, meetLink, rawPhone]);
+  }, [isOpen, appointment, user, activePreset, clientName, serviceName, hostName, formattedDate, timeSlot, meetLink, rawPhone]);
+
+  if (!isOpen || !appointment) return null;
 
   const cleanPhone = phoneNumber.replace(/[^0-9]/g, '');
 
