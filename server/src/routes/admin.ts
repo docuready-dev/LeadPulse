@@ -158,7 +158,12 @@ router.post('/users/:id/tier', async (req, res) => {
   }
 
   const existing = userStore.getUserById(id);
-  if (id === 'user_ashleyghose64' || (existing?.email && existing.email.toLowerCase().trim() === 'ashleyghose64@gmail.com')) {
+  if (!existing) {
+    return res.status(404).json({ error: 'User not found' });
+  }
+
+  const targetId = existing._id;
+  if (targetId === 'user_ashleyghose64' || (existing?.email && existing.email.toLowerCase().trim() === 'ashleyghose64@gmail.com')) {
     if (plan.toLowerCase() !== 'pro') {
       return res.status(403).json({ error: 'The Super Admin account ashleyghose64@gmail.com is strictly locked to pro plan.' });
     }
@@ -175,12 +180,15 @@ router.post('/users/:id/tier', async (req, res) => {
       ai_pitches_limit: aiLimits[normalizedPlan] !== undefined ? aiLimits[normalizedPlan] : 5
     };
 
-    userStore.updateUser(id, updates);
+    const updatedUser = userStore.updateUser(targetId, updates);
     try {
-      await db.collection('users').doc(id).update(updates);
+      await db.collection('users').doc(targetId).set(updates, { merge: true });
     } catch {}
 
-    res.json({ success: true, plan: normalizedPlan, updates });
+    const cleanUser = updatedUser ? { ...updatedUser } : null;
+    if (cleanUser) delete (cleanUser as any).password;
+
+    res.json({ success: true, plan: normalizedPlan, user: cleanUser, updates });
   } catch (err) {
     res.status(500).json({ error: 'Failed to update user tier' });
   }
@@ -195,16 +203,23 @@ router.post('/users/:id/role', async (req, res) => {
   }
 
   const existing = userStore.getUserById(id);
-  if (id === 'user_ashleyghose64' || (existing?.email && existing.email.toLowerCase().trim() === 'ashleyghose64@gmail.com')) {
+  if (!existing) {
+    return res.status(404).json({ error: 'User not found' });
+  }
+
+  const targetId = existing._id;
+  if (targetId === 'user_ashleyghose64' || (existing?.email && existing.email.toLowerCase().trim() === 'ashleyghose64@gmail.com')) {
     return res.status(403).json({ error: 'The Super Admin account ashleyghose64@gmail.com is strictly locked to SUPER_ADMIN only.' });
   }
 
   try {
-    userStore.updateUser(id, { role });
+    const updatedUser = userStore.updateUser(targetId, { role });
     try {
-      await db.collection('users').doc(id).update({ role });
+      await db.collection('users').doc(targetId).set({ role }, { merge: true });
     } catch {}
-    res.json({ success: true, role });
+    const cleanUser = updatedUser ? { ...updatedUser } : null;
+    if (cleanUser) delete (cleanUser as any).password;
+    res.json({ success: true, role, user: cleanUser });
   } catch (err) {
     res.status(500).json({ error: 'Failed to update user role' });
   }
@@ -213,12 +228,16 @@ router.post('/users/:id/role', async (req, res) => {
 // Reset Onboarding (allows re-testing full onboarding lifecycle)
 router.post('/users/:id/reset-onboarding', async (req, res) => {
   const { id } = req.params;
+  const existing = userStore.getUserById(id);
+  const targetId = existing?._id || id;
   try {
-    userStore.updateUser(id, { onboarding_complete: false });
+    const updatedUser = userStore.updateUser(targetId, { onboarding_complete: false });
     try {
-      await db.collection('users').doc(id).update({ onboarding_complete: false });
+      await db.collection('users').doc(targetId).set({ onboarding_complete: false }, { merge: true });
     } catch {}
-    res.json({ success: true, message: 'Onboarding reset successfully' });
+    const cleanUser = updatedUser ? { ...updatedUser } : null;
+    if (cleanUser) delete (cleanUser as any).password;
+    res.json({ success: true, message: 'Onboarding reset successfully', user: cleanUser });
   } catch (err) {
     res.status(500).json({ error: 'Failed to reset onboarding' });
   }
@@ -228,15 +247,16 @@ router.post('/users/:id/reset-onboarding', async (req, res) => {
 router.delete('/users/:id', async (req, res) => {
   const { id } = req.params;
   const existing = userStore.getUserById(id);
-  if (id === 'user_ashleyghose64' || (existing?.email && existing.email.toLowerCase().trim() === 'ashleyghose64@gmail.com')) {
+  const targetId = existing?._id || id;
+  if (targetId === 'user_ashleyghose64' || (existing?.email && existing.email.toLowerCase().trim() === 'ashleyghose64@gmail.com')) {
     return res.status(403).json({ error: 'The Super Admin account ashleyghose64@gmail.com cannot be deleted.' });
   }
 
   try {
-    userStore.deleteUser(id);
+    userStore.deleteUser(targetId);
     try {
-      await db.collection('users').doc(id).delete();
-      const leadsSnapshot = await db.collection('leads').where('userId', '==', id).get();
+      await db.collection('users').doc(targetId).delete();
+      const leadsSnapshot = await db.collection('leads').where('userId', '==', targetId).get();
       const batch = db.batch();
       leadsSnapshot.docs.forEach(doc => batch.delete(doc.ref));
       await batch.commit();

@@ -44,25 +44,30 @@ async function provisionSystemAccounts() {
     // Strictly ensure zero user leads are attached to Ashley Super Admin
     leadStore.deleteAll('user_ashleyghose64');
 
-    // 2. Bicon Ghose User Account (Free Tier User with generated leads, password: Ashley1234)
+    // 2. Bicon Ghose User Account (password: Ashley1234)
     const biconPasswordHash = await bcrypt.hash('Ashley1234', 10);
+    const existingBicon = userStore.getUserById('user_ashleyghose28') || userStore.getUserByEmail('ashleyghose28@gmail.com');
+    const biconPlan = existingBicon?.plan && existingBicon.plan !== 'free' ? existingBicon.plan : 'basic';
+    const emailLimits: Record<string, number> = { free: 50, basic: 1500, pro: 5000 };
+    const aiLimits: Record<string, number> = { free: 5, basic: 250, pro: -1 };
+
     const biconUser = {
       _id: 'user_ashleyghose28',
       email: 'ashleyghose28@gmail.com',
       name: 'Bicon Ghose',
       phone: '+919004804043',
       role: 'USER',
-      plan: 'free',
-      lead_credits: 5,
-      emails_limit: 50,
-      emails_sent: 0,
-      ai_pitches_limit: 5,
-      ai_pitches_used: 0,
+      plan: biconPlan,
+      lead_credits: existingBicon?.lead_credits !== undefined ? existingBicon.lead_credits : 15,
+      emails_limit: existingBicon?.emails_limit !== undefined && existingBicon.emails_limit >= 1500 ? existingBicon.emails_limit : (emailLimits[biconPlan] || 1500),
+      emails_sent: existingBicon?.emails_sent !== undefined ? existingBicon.emails_sent : 0,
+      ai_pitches_limit: existingBicon?.ai_pitches_limit !== undefined ? existingBicon.ai_pitches_limit : (aiLimits[biconPlan] !== undefined ? aiLimits[biconPlan] : 250),
+      ai_pitches_used: existingBicon?.ai_pitches_used !== undefined ? existingBicon.ai_pitches_used : 0,
       password: biconPasswordHash,
       onboarding_complete: true,
       two_factor_enabled: false,
       phone_verified: true,
-      createdAt: '2026-10-14T00:00:00.000Z',
+      createdAt: existingBicon?.createdAt || '2026-10-14T00:00:00.000Z',
       updatedAt: new Date().toISOString()
     };
 
@@ -310,13 +315,13 @@ export async function syncUserPoolCredits(userId: string, data: any): Promise<an
   const tierEmailLimit = plan === 'pro' ? 5000 : plan === 'basic' ? 1500 : 50;
   const tierAiLimit = plan === 'pro' ? -1 : plan === 'basic' ? 250 : 5;
 
-  if (data.emails_limit === undefined) {
+  if (data.emails_limit === undefined || (plan !== 'free' && data.emails_limit < tierEmailLimit)) {
     data.emails_limit = tierEmailLimit;
   }
   if (data.emails_sent === undefined) {
     data.emails_sent = 0;
   }
-  if (data.ai_pitches_limit === undefined) {
+  if (data.ai_pitches_limit === undefined || (plan !== 'free' && data.ai_pitches_limit < tierAiLimit && tierAiLimit !== -1)) {
     data.ai_pitches_limit = tierAiLimit;
   }
   if (data.ai_pitches_used === undefined) {

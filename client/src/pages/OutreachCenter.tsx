@@ -20,9 +20,10 @@ import type { WhatsAppTemplate, WhatsAppImageAttachment, WhatsAppPdfAttachment, 
 import { useStore } from '../store/useStore';
 import { alertDialog } from '../components/AppConfirmModal';
 import axios from 'axios';
+import API_URL from '../config/api';
 
 const OutreachCenter = () => {
-  const { user, integrations, setUpgradeModalOpen, recordEmailDispatch, recordAiGeneration } = useStore();
+  const { user, token, integrations, setUpgradeModalOpen, recordEmailDispatch, recordAiGeneration } = useStore();
   const [activeChannel, setActiveChannel] = useState<'email' | 'whatsapp' | 'sms'>('email');
 
   const defaultBookingHost = localStorage.getItem('leadpulse_booking_host') || (typeof window !== 'undefined' ? `${window.location.origin}/appointments` : '/appointments');
@@ -76,8 +77,13 @@ const OutreachCenter = () => {
     if (!user?._id) return;
     setIsLoadingMailbox(true);
     try {
-      const res = await axios.get('http://localhost:3001/api/outreach/mailbox', {
-        headers: { userid: user._id }
+      const headers: Record<string, string> = { userid: user._id };
+      if (user.email) headers.useremail = user.email;
+      const activeToken = token || useStore.getState().token;
+      if (activeToken) headers.authorization = `Bearer ${activeToken}`;
+
+      const res = await axios.get(`${API_URL}/api/outreach/mailbox`, {
+        headers
       });
       if (res.data?.isConnected && res.data.mailbox) {
         setConnectedMailbox(res.data.mailbox);
@@ -358,14 +364,19 @@ const OutreachCenter = () => {
     setAiSuccessMessage(null);
 
     try {
-      const res = await axios.post('http://localhost:3001/api/outreach/ai-generate', {
+      const headers: Record<string, string> = { userid: user?._id || '' };
+      if (user?.email) headers.useremail = user.email;
+      const activeToken = token || useStore.getState().token;
+      if (activeToken) headers.authorization = `Bearer ${activeToken}`;
+
+      const res = await axios.post(`${API_URL}/api/outreach/ai-generate`, {
         templateId: selectedTemplateId,
         prompt: promptToUse,
         tone: aiTone,
         niche: previewLead?.fieldOfWork || previewLead?.category,
         userBusinessName: user?.name || 'LeadPulse'
       }, {
-        headers: { userid: user?._id }
+        headers
       });
 
       if (res.data?.generatedData) {
@@ -724,7 +735,12 @@ const OutreachCenter = () => {
     setIsSendingSingle(true);
     setDispatchNotification(null);
     try {
-      const res = await axios.post('http://localhost:3001/api/outreach/dispatch-single', {
+      const headers: Record<string, string> = { userid: user?._id || 'demo-user' };
+      if (user?.email) headers.useremail = user.email;
+      const activeToken = token || useStore.getState().token;
+      if (activeToken) headers.authorization = `Bearer ${activeToken}`;
+
+      const res = await axios.post(`${API_URL}/api/outreach/dispatch-single`, {
         templateId: selectedTemplateId,
         templateData,
         templateStyling,
@@ -733,7 +749,7 @@ const OutreachCenter = () => {
         fromName: connectedMailbox?.fromName || user?.name || 'Workspace Operator',
         fromEmail: connectedMailbox?.fromEmail || connectedMailbox?.user || user?.email || 'outreach@leadpulse.io'
       }, {
-        headers: { userid: user?._id || 'demo-user' }
+        headers
       });
 
       if (res.data.success) {

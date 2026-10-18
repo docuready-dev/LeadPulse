@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 
 import { useStore } from '../store/useStore';
+import API_URL from '../config/api';
 
 interface LeadItem {
   _id?: string;
@@ -138,8 +139,14 @@ const DispatchTrackerModal = ({
 
       setProgressPercent(45);
 
-      const res = await axios.post('http://localhost:3001/api/outreach/dispatch-batch', payload, {
-        headers: { userid: user?._id }
+      const headers: Record<string, string> = {};
+      if (user?._id) headers.userid = user._id;
+      if (user?.email) headers.useremail = user.email;
+      const activeToken = useStore.getState().token;
+      if (activeToken) headers.authorization = `Bearer ${activeToken}`;
+
+      const res = await axios.post(`${API_URL}/api/outreach/dispatch-batch`, payload, {
+        headers
       });
 
       setProgressPercent(100);

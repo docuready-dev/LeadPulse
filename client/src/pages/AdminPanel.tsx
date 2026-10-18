@@ -216,11 +216,28 @@ const AdminPanel = () => {
   // Change Tier / Plan
   const handleChangeTier = async (userId: string, newPlan: 'free' | 'basic' | 'pro') => {
     try {
-      await axios.post(
+      const res = await axios.post(
         `${API_URL}/api/admin/users/${userId}/tier`,
         { plan: newPlan },
         { headers: getHeaders() }
       );
+
+      const currentUserId = user?._id || (user as any)?.id;
+      const currentUserEmail = (user?.email || '').toLowerCase().trim();
+      const targetEmail = (tierModalUser?.email || '').toLowerCase().trim();
+      const isSelf = 
+        userId === currentUserId || 
+        userId === currentUserEmail ||
+        targetEmail === currentUserEmail ||
+        (currentUserEmail === 'ashleyghose64@gmail.com' && (userId === 'user_ashleyghose64' || userId.includes('ashleyghose64')));
+
+      if (res.data?.user && isSelf) {
+        useStore.getState().setUser(res.data.user);
+      }
+      if (isSelf) {
+        useStore.getState().refreshUserProfile(currentUserId);
+      }
+
       showNotification(`User plan successfully updated to ${newPlan.toUpperCase()}.`);
       setTierModalUser(null);
       fetchAllData();
