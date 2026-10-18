@@ -4,7 +4,8 @@ import Header from '../components/Header';
 import { 
   Search, Filter, Plus, Users, LayoutTemplate, Tag, Mail, 
   Phone, CheckCircle2, Trash2, Send, Download, ExternalLink, 
-  Code, Eye, Check, X, Sparkles, Building2, Globe, Copy, AlertCircle, Edit3
+  Code, Eye, Check, X, Sparkles, Building2, Globe, Copy, AlertCircle, Edit3,
+  Webhook, Zap
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { confirmDialog, alertDialog } from '../components/AppConfirmModal';
@@ -102,6 +103,8 @@ const Audience = () => {
   const [formsList, setFormsList] = useState<FormTemplate[]>(DEFAULT_FORMS);
   const [activeForm, setActiveForm] = useState<FormTemplate>(DEFAULT_FORMS[0]);
   const [copiedCode, setCopiedCode] = useState(false);
+  const [copiedWebhook, setCopiedWebhook] = useState(false);
+  const [isTestingWebhook, setIsTestingWebhook] = useState(false);
 
   // New Contact form inputs
   const [newContact, setNewContact] = useState({
@@ -375,18 +378,22 @@ const Audience = () => {
     document.body.removeChild(link);
   };
 
+  // Dynamic API Base URL (works seamlessly in localhost and on Render)
+  const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:3001' : window.location.origin;
+
   // Test Inbound Form Submission
   const handleTestFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user?._id) return;
     setTestSubmitting(true);
     try {
-      await axios.post(`http://localhost:3001/api/leads/form-submit/${user._id}`, {
+      await axios.post(`${apiBase}/api/leads/form-submit/${user._id}`, {
         ...testSubmission,
         formId: activeForm.id
       });
       setTestSuccess(true);
       fetchLeads(); // refresh real contacts list
+      showToast('Form submission received! New lead created.');
       setTimeout(() => {
         setTestSuccess(false);
         setIsTestFormOpen(false);
@@ -404,6 +411,42 @@ const Audience = () => {
     }
   };
 
+  // Test Universal Webhook Ingestion
+  const handleTestWebhookSubmit = async () => {
+    if (!user?._id) return;
+    setIsTestingWebhook(true);
+    try {
+      await axios.post(`${apiBase}/api/leads/webhook/${user._id}`, {
+        name: 'Sarah Jenkins',
+        email: 'sarah.jenkins@nexussolutions.io',
+        phone: '+1 (555) 392-8172',
+        company: 'Nexus Cloud Solutions',
+        category: 'B2B SaaS',
+        source: 'Zapier Webhook Test',
+        notes: 'Requested product walkthrough via automated webhook zap'
+      });
+      fetchLeads();
+      showToast('Webhook lead ingested successfully! Created in CRM & triggered automations.');
+    } catch (err: any) {
+      console.error('Webhook test error:', err);
+      await alertDialog({
+        title: 'Webhook Test Error',
+        message: err.response?.data?.error || 'Failed to trigger test webhook.',
+        variant: 'error'
+      });
+    } finally {
+      setIsTestingWebhook(false);
+    }
+  };
+
+  const handleCopyWebhookUrl = () => {
+    const webhookUrl = `${apiBase}/api/leads/webhook/${user?._id || 'USER_ID'}`;
+    navigator.clipboard.writeText(webhookUrl);
+    setCopiedWebhook(true);
+    showToast('Webhook URL copied to clipboard!');
+    setTimeout(() => setCopiedWebhook(false), 2000);
+  };
+
   // Toggle Form Active/Paused
   const handleToggleFormStatus = (formId: string) => {
     setFormsList(formsList.map(f => f.id === formId ? {
@@ -412,19 +455,19 @@ const Audience = () => {
     } : f));
   };
 
-  // Copy embed HTML code
+  // Copy embed HTML code with seamless AJAX submission
   const getEmbedHtmlCode = (form: FormTemplate) => {
-    const endpoint = `http://localhost:3001/api/leads/form-submit/${user?._id || 'USER_ID'}`;
+    const endpoint = `${apiBase}/api/leads/form-submit/${user?._id || 'USER_ID'}`;
     return `<!-- LeadPulse Inbound Capture Form: ${form.title} -->
-<div class="leadpulse-capture-card" style="font-family: system-ui, sans-serif; max-width: 440px; padding: 24px; border-radius: 16px; background: #ffffff; border: 1px solid #E2E8F0; box-shadow: 0 10px 25px rgba(30,27,75,0.05);">
-  <h3 style="margin: 0 0 8px 0; font-size: 18px; font-weight: 800; color: #191716;">${form.headline}</h3>
-  <p style="margin: 0 0 20px 0; font-size: 13px; color: #567C8D;">${form.subheadline}</p>
-  <form action="${endpoint}" method="POST" style="display: flex; flex-direction: column; gap: 12px;">
-    <input type="hidden" name="formId" value="${form.id}" />
-    <input type="text" name="name" placeholder="Your Name" required style="padding: 10px 14px; border-radius: 8px; border: 1px solid #C8D9E6; font-size: 14px;" />
-    <input type="email" name="email" placeholder="Work Email" required style="padding: 10px 14px; border-radius: 8px; border: 1px solid #C8D9E6; font-size: 14px;" />
-    <input type="text" name="company" placeholder="Company / Website" style="padding: 10px 14px; border-radius: 8px; border: 1px solid #C8D9E6; font-size: 14px;" />
-    <button type="submit" style="padding: 12px; background: ${form.themeColor}; color: #ffffff; border: none; border-radius: 8px; font-weight: 700; cursor: pointer;">
+<div id="lp-capture-container" style="font-family: system-ui, -apple-system, sans-serif; max-width: 440px; padding: 24px; border-radius: 12px; background: #ffffff; border: 1px solid #E2E8F0; box-shadow: 0 4px 20px rgba(0,0,0,0.06);">
+  <h3 style="margin: 0 0 8px 0; font-size: 18px; font-weight: 700; color: #191716;">${form.headline}</h3>
+  <p style="margin: 0 0 16px 0; font-size: 13px; color: #64748B;">${form.subheadline}</p>
+  <form onsubmit="event.preventDefault(); var b=this.querySelector('button'); b.disabled=true; b.innerText='Submitting...'; fetch('${endpoint}', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name:this.name.value, email:this.email.value, company:this.company.value, phone:this.phone.value, formId:'${form.id}'})}).then(function(r){return r.json()}).then(function(d){document.getElementById('lp-capture-container').innerHTML='<div style=\\'text-align:center;padding:24px;color:#16a34a;font-weight:600;\\'>&#10004; Thank you! Your request has been received.</div>'}).catch(function(){b.disabled=false; b.innerText='${form.buttonText}'; alert('Submission failed. Please try again.');});" style="display: flex; flex-direction: column; gap: 12px;">
+    <input type="text" name="name" placeholder="Full Name" required style="padding: 10px 14px; border-radius: 8px; border: 1px solid #CBD5E1; font-size: 14px; outline: none;" />
+    <input type="email" name="email" placeholder="Work Email" required style="padding: 10px 14px; border-radius: 8px; border: 1px solid #CBD5E1; font-size: 14px; outline: none;" />
+    <input type="tel" name="phone" placeholder="Phone or WhatsApp (Optional)" style="padding: 10px 14px; border-radius: 8px; border: 1px solid #CBD5E1; font-size: 14px; outline: none;" />
+    <input type="text" name="company" placeholder="Company Name" style="padding: 10px 14px; border-radius: 8px; border: 1px solid #CBD5E1; font-size: 14px; outline: none;" />
+    <button type="submit" style="padding: 12px; background: ${form.themeColor}; color: #ffffff; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: opacity 0.2s;">
       ${form.buttonText}
     </button>
   </form>
@@ -886,6 +929,57 @@ const Audience = () => {
             {/* TAB 3: SIGN-UP FORMS & EMBEDS */}
             {activeTab === 'forms' && (
               <div className="space-y-4">
+                {/* Universal Inbound Webhook Card */}
+                <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-xs">
+                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-[#191716] flex items-center justify-center text-white shrink-0 shadow-xs">
+                        <Webhook className="w-5 h-5 text-[#E07A5F]" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-sm font-bold text-slate-900 tracking-tight">Universal Inbound Webhook</h3>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            Active & Ready
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          Stream inbound leads automatically into LeadPulse CRM from Zapier, Make, Typeform, Webflow, Calendly, or custom apps.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={handleTestWebhookSubmit}
+                        disabled={isTestingWebhook}
+                        className="px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-md text-xs font-delight font-medium text-slate-700 flex items-center gap-1.5 shadow-2xs cursor-pointer transition-all disabled:opacity-50"
+                      >
+                        <Zap className={`w-3.5 h-3.5 ${isTestingWebhook ? 'animate-spin text-amber-500' : 'text-amber-500'}`} />
+                        <span>{isTestingWebhook ? 'Sending Ping...' : 'Test Webhook Ping'}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 bg-slate-50 p-2.5 rounded-md border border-slate-200">
+                    <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-slate-200 text-slate-700 rounded text-center shrink-0">
+                      POST
+                    </span>
+                    <input
+                      type="text"
+                      readOnly
+                      value={`${apiBase}/api/leads/webhook/${user?._id || 'USER_ID'}`}
+                      className="flex-1 bg-transparent text-xs font-mono text-slate-700 outline-none select-all px-1"
+                    />
+                    <button
+                      onClick={handleCopyWebhookUrl}
+                      className="px-3 py-1 bg-white hover:bg-slate-100 border border-slate-300 text-slate-700 rounded text-xs font-medium flex items-center justify-center gap-1.5 shrink-0 shadow-2xs transition-colors cursor-pointer"
+                    >
+                      {copiedWebhook ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                      <span>{copiedWebhook ? 'Copied' : 'Copy URL'}</span>
+                    </button>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   
                   {/* Create New Form Card Trigger */}

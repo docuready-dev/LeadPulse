@@ -1158,4 +1158,78 @@ router.post('/reset-password', async (req, res) => {
   }
 });
 
+// POST /api/auth/change-password - Changes user password by verifying current password
+router.post('/change-password', async (req, res) => {
+  let userId = (req.headers.userid as string) || (req.body.userId as string);
+  if (!userId && req.headers.authorization) {
+    try {
+      const authHeader = req.headers.authorization;
+      const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : authHeader;
+      const decoded = jwt.verify(token, JWT_SECRET) as any;
+      if (decoded && decoded.id) userId = decoded.id;
+    } catch {}
+  }
+
+  const { currentPassword, newPassword } = req.body;
+
+  if (!userId) {
+    return res.status(401).json({ error: 'Unauthorized. Please sign in to update your password.' });
+  }
+
+  if (!currentPassword || typeof currentPassword !== 'string') {
+    return res.status(400).json({ error: 'Current password is required.' });
+  }
+
+  if (!newPassword || typeof newPassword !== 'string' || newPassword.length < 6) {
+    return res.status(400).json({ error: 'New password must be at least 6 characters long.' });
+  }
+
+  try {
+    let rawUser: any = userStore.getUserById(userId);
+    let docId = userId;
+
+    if (!rawUser) {
+      try {
+        const doc = await db.collection('users').doc(userId).get();
+        if (doc.exists) {
+          rawUser = doc.data();
+          docId = doc.id;
+        }
+      } catch {}
+    }
+
+    if (!rawUser) {
+      return res.status(404).json({ error: 'User account not found.' });
+    }
+
+    if (!rawUser.password) {
+      return res.status(400).json({ error: 'This account was authenticated with Google OAuth. Password change is unavailable.' });
+    }
+
+    // Verify current password
+    const isMatch = await bcrypt.compare(currentPassword, rawUser.password);
+    if (!isMatch) {
+      return res.status(400).json({ error: 'Current password is incorrect. Please verify and try again.' });
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    const updates = {
+      password: hashedPassword,
+      updatedAt: new Date().toISOString()
+    };
+
+    userStore.updateUser(docId, updates);
+    try {
+      await db.collection('users').doc(docId).update(updates);
+    } catch {}
+
+    console.log(`[Auth] Password successfully updated for user ${rawUser.email} (${docId})`);
+    return res.json({ success: true, message: 'Password updated successfully!' });
+  } catch (err: any) {
+    console.error('[Auth] change-password error:', err);
+    return res.status(500).json({ error: 'Server error while updating password.' });
+  }
+});
+
 export default router;

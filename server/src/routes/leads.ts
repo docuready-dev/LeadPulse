@@ -4,6 +4,7 @@ import { scraperQueue } from '../services/scraperQueue';
 import { syncUserPoolCredits } from './auth';
 import { leadStore } from '../services/leadStore';
 import { userStore } from '../services/userStore';
+import { triggerMatchingAutomations } from './automations';
 
 const router = express.Router();
 
@@ -75,24 +76,44 @@ router.post('/', async (req, res) => {
   res.json(savedLead);
 });
 
-// Public Form Capture Endpoint (No auth header required so external website forms can submit!)
+// CORS Preflight for Public Form and Webhook endpoints
+router.options('/form-submit/:userId', (req, res) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.sendStatus(200);
+});
+
+router.options('/webhook/:userId', (req, res) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.sendStatus(200);
+});
+
+// Public Form Capture Endpoint (No auth header required so external website forms can submit from any domain)
 router.post('/form-submit/:userId', async (req, res) => {
+  res.header('Access-Control-Allow-Origin', '*');
   const { userId } = req.params;
-  const { name, email, phone, company, formId = 'website-embed' } = req.body;
+  const { name, email, phone, company, formId = 'website-embed', notes, category } = req.body;
 
-  if (!email) return res.status(400).json({ error: 'Email is required' });
+  if (!email && !phone) {
+    return res.status(400).json({ error: 'Either Email or Phone number is required' });
+  }
 
+  // User strategy: Always create a new lead record so each inbound submission is treated as a distinct sales opportunity
   const newLead = {
     userId,
-    businessName: company || name || email.split('@')[0],
-    email,
+    businessName: company || name || (email ? email.split('@')[0] : 'Inbound Prospect'),
+    email: email || '',
     phone: phone || '',
-    category: 'Inbound Form',
+    category: category || 'Inbound Form',
     location: 'Website Inbound',
     website: '',
     status: 'New',
     tags: ['Inbound Lead', formId],
     source: `Form: ${formId}`,
+    notes: notes || '',
     saved: true,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
@@ -107,8 +128,79 @@ router.post('/form-submit/:userId', async (req, res) => {
     console.warn('[Leads] Firestore form capture write failed, stored in local persistent store:', err.message);
   }
 
-  leadStore.addLead({ ...newLead, _id: savedId });
-  res.json({ success: true, message: 'Lead captured successfully!', id: savedId });
+  const stored = leadStore.addLead({ ...newLead, _id: savedId });
+
+  // Auto-enroll in any active matching automations
+  triggerMatchingAutomations(userId, 'Inbound Form Submitted', stored).catch(e => {
+    console.warn('[Leads] Auto-enrollment error:', e.message);
+  });
+
+  res.json({ success: true, message: 'Lead captured successfully!', id: savedId, lead: stored });
+});
+
+// Universal Inbound Webhook Endpoint (For Zapier, Make, Typeform, Webflow, n8n, Calendly, etc.)
+router.post('/webhook/:userId', async (req, res) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  const { userId } = req.params;
+  const b = req.body || {};
+
+  // Smart payload extraction across various payload conventions
+  const email = (b.email || b.mail || b.email_address || b.contact_email || b.Email || '').trim();
+  const rawName = (b.name || b.fullName || b.full_name || b.contact_name || b.Name || '').trim();
+  const firstName = (b.firstName || b.first_name || '').trim();
+  const lastName = (b.lastName || b.last_name || '').trim();
+  const combinedName = rawName || (firstName ? `${firstName} ${lastName}`.trim() : (email ? email.split('@')[0] : 'Inbound Webhook Lead'));
+  const company = (b.company || b.businessName || b.business_name || b.org || b.organization || b.Company || combinedName).trim();
+  const phone = (b.phone || b.mobile || b.tel || b.phoneNumber || b.phone_number || b.whatsapp || b.Phone || '').trim();
+  const category = (b.category || b.industry || b.niche || 'Webhook Inbound').trim();
+  const location = (b.location || b.city || b.country || 'External Webhook').trim();
+  const notes = (b.notes || b.message || b.comment || b.description || b.text || '').trim();
+  const sourceName = (b.source || b.provider || 'Webhook Integration').trim();
+
+  if (!email && !phone && !company) {
+    return res.status(400).json({ error: 'Payload must contain at least an email, phone number, or company name.' });
+  }
+
+  // Create fresh lead record (Always Create New policy)
+  const newLead = {
+    userId,
+    businessName: company,
+    email,
+    phone,
+    category,
+    location,
+    website: b.website || b.url || '',
+    status: 'New',
+    tags: ['Webhook Inbound', sourceName],
+    source: `Webhook: ${sourceName}`,
+    notes,
+    saved: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+
+  let savedId = `lead_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+  try {
+    const leadsRef = db.collection('leads');
+    const docRef = await leadsRef.add(newLead);
+    savedId = docRef.id;
+  } catch (err: any) {
+    console.warn('[Leads] Firestore webhook lead write failed, stored in local persistent store:', err.message);
+  }
+
+  const stored = leadStore.addLead({ ...newLead, _id: savedId });
+
+  // Auto-enroll in any active matching automations
+  triggerMatchingAutomations(userId, 'Webhook Inbound', stored).catch(e => {
+    console.warn('[Leads] Auto-enrollment error for webhook lead:', e.message);
+  });
+
+  res.json({
+    success: true,
+    message: 'Webhook lead ingested successfully!',
+    id: savedId,
+    lead: stored
+  });
 });
 
 // ============================================================================

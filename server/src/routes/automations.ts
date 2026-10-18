@@ -1,4 +1,4 @@
-﻿import express from 'express';
+import express from 'express';
 import { db } from '../index';
 
 const router = express.Router();
@@ -260,5 +260,44 @@ router.post('/:id/trigger', async (req, res) => {
     res.status(500).json({ error: err.message || 'Failed to trigger journey' });
   }
 });
+
+// Helper to trigger active automations when events fire (e.g. Inbound Form, Webhook, Lead Creation)
+export async function triggerMatchingAutomations(userId: string, eventName: string, leadData: any) {
+  try {
+    const automationsRef = db.collection('automations');
+    const snapshot = await automationsRef.where('userId', '==', userId).where('status', '==', 'active').get();
+    if (snapshot.empty) return 0;
+
+    let triggeredCount = 0;
+    const lowerEvent = (eventName || '').toLowerCase();
+
+    for (const doc of snapshot.docs) {
+      const data = doc.data();
+      const trig = (data.trigger || '').toLowerCase();
+      
+      const isMatch = 
+        trig.includes('inbound') ||
+        trig.includes('form') ||
+        trig.includes('webhook') ||
+        trig.includes('lead created') ||
+        trig.includes('contact added') ||
+        trig.includes(lowerEvent);
+
+      if (isMatch) {
+        const newEnrolled = (data.totalEnrolled || 0) + 1;
+        await doc.ref.update({
+          totalEnrolled: newEnrolled,
+          updatedAt: new Date().toISOString()
+        });
+        triggeredCount++;
+        console.log(`[Automations] Auto-enrolled lead (${leadData.email || leadData.businessName}) into journey "${data.name}"`);
+      }
+    }
+    return triggeredCount;
+  } catch (err: any) {
+    console.warn('[Automations] Failed to trigger matching automations:', err.message);
+    return 0;
+  }
+}
 
 export default router;
