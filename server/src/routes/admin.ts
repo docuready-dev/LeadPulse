@@ -74,10 +74,28 @@ router.get('/users', async (req, res) => {
 
     const userMap = new Map<string, any>();
     for (const u of localUsers) {
-      userMap.set(u._id, u);
+      const key = (u.email || u._id).toLowerCase().trim();
+      userMap.set(key, u);
     }
     for (const u of firestoreUsers) {
-      userMap.set(u._id, { ...(userMap.get(u._id) || {}), ...u });
+      const key = (u.email || u._id).toLowerCase().trim();
+      userMap.set(key, { ...(userMap.get(key) || {}), ...u });
+    }
+
+    // Ensure Ashley Super Admin is strictly present
+    const ashleyRecord = userStore.getUserById('user_ashleyghose64') || userStore.getUserByEmail('ashleyghose64@gmail.com');
+    if (ashleyRecord) {
+      const copy = { ...ashleyRecord };
+      delete (copy as any).password;
+      userMap.set('ashleyghose64@gmail.com', copy);
+    }
+
+    // Ensure Bicon Ghose is strictly present
+    const biconRecord = userStore.getUserById('user_ashleyghose28') || userStore.getUserByEmail('ashleyghose28@gmail.com');
+    if (biconRecord) {
+      const copy = { ...biconRecord };
+      delete (copy as any).password;
+      userMap.set('ashleyghose28@gmail.com', copy);
     }
 
     res.json(Array.from(userMap.values()));

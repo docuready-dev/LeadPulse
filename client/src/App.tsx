@@ -33,7 +33,22 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 const AdminRoute = ({ children }: { children: React.ReactNode }) => {
   const { token, user } = useStore();
   if (!token) return <Navigate to="/" replace />;
-  const isSuper = user?.role === 'SUPER_ADMIN' || user?.email?.toLowerCase().trim() === 'ashleyghose64@gmail.com';
+
+  const roleClean = (user?.role || '').toUpperCase();
+  const emailClean = (user?.email || '').toLowerCase().trim();
+  const isSuper = roleClean === 'SUPER_ADMIN' || emailClean === 'ashleyghose64@gmail.com';
+
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-[#FAF8F5]">
+        <div className="flex items-center gap-2 text-xs font-delight font-semibold text-[#191716]">
+          <span className="w-4 h-4 border-2 border-[#C85A32] border-t-transparent rounded-full animate-spin" />
+          <span>Authenticating Super Admin...</span>
+        </div>
+      </div>
+    );
+  }
+
   if (!isSuper) return <Navigate to="/dashboard" replace />;
   return <div className="saas-platform min-h-screen w-full relative">{children}</div>;
 };

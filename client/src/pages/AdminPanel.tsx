@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useStore } from '../store/useStore';
 import axios from 'axios';
+import API_URL from '../config/api';
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
 import { 
@@ -45,7 +46,7 @@ interface PlatformSettings {
 }
 
 const AdminPanel = () => {
-  const { user } = useStore();
+  const { user, token } = useStore();
   const navigate = useNavigate();
 
   // Active Tab
@@ -110,17 +111,46 @@ const AdminPanel = () => {
     }
   };
 
+  const getHeaders = () => {
+    const uid = user?._id || (user as any)?.id || user?.email || 'user_ashleyghose64';
+    const h: Record<string, string> = {
+      userid: uid,
+    };
+    if (token) {
+      h.authorization = `Bearer ${token}`;
+    }
+    const gw = (import.meta as any).env?.VITE_ADMIN_GATEWAY_SECRET;
+    if (gw) {
+      h['x-admin-gateway-token'] = gw;
+    }
+    return h;
+  };
+
   const fetchAllData = async () => {
-    if (!user?._id) return;
     setLoading(true);
     try {
-      const headers = { userid: user._id };
+      const headers = getHeaders();
       const [statsRes, usersRes, txRes, settingsRes, leadsRes] = await Promise.all([
-        axios.get('http://localhost:3001/api/admin/stats', { headers }).catch(() => ({ data: stats })),
-        axios.get('http://localhost:3001/api/admin/users', { headers }).catch(() => ({ data: [] })),
-        axios.get('http://localhost:3001/api/admin/transactions', { headers }).catch(() => ({ data: [] })),
-        axios.get('http://localhost:3001/api/admin/settings', { headers }).catch(() => ({ data: settings })),
-        axios.get('http://localhost:3001/api/admin/leads', { headers }).catch(() => ({ data: [] }))
+        axios.get(`${API_URL}/api/admin/stats`, { headers }).catch((err) => {
+          console.warn('[Admin] Failed to fetch stats:', err?.response?.data || err.message);
+          return { data: stats };
+        }),
+        axios.get(`${API_URL}/api/admin/users`, { headers }).catch((err) => {
+          console.warn('[Admin] Failed to fetch users:', err?.response?.data || err.message);
+          return { data: [] };
+        }),
+        axios.get(`${API_URL}/api/admin/transactions`, { headers }).catch((err) => {
+          console.warn('[Admin] Failed to fetch transactions:', err?.response?.data || err.message);
+          return { data: [] };
+        }),
+        axios.get(`${API_URL}/api/admin/settings`, { headers }).catch((err) => {
+          console.warn('[Admin] Failed to fetch settings:', err?.response?.data || err.message);
+          return { data: settings };
+        }),
+        axios.get(`${API_URL}/api/admin/leads`, { headers }).catch((err) => {
+          console.warn('[Admin] Failed to fetch leads:', err?.response?.data || err.message);
+          return { data: [] };
+        })
       ]);
 
       if (statsRes.data) setStats(statsRes.data);
@@ -137,15 +167,15 @@ const AdminPanel = () => {
 
   useEffect(() => {
     fetchAllData();
-  }, [user?._id]);
+  }, [user?._id, user?.email, token]);
 
   // Adjust User Credits
   const handleUpdateCredits = async (userId: string, amount: number, mode: 'add' | 'set' = 'add') => {
     try {
       await axios.post(
-        `http://localhost:3001/api/admin/users/${userId}/credits`,
+        `${API_URL}/api/admin/users/${userId}/credits`,
         { amount, mode },
-        { headers: { userid: user?._id } }
+        { headers: getHeaders() }
       );
       showNotification('Successfully updated credits balance.');
       setCreditModalUser(null);
@@ -159,9 +189,9 @@ const AdminPanel = () => {
   const handleChangeTier = async (userId: string, newPlan: 'free' | 'basic' | 'pro') => {
     try {
       await axios.post(
-        `http://localhost:3001/api/admin/users/${userId}/tier`,
+        `${API_URL}/api/admin/users/${userId}/tier`,
         { plan: newPlan },
-        { headers: { userid: user?._id } }
+        { headers: getHeaders() }
       );
       showNotification(`User plan successfully updated to ${newPlan.toUpperCase()}.`);
       setTierModalUser(null);
@@ -175,9 +205,9 @@ const AdminPanel = () => {
   const handleChangeRole = async (userId: string, newRole: 'SUPER_ADMIN' | 'USER') => {
     try {
       await axios.post(
-        `http://localhost:3001/api/admin/users/${userId}/role`,
+        `${API_URL}/api/admin/users/${userId}/role`,
         { role: newRole },
-        { headers: { userid: user?._id } }
+        { headers: getHeaders() }
       );
       showNotification(`User role updated to ${newRole}.`);
       fetchAllData();
@@ -190,9 +220,9 @@ const AdminPanel = () => {
   const handleResetOnboarding = async (userId: string) => {
     try {
       await axios.post(
-        `http://localhost:3001/api/admin/users/${userId}/reset-onboarding`,
+        `${API_URL}/api/admin/users/${userId}/reset-onboarding`,
         {},
-        { headers: { userid: user?._id } }
+        { headers: getHeaders() }
       );
       showNotification('Onboarding lifecycle reset for target account.');
       fetchAllData();
@@ -205,8 +235,8 @@ const AdminPanel = () => {
   const handleDeleteUser = async (userId: string, email: string) => {
     if (!window.confirm(`Are you sure you want to permanently delete user account ${email}? This action is irreversible.`)) return;
     try {
-      await axios.delete(`http://localhost:3001/api/admin/users/${userId}`, {
-        headers: { userid: user?._id }
+      await axios.delete(`${API_URL}/api/admin/users/${userId}`, {
+        headers: getHeaders()
       });
       showNotification(`User ${email} deleted successfully.`);
       fetchAllData();
@@ -218,8 +248,8 @@ const AdminPanel = () => {
   // Save Settings
   const handleSaveSettings = async () => {
     try {
-      await axios.post('http://localhost:3001/api/admin/settings', settings, {
-        headers: { userid: user?._id }
+      await axios.post(`${API_URL}/api/admin/settings`, settings, {
+        headers: getHeaders()
       });
       showNotification('Platform economics and workflow settings saved successfully!');
     } catch (err: any) {
@@ -230,8 +260,8 @@ const AdminPanel = () => {
   // Flush Scraper Queue
   const handleClearScraperQueue = async () => {
     try {
-      const res = await axios.post('http://localhost:3001/api/admin/scraper/clear', {}, {
-        headers: { userid: user?._id }
+      const res = await axios.post(`${API_URL}/api/admin/scraper/clear`, {}, {
+        headers: getHeaders()
       });
       showNotification(`Scraper queue cleared. Dropped ${res.data.droppedJobs} pending jobs.`);
       fetchAllData();
@@ -244,8 +274,8 @@ const AdminPanel = () => {
   const handlePurgeLeads = async () => {
     if (!window.confirm('DANGER: This will delete ALL leads across the entire platform database. Are you absolutely certain?')) return;
     try {
-      const res = await axios.delete('http://localhost:3001/api/admin/leads/purge', {
-        headers: { userid: user?._id }
+      const res = await axios.delete(`${API_URL}/api/admin/leads/purge`, {
+        headers: getHeaders()
       });
       showNotification(`Purged ${res.data.deletedCount} leads from master database.`);
       fetchAllData();
@@ -294,14 +324,24 @@ const AdminPanel = () => {
 
   // Filtered Users
   const filteredUsers = useMemo(() => {
+    const q = userSearch.toLowerCase().trim();
     return users.filter((u) => {
       const matchesSearch = 
-        (u.name || '').toLowerCase().includes(userSearch.toLowerCase()) ||
-        (u.email || '').toLowerCase().includes(userSearch.toLowerCase()) ||
-        (u.company_name || '').toLowerCase().includes(userSearch.toLowerCase()) ||
-        (u.phone || '').includes(userSearch);
-      const matchesRole = selectedRoleFilter === 'ALL' || u.role === selectedRoleFilter;
-      const matchesPlan = selectedPlanFilter === 'ALL' || (u.plan || 'free').toLowerCase() === selectedPlanFilter;
+        !q ||
+        (u.name || '').toLowerCase().includes(q) ||
+        (u.email || '').toLowerCase().includes(q) ||
+        (u._id || '').toLowerCase().includes(q) ||
+        (u.company_name || '').toLowerCase().includes(q) ||
+        (u.phone || '').includes(q);
+
+      const roleClean = (u.role || '').toUpperCase();
+      const isSuper = roleClean === 'SUPER_ADMIN' || roleClean === 'SUPERADMIN' || (u.email && u.email.toLowerCase().trim() === 'ashleyghose64@gmail.com');
+      const matchesRole = 
+        selectedRoleFilter === 'ALL' || 
+        (selectedRoleFilter === 'SUPER_ADMIN' ? isSuper : !isSuper);
+
+      const planClean = (u.plan || 'free').toLowerCase();
+      const matchesPlan = selectedPlanFilter === 'ALL' || planClean === selectedPlanFilter.toLowerCase();
       return matchesSearch && matchesRole && matchesPlan;
     });
   }, [users, userSearch, selectedRoleFilter, selectedPlanFilter]);
@@ -796,6 +836,26 @@ const AdminPanel = () => {
                           </tr>
                         );
                       })}
+                      {filteredUsers.length === 0 && (
+                        <tr>
+                          <td colSpan={8} className="p-8 text-center text-[#6E675F]">
+                            <div className="flex flex-col items-center justify-center gap-2">
+                              <Users className="w-8 h-8 text-[#9C9488]" />
+                              <p className="font-semibold text-sm text-[#191716]">No users found</p>
+                              <p className="text-xs text-[#6E675F]">
+                                {userSearch ? `No accounts match "${userSearch}".` : 'No registered accounts detected or loaded.'}
+                              </p>
+                              <button
+                                onClick={fetchAllData}
+                                className="mt-2 px-3 py-1.5 bg-[#C85A32] text-white text-xs font-semibold rounded-lg hover:bg-[#B04B25] transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                              >
+                                <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+                                <span>{loading ? 'Scanning Database...' : 'Rescan & Detect Users'}</span>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                 </div>

@@ -98,7 +98,36 @@ class UserStore {
   }
 
   getUserById(id: string): UserRecord | null {
-    return this.users.get(id) || null;
+    if (!id) return null;
+    // 1. Direct match by _id
+    const user = this.users.get(id);
+    if (user) return user;
+
+    // 2. If id is an email, look up by email
+    if (id.includes('@')) {
+      const byEmail = this.getUserByEmail(id);
+      if (byEmail) return byEmail;
+    }
+
+    // 3. Normalized alias check for Ashley Super Admin
+    const clean = id.toLowerCase().trim();
+    if (clean === 'user_ashleyghose64' || clean.includes('ashleyghose64')) {
+      return this.getUserByEmail('ashleyghose64@gmail.com') || this.users.get('user_ashleyghose64') || null;
+    }
+
+    // 4. Normalized alias check for Bicon Ghose
+    if (clean === 'user_ashleyghose28' || clean.includes('ashleyghose28')) {
+      return this.getUserByEmail('ashleyghose28@gmail.com') || this.users.get('user_ashleyghose28') || null;
+    }
+
+    // 5. Fallback scan across all users for email or _id matching
+    for (const u of this.users.values()) {
+      if (u._id === id || (u.email && u.email.toLowerCase().trim() === clean)) {
+        return u;
+      }
+    }
+
+    return null;
   }
 
   getUserByEmail(email: string): UserRecord | null {

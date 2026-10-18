@@ -343,48 +343,71 @@ export async function syncUserPoolCredits(userId: string, data: any): Promise<an
 
 // GET /api/auth/me - Fetch latest synced user profile & token balance
 router.get('/me', async (req, res) => {
-  const userId = req.headers.userid as string;
-  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+  let userId = (req.headers.userid as string) || '';
+
+  if (!userId && req.headers.authorization) {
+    try {
+      const authHeader = req.headers.authorization;
+      const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : authHeader;
+      const decoded = jwt.verify(token, JWT_SECRET) as any;
+      if (decoded && decoded.id) userId = decoded.id;
+    } catch {}
+  }
+
+  if (!userId) return res.status(401).json({ error: 'Unauthorized: missing user identifier' });
+
+  const clean = userId.toLowerCase().trim();
+  const isSuperAshley = clean === 'user_ashleyghose64' || clean.includes('ashleyghose64');
+  const isBicon = clean === 'user_ashleyghose28' || clean.includes('ashleyghose28');
 
   try {
     let userData: any = null;
     let docId = userId;
 
-    // 1. Try Firestore
-    try {
-      const userRef = db.collection('users').doc(userId);
-      const doc = await userRef.get();
-      if (doc.exists) {
-        userData = doc.data();
-        docId = doc.id;
-      }
-    } catch (fsErr: any) {
-      console.warn('[Auth] Firestore offline or unauthenticated for /me:', fsErr.message);
+    if (isSuperAshley) {
+      docId = 'user_ashleyghose64';
+      userData = userStore.getUserById('user_ashleyghose64') || userStore.getUserByEmail('ashleyghose64@gmail.com');
+    } else if (isBicon) {
+      docId = 'user_ashleyghose28';
+      userData = userStore.getUserById('user_ashleyghose28') || userStore.getUserByEmail('ashleyghose28@gmail.com');
     }
 
-    // 2. Fallback to local persistent user store
+    // 1. Try local persistent store first
     if (!userData) {
-      const localUser = userStore.getUserById(userId);
+      const localUser = userStore.getUserById(userId) || (userId.includes('@') ? userStore.getUserByEmail(userId) : null);
       if (localUser) {
         userData = { ...localUser };
         docId = localUser._id;
       }
     }
 
+    // 2. Try Firestore
+    if (!userData) {
+      try {
+        const userRef = db.collection('users').doc(userId);
+        const doc = await userRef.get();
+        if (doc.exists) {
+          userData = doc.data();
+          docId = doc.id;
+        }
+      } catch (fsErr: any) {
+        console.warn('[Auth] Firestore offline or unauthenticated for /me:', fsErr.message);
+      }
+    }
+
     // 3. Fallback to default authentic user record if first run
     if (!userData) {
-      const isSuper = userId.toLowerCase().includes('ashleyghose64');
       const fallbackRecord = {
-        _id: userId,
-        email: `${userId}@leadpulse.io`,
-        name: isSuper ? 'Ashley' : 'LeadPulse User',
-        role: isSuper ? 'SUPER_ADMIN' : 'USER',
-        plan: 'free',
-        lead_credits: 15,
+        _id: docId,
+        email: isSuperAshley ? 'ashleyghose64@gmail.com' : isBicon ? 'ashleyghose28@gmail.com' : (userId.includes('@') ? userId : `${userId}@leadpulse.io`),
+        name: isSuperAshley ? 'Ashley' : isBicon ? 'Bicon Ghose' : 'LeadPulse User',
+        role: isSuperAshley ? 'SUPER_ADMIN' : 'USER',
+        plan: isSuperAshley ? 'pro' : 'free',
+        lead_credits: isSuperAshley ? 1000 : 15,
         pool_refreshed_at: new Date().toISOString(),
-        emails_limit: 50,
+        emails_limit: isSuperAshley ? 5000 : 50,
         emails_sent: 0,
-        ai_pitches_limit: 5,
+        ai_pitches_limit: isSuperAshley ? -1 : 5,
         ai_pitches_used: 0,
         onboarding_complete: true,
         createdAt: new Date().toISOString()

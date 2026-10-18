@@ -21,7 +21,7 @@ const Header = ({ title: _title }: HeaderProps) => {
   const connectedApps = integrations.filter(a => a.connected);
   const previewNames = connectedApps.slice(0, 2).map(a => a.name.split(' ')[0]).join(', ');
   const extraCount = Math.max(0, connectedApps.length - 2);
-  const isSuperAdmin = user?.role === 'SUPER_ADMIN' || user?.email?.toLowerCase().trim() === 'ashleyghose64@gmail.com';
+  const isSuperAdmin = (user?.role || '').toUpperCase() === 'SUPER_ADMIN' || user?.email?.toLowerCase().trim() === 'ashleyghose64@gmail.com';
 
   return (
     <header className="h-14 bg-[#FAF8F5] flex items-center justify-between px-8 border-b border-[#E5E0D5] select-none">

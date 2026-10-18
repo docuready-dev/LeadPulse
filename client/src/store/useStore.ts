@@ -134,11 +134,13 @@ export const useStore = create<AppState>()(
       })),
       refreshUserProfile: async (overrideUserId?: string) => {
         const uid = overrideUserId || get().user?._id;
-        if (!uid) return;
+        const token = get().token;
+        if (!uid && !token) return;
         try {
-          const res = await axios.get('http://localhost:3001/api/auth/me', {
-            headers: { userid: uid }
-          });
+          const headers: Record<string, string> = {};
+          if (uid) headers.userid = uid;
+          if (token) headers.authorization = `Bearer ${token}`;
+          const res = await axios.get('http://localhost:3001/api/auth/me', { headers });
           if (res.data?.user) {
             set({ user: normalizeUserCredits(res.data.user) });
           }

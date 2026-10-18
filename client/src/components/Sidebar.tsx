@@ -35,7 +35,7 @@ const Sidebar = () => {
   const { user, setToken, setUser, setUpgradeModalOpen, setUpgradeTab, setTopUpOpen } = useStore();
 
   const currentPlan = (user?.plan || 'free').toLowerCase();
-  const isSuperAdmin = user?.role === 'SUPER_ADMIN' || user?.email?.toLowerCase().trim() === 'ashleyghose64@gmail.com';
+  const isSuperAdmin = (user?.role || '').toUpperCase() === 'SUPER_ADMIN' || user?.email?.toLowerCase().trim() === 'ashleyghose64@gmail.com';
   const isTopTier = currentPlan === 'pro';
   const rawCredits = user?.lead_credits ?? 15;
   const displayCredits = currentPlan === 'free' && !(user as any)?.has_topup ? Math.min(rawCredits, 15) : rawCredits;
