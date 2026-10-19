@@ -94,18 +94,13 @@ const Sidebar = () => {
           className="flex items-center gap-2.5 group cursor-pointer hover:opacity-90 transition-all select-none"
           title="Go to Landing Page"
         >
-          <div className="w-8 h-8 rounded-lg overflow-hidden bg-transparent flex items-center justify-center p-0.5 border border-[#D6CFC2] shadow-2xs group-hover:border-[#C85A32] group-hover:scale-105 transition-all shrink-0">
-            <img 
-              src={strovrLogo} 
-              alt="Strovr Logo" 
-              className="w-full h-full object-contain" 
-            />
-          </div>
+          <img 
+            src={strovrLogo} 
+            alt="Strovr Logo" 
+            className="h-7 w-auto object-contain shrink-0 group-hover:scale-102 transition-transform" 
+          />
           <div className="flex flex-col">
-            <span className="font-bold text-[15px] tracking-tight text-[#191716] group-hover:text-[#C85A32] transition-colors font-delight leading-none">
-              Strovr
-            </span>
-            <span className="text-[9px] font-delight font-medium text-[#6E675F] uppercase tracking-wider mt-0.5">
+            <span className="text-[9px] font-delight font-medium text-[#6E675F] uppercase tracking-wider">
               Growth Engine
             </span>
           </div>

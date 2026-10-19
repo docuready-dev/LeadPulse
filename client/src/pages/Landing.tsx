@@ -266,21 +266,16 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
         >
           <a 
             href="/" 
-            className="flex items-center gap-2.5 group cursor-pointer hover:opacity-90 transition-all select-none"
+            className="flex items-center gap-3 group cursor-pointer hover:opacity-90 transition-all select-none"
             title="Strovr Home"
           >
-            <div className="w-8 h-8 rounded-[6px] overflow-hidden bg-[#191716] flex items-center justify-center p-1 border border-[#E5E0D5] shadow-2xs group-hover:border-[#C85A32] group-hover:scale-105 transition-all shrink-0">
-              <img 
-                src={strovrLogo} 
-                alt="Strovr Logo" 
-                className="w-full h-full object-contain" 
-              />
-            </div>
+            <img 
+              src={strovrLogo} 
+              alt="Strovr Logo" 
+              className="h-8 md:h-9 w-auto object-contain shrink-0 group-hover:scale-102 transition-transform" 
+            />
             <div className="flex flex-col">
               <div className="flex items-center gap-1.5">
-                <span className="font-extrabold text-[17px] tracking-tight text-[#191716] group-hover:text-[#C85A32] transition-colors leading-none">
-                  Strovr
-                </span>
                 <span className="text-[9.5px] font-delight font-bold uppercase bg-[#F5F2EB] text-[#C85A32] border border-[#E5E0D5] px-1.5 py-0.5 rounded-[4px] tracking-wider leading-none">
                   v1.0
                 </span>
@@ -1502,12 +1497,7 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
                 className="flex items-center gap-2 group cursor-pointer hover:opacity-90 transition-all select-none"
                 title="Strovr Home"
               >
-                <div className="w-6 h-6 rounded overflow-hidden bg-[#191716] flex items-center justify-center p-0.5 border border-[#E5E0D5] group-hover:border-[#C85A32] transition-all shrink-0">
-                  <img src={strovrLogo} alt="Strovr Logo" className="w-full h-full object-contain" />
-                </div>
-                <span className="font-extrabold tracking-tight text-[#191716] group-hover:text-[#C85A32] transition-colors text-base">
-                  Strovr
-                </span>
+                <img src={strovrLogo} alt="Strovr Logo" className="h-6 w-auto object-contain shrink-0" />
                 <span className="text-[9px] font-delight font-bold uppercase bg-[#FAF8F5] text-[#C85A32] border border-[#E5E0D5] px-1 py-0.5 rounded tracking-wider">
                   v1.0
                 </span>

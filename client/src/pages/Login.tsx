@@ -301,16 +301,11 @@ const Login = ({ onBack }: LoginProps) => {
             <div className="text-center mb-6">
               <a 
                 href="/" 
-                className="inline-flex items-center gap-2.5 group cursor-pointer hover:opacity-85 transition-all mb-3 select-none"
+                className="inline-flex items-center gap-2 group cursor-pointer hover:opacity-85 transition-all mb-3 select-none"
                 title="Return to Landing Page"
               >
-                <div className="w-8 h-8 rounded-md overflow-hidden bg-[#191716] flex items-center justify-center p-1 border border-slate-200 shadow-2xs group-hover:border-[#C85A32] group-hover:scale-105 transition-all">
-                  <img src={strovrLogo} alt="Strovr Logo" className="w-full h-full object-contain" />
-                </div>
-                <span className="font-extrabold text-lg tracking-tight text-slate-900 group-hover:text-[#C85A32] transition-colors leading-none">
-                  Strovr
-                </span>
-                <span className="text-[9px] font-delight font-bold uppercase bg-slate-100 text-[#C85A32] border border-slate-200 px-1 py-0.5 rounded tracking-wider">
+                <img src={strovrLogo} alt="Strovr Logo" className="h-9 w-auto object-contain" />
+                <span className="text-[9px] font-delight font-bold uppercase bg-slate-100 text-[#C85A32] border border-slate-200 px-1.5 py-0.5 rounded tracking-wider">
                   v1.0
                 </span>
               </a>
