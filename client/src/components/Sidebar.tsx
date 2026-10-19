@@ -88,28 +88,23 @@ const Sidebar = () => {
     <aside className="w-[244px] flex flex-col h-screen border-r border-[#E5E0D5] bg-[#F5F2EB] text-[#191716] shrink-0 select-none">
       
       {/* Brand & Workspace Header */}
-      <div className="h-14 px-4.5 flex items-center justify-between border-b border-[#E5E0D5] bg-[#F5F2EB]">
+      <div className="h-15 px-4 flex items-center justify-between border-b border-[#E5E0D5] bg-[#F5F2EB]">
         <Link 
           to="/" 
-          className="flex items-center gap-2.5 group cursor-pointer hover:opacity-90 transition-all select-none"
+          className="flex items-center group cursor-pointer hover:opacity-90 transition-all select-none"
           title="Go to Landing Page"
         >
           <img 
             src={strovrLogo} 
             alt="Strovr Logo" 
-            className="h-7 w-auto object-contain shrink-0 group-hover:scale-102 transition-transform" 
+            className="h-9 md:h-9.5 w-auto object-contain shrink-0 group-hover:scale-102 transition-transform" 
           />
-          <div className="flex flex-col">
-            <span className="text-[9px] font-delight font-medium text-[#6E675F] uppercase tracking-wider">
-              Growth Engine
-            </span>
-          </div>
         </Link>
-        <div className="w-6.5 h-6.5 rounded-md overflow-hidden border border-[#D6CFC2] bg-white">
+        <div className="w-7 h-7 rounded-md overflow-hidden border border-[#D6CFC2] bg-white shrink-0">
            {user?.profile_picture ? (
              <img src={user?.profile_picture} className="w-full h-full object-cover" alt="Profile" />
            ) : (
-             <div className="w-full h-full flex items-center justify-center text-[10px] font-bold text-[#191716] font-delight">
+             <div className="w-full h-full flex items-center justify-center text-[10.5px] font-bold text-[#191716] font-delight">
                {user?.name?.charAt(0) || 'U'}
              </div>
            )}

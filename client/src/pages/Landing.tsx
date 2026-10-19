@@ -266,17 +266,17 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
         >
           <a 
             href="/" 
-            className="flex items-center gap-3 group cursor-pointer hover:opacity-90 transition-all select-none"
+            className="flex items-center gap-3.5 group cursor-pointer hover:opacity-90 transition-all select-none"
             title="Strovr Home"
           >
             <img 
               src={strovrLogo} 
               alt="Strovr Logo" 
-              className="h-8 md:h-9 w-auto object-contain shrink-0 group-hover:scale-102 transition-transform" 
+              className="h-10 md:h-12 w-auto object-contain shrink-0 group-hover:scale-102 transition-transform" 
             />
             <div className="flex flex-col">
               <div className="flex items-center gap-1.5">
-                <span className="text-[9.5px] font-delight font-bold uppercase bg-[#F5F2EB] text-[#C85A32] border border-[#E5E0D5] px-1.5 py-0.5 rounded-[4px] tracking-wider leading-none">
+                <span className="text-[10px] font-delight font-bold uppercase bg-[#F5F2EB] text-[#C85A32] border border-[#E5E0D5] px-1.5 py-0.5 rounded-[4px] tracking-wider leading-none">
                   v1.0
                 </span>
               </div>
@@ -323,6 +323,15 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
             animate="show"
             className="flex flex-col items-start text-left z-10"
           >
+            {/* Big OG Form Logo */}
+            <motion.div variants={itemVars} className="mb-6">
+              <img 
+                src={strovrLogo} 
+                alt="Strovr" 
+                className="h-16 sm:h-20 md:h-24 lg:h-26 w-auto object-contain" 
+              />
+            </motion.div>
+
             <motion.div
               variants={itemVars}
               className="mb-6 inline-flex items-center gap-2 px-3 py-1 rounded-[5px] border border-[#E5E0D5] bg-[#F5F2EB] text-[11px] font-delight font-bold text-[#57524B] tracking-wide"
@@ -1497,8 +1506,8 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
                 className="flex items-center gap-2 group cursor-pointer hover:opacity-90 transition-all select-none"
                 title="Strovr Home"
               >
-                <img src={strovrLogo} alt="Strovr Logo" className="h-6 w-auto object-contain shrink-0" />
-                <span className="text-[9px] font-delight font-bold uppercase bg-[#FAF8F5] text-[#C85A32] border border-[#E5E0D5] px-1 py-0.5 rounded tracking-wider">
+                <img src={strovrLogo} alt="Strovr Logo" className="h-8 w-auto object-contain shrink-0" />
+                <span className="text-[9.5px] font-delight font-bold uppercase bg-[#FAF8F5] text-[#C85A32] border border-[#E5E0D5] px-1.5 py-0.5 rounded tracking-wider">
                   v1.0
                 </span>
               </a>

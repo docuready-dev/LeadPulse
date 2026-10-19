@@ -335,9 +335,10 @@ const Dashboard = () => {
       const res = await axios.get(`${API_URL}/api/leads`, {
         headers: { userid: user?._id }
       });
-      setLeads(res.data);
+      setLeads(Array.isArray(res.data) ? res.data : (Array.isArray(res.data?.leads) ? res.data.leads : []));
     } catch (err) {
       console.error('Failed to fetch leads', err);
+      setLeads([]);
     }
   };
 
@@ -347,7 +348,9 @@ const Dashboard = () => {
       const res = await axios.get(`${API_URL}/api/automations/queue`, {
         headers: { userid: user._id }
       });
-      setQueueData(res.data);
+      if (res.data?.stats) {
+        setQueueData(res.data);
+      }
     } catch (err) {
       console.warn('Failed to fetch automation queue:', err);
     }
@@ -493,14 +496,15 @@ const Dashboard = () => {
   };
 
   // Derived Telemetry
-  const totalLeads = leads.length;
-  const categories = Array.from(new Set(leads.map(l => l.category).filter(Boolean))).slice(0, 6);
-  const newLeads = leads.filter(l => (l.status || 'New') === 'New').length;
-  const contactedLeads = leads.filter(
+  const safeLeads = Array.isArray(leads) ? leads : [];
+  const totalLeads = safeLeads.length;
+  const categories = Array.from(new Set(safeLeads.map(l => l.category).filter(Boolean))).slice(0, 6);
+  const newLeads = safeLeads.filter(l => (l.status || 'New') === 'New').length;
+  const contactedLeads = safeLeads.filter(
     l => l.status === 'WhatsApp Contacted' || l.status === 'Email Verified & Captured' || l.status === 'Replied / Awaiting Email'
   ).length;
-  const proposalLeads = leads.filter(l => l.status === 'Proposal Sent').length;
-  const wonLeads = leads.filter(l => l.status === 'Closed Won').length;
+  const proposalLeads = safeLeads.filter(l => l.status === 'Proposal Sent').length;
+  const wonLeads = safeLeads.filter(l => l.status === 'Closed Won').length;
 
   const currentPlan = (user?.plan || 'free').toLowerCase();
   const isProTier = currentPlan === 'pro';
@@ -966,7 +970,7 @@ const Dashboard = () => {
                       {cat}
                     </div>
                     <div className="text-[11px] text-[#6E675F] font-delight font-normal mt-1">
-                      {leads.filter(l => l.category === cat).length} leads mapped
+                      {safeLeads.filter(l => l.category === cat).length} leads mapped
                     </div>
                   </div>
                 ))
@@ -1367,7 +1371,7 @@ const Dashboard = () => {
                     Active In-Flight Drips
                   </div>
                   <div className="text-2xl lg:text-3xl font-bold font-delight text-[#191716] tabular-nums mt-2">
-                    {queueData.stats.active}
+                    {queueData?.stats?.active ?? 0}
                   </div>
                   <div className="text-[11px] text-[#6E675F] mt-1">Prospects currently enrolled</div>
                 </div>
@@ -1377,7 +1381,7 @@ const Dashboard = () => {
                     Pending 1-Click WhatsApp
                   </div>
                   <div className="text-2xl lg:text-3xl font-bold font-delight text-emerald-700 tabular-nums mt-2">
-                    {queueData.stats.pendingTasks}
+                    {queueData?.stats?.pendingTasks ?? 0}
                   </div>
                   <div className="text-[11px] text-[#6E675F] mt-1">Ready for instant operator ping</div>
                 </div>
@@ -1387,7 +1391,7 @@ const Dashboard = () => {
                     Waiting In Delay
                   </div>
                   <div className="text-2xl lg:text-3xl font-bold font-delight text-[#C85A32] tabular-nums mt-2">
-                    {queueData.waitingDelays.length}
+                    {queueData?.waitingDelays?.length ?? 0}
                   </div>
                   <div className="text-[11px] text-[#6E675F] mt-1">Guarded by business hours</div>
                 </div>
@@ -1397,21 +1401,21 @@ const Dashboard = () => {
                     Completed / Exited
                   </div>
                   <div className="text-2xl lg:text-3xl font-bold font-delight text-[#191716] tabular-nums mt-2">
-                    {queueData.stats.completed + queueData.stats.repliedExited}
+                    {(queueData?.stats?.completed ?? 0) + (queueData?.stats?.repliedExited ?? 0)}
                   </div>
                   <div className="text-[11px] text-[#6E675F] mt-1">
-                    {queueData.stats.repliedExited} exited on reply
+                    {queueData?.stats?.repliedExited ?? 0} exited on reply
                   </div>
                 </div>
               </div>
 
               {/* Pending 1-Click WhatsApp Action Tasks */}
-              {queueData.pendingTasks.length > 0 ? (
+              {Array.isArray(queueData?.pendingTasks) && queueData.pendingTasks.length > 0 ? (
                 <div className="p-5 lg:p-6 bg-emerald-50/40 border-t border-[#E5E0D5] space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 text-xs font-bold font-delight text-emerald-900">
                       <MessageSquare className="w-4 h-4 text-emerald-600" />
-                      <span>Action Required: {queueData.pendingTasks.length} WhatsApp Ping{queueData.pendingTasks.length > 1 ? 's' : ''} Pending</span>
+                      <span>Action Required: {queueData?.pendingTasks?.length ?? 0} WhatsApp Ping{(queueData?.pendingTasks?.length ?? 0) > 1 ? 's' : ''} Pending</span>
                     </div>
                     <span className="text-[11px] font-delight text-emerald-800">
                       Click below to open pre-filled chat in WhatsApp Web / App
@@ -1419,7 +1423,7 @@ const Dashboard = () => {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
-                    {queueData.pendingTasks.slice(0, 3).map((task: any) => {
+                    {queueData?.pendingTasks?.slice(0, 3).map((task: any) => {
                       const waLink =
                         task.pendingManualTask?.waLink ||
                         `https://wa.me/${(task.leadPhone || '').replace(/[^0-9]/g, '')}?text=${encodeURIComponent(task.pendingManualTask?.message || '')}`;
