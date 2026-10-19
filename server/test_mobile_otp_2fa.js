@@ -91,7 +91,7 @@ async function runTests() {
   // --- TEST 2: Registration requires mobile number and OTP ---
   console.log('\n--- 2. Testing Registration Requirements ---');
   const testPhone = `+919811${Math.floor(100000 + Math.random() * 900000)}`;
-  const testEmail = `newuser_${Date.now()}@leadpulse-test.io`;
+  const testEmail = `newuser_${Date.now()}@strovr-test.io`;
 
   // Try registering without phone
   const failNoPhone = await request('/api/auth/register', {

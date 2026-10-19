@@ -68,7 +68,7 @@ export async function verifySendGridConnection(
 ): Promise<{ success: boolean; message: string; messageId?: string; error?: string }> {
   const apiKey = (settings.apiKey || process.env.SENDGRID_API_KEY || '').trim();
   const fromEmail = (settings.fromEmail || process.env.SENDGRID_FROM_EMAIL || '').trim();
-  const fromName = (settings.fromName || 'LeadPulse Operator').trim();
+  const fromName = (settings.fromName || 'Strovr Operator').trim();
 
   if (!apiKey) {
     return {
@@ -133,7 +133,7 @@ export async function verifySendGridConnection(
           email: fromEmail,
           name: fromName
         },
-        subject: 'LeadPulse Outbox Verification: SendGrid Web API Connected',
+        subject: 'Strovr Outbox Verification: SendGrid Web API Connected',
         content: [
           {
             type: 'text/plain',
@@ -150,7 +150,7 @@ export async function verifySendGridConnection(
                   SendGrid Outbox Verified
                 </h2>
                 <p style="margin: 0 0 16px 0; font-size: 14px; line-height: 1.6; color: #475569;">
-                  This test confirms that LeadPulse has authenticated with SendGrid's Web API over secure HTTPS (Port 443).
+                  This test confirms that Strovr has authenticated with SendGrid's Web API over secure HTTPS (Port 443).
                 </p>
                 <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; font-size: 13px; font-family: monospace; color: #1e293b;">
                   <strong>Transport:</strong> SendGrid REST API v3 (Port 443 HTTPS)<br/>
@@ -246,7 +246,7 @@ export async function verifyMailboxConnection(
   const port = Number(settings.port || 587);
   const user = (settings.user || '').trim();
   const pass = (settings.pass || '').trim();
-  const fromName = (settings.fromName || 'LeadPulse Operator').trim();
+  const fromName = (settings.fromName || 'Strovr Operator').trim();
   const fromEmail = (settings.fromEmail || user).trim();
 
   if (!host || !port || !user || !pass) {
@@ -281,7 +281,7 @@ export async function verifyMailboxConnection(
         from: senderDisplay,
         to: testRecipient.trim(),
         replyTo: replyToAddress,
-        subject: 'LeadPulse Outbox Verification: SMTP Connection Verified',
+        subject: 'Strovr Outbox Verification: SMTP Connection Verified',
         text: `Your SMTP outbox (${host}:${port}) has been verified and is ready for live outreach campaigns.`,
         html: `
           <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 520px; margin: 0 auto; padding: 28px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px;">
@@ -292,7 +292,7 @@ export async function verifyMailboxConnection(
               SMTP Verification Succeeded
             </h2>
             <p style="margin: 0 0 16px 0; font-size: 14px; line-height: 1.6; color: #475569;">
-              This test confirms that LeadPulse has authenticated with your outbound SMTP server.
+              This test confirms that Strovr has authenticated with your outbound SMTP server.
             </p>
             <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; font-size: 13px; font-family: monospace; color: #1e293b;">
               <strong>Host:</strong> ${host}:${port}<br/>
@@ -357,7 +357,7 @@ export async function sendDirectEmail(options: SendMailOptions): Promise<Dispatc
 
   if (isSendGrid && sendGridKey) {
     const senderEmail = (fromEmail || userSmtp?.fromEmail || process.env.SENDGRID_FROM_EMAIL || userSmtp?.user || '').trim();
-    const senderDisplayName = (fromName || userSmtp?.fromName || 'LeadPulse Operator').trim();
+    const senderDisplayName = (fromName || userSmtp?.fromName || 'Strovr Operator').trim();
     const resolvedReplyTo = (replyTo || userSmtp?.replyTo || senderEmail).trim();
 
     if (!senderEmail) {
@@ -459,7 +459,7 @@ export async function sendDirectEmail(options: SendMailOptions): Promise<Dispatc
   }
 
   const senderEmail = (fromEmail || userSmtp?.fromEmail || smtpUser).trim();
-  const senderDisplayName = (fromName || userSmtp?.fromName || 'LeadPulse Operator').trim();
+  const senderDisplayName = (fromName || userSmtp?.fromName || 'Strovr Operator').trim();
   const formattedSender = `"${senderDisplayName}" <${senderEmail}>`;
 
   const transporter: Transporter = nodemailer.createTransport({
@@ -539,20 +539,20 @@ export async function sendPasswordResetEmail(
   resetLink: string
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   const recipientEmail = toEmail.trim();
-  const displayName = userName.trim() || 'LeadPulse User';
-  const subject = 'Reset your LeadPulse password';
+  const displayName = userName.trim() || 'Strovr User';
+  const subject = 'Reset your Strovr password';
 
   const html = `
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Reset Your LeadPulse Password</title>
+  <title>Reset Your Strovr Password</title>
 </head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 24px; color: #1e293b;">
   <div style="max-width: 520px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
     <div style="background: #0f172a; padding: 24px; text-align: center;">
-      <h1 style="color: #ffffff; margin: 0; font-size: 20px; font-weight: 700; letter-spacing: -0.5px;">LeadPulse</h1>
+      <h1 style="color: #ffffff; margin: 0; font-size: 20px; font-weight: 700; letter-spacing: -0.5px;">Strovr</h1>
       <p style="color: #94a3b8; margin: 4px 0 0 0; font-size: 11px; text-transform: uppercase; letter-spacing: 1px;">Security &bull; Account Recovery</p>
     </div>
     <div style="padding: 32px 24px;">
@@ -561,7 +561,7 @@ export async function sendPasswordResetEmail(
         Hello ${displayName},
       </p>
       <p style="margin: 0 0 24px 0; font-size: 14px; line-height: 1.6; color: #475569;">
-        We received a request to reset the password for your LeadPulse workspace account. Click the button below to set a new password:
+        We received a request to reset the password for your Strovr workspace account. Click the button below to set a new password:
       </p>
       <div style="text-align: center; margin: 28px 0;">
         <a href="${resetLink}" style="background-color: #0f172a; color: #ffffff; display: inline-block; padding: 12px 28px; font-size: 14px; font-weight: 600; text-decoration: none; border-radius: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
@@ -581,18 +581,18 @@ export async function sendPasswordResetEmail(
       </div>
     </div>
     <div style="background: #f8fafc; border-top: 1px solid #e2e8f0; padding: 16px 24px; text-align: center; font-size: 11px; color: #94a3b8;">
-      LeadPulse Security &bull; Multi-Channel Lead Generation Platform
+      Strovr Security &bull; Multi-Channel B2B Revenue Engine
     </div>
   </div>
 </body>
 </html>
   `;
 
-  const text = `Hello ${displayName},\n\nWe received a request to reset your LeadPulse workspace password. Use the following link to set a new password within 1 hour:\n\n${resetLink}\n\nIf you did not request this, please ignore this email.\n\nLeadPulse Security`;
+  const text = `Hello ${displayName},\n\nWe received a request to reset your Strovr workspace password. Use the following link to set a new password within 1 hour:\n\n${resetLink}\n\nIf you did not request this, please ignore this email.\n\nStrovr Security`;
 
   const sendGridKey = (process.env.SENDGRID_API_KEY || '').trim();
-  const fromEmail = (process.env.SENDGRID_FROM_EMAIL || 'support@leadpulse.io').trim();
-  const fromName = 'LeadPulse Security';
+  const fromEmail = (process.env.SENDGRID_FROM_EMAIL || 'support@strovr.space').trim();
+  const fromName = 'Strovr Security';
 
   // 1. If SendGrid is configured, dispatch via SendGrid REST API v3
   if (sendGridKey) {

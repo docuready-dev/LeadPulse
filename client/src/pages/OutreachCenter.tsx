@@ -26,7 +26,7 @@ const OutreachCenter = () => {
   const { user, token, integrations, setUpgradeModalOpen, recordEmailDispatch, recordAiGeneration } = useStore();
   const [activeChannel, setActiveChannel] = useState<'email' | 'whatsapp' | 'sms'>('email');
 
-  const defaultBookingHost = localStorage.getItem('leadpulse_booking_host') || (typeof window !== 'undefined' ? `${window.location.origin}/appointments` : '/appointments');
+  const defaultBookingHost = localStorage.getItem('strovr_booking_host') || localStorage.getItem('leadpulse_booking_host') || (typeof window !== 'undefined' ? `${window.location.origin}/appointments` : '/appointments');
   const calendarIntegration = integrations.find(i => (i.id === 'google-calendar' || i.id === 'calendly') && i.connected);
   const [bookingHostUrl, setBookingHostUrl] = useState<string>(
     calendarIntegration?.config?.appointmentScheduleUrl || calendarIntegration?.config?.bookingUrl || defaultBookingHost
@@ -145,13 +145,13 @@ const OutreachCenter = () => {
   const [whatsAppImage, setWhatsAppImage] = useState<WhatsAppImageAttachment>({
     enabled: true,
     url: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&auto=format&fit=crop&q=80',
-    caption: 'LeadPulse Growth Analytics & Live Performance Overview',
+    caption: 'Strovr Growth Analytics & Live Performance Overview',
     fileName: 'Executive_Analytics_Dashboard.jpg'
   });
 
   const [whatsAppPdf, setWhatsAppPdf] = useState<WhatsAppPdfAttachment>({
     enabled: true,
-    url: 'https://leadpulse.io/assets/LeadPulse_Executive_Deck.pdf',
+    url: 'https://www.strovr.space/assets/Strovr_Executive_Deck.pdf',
     fileName: '{{business_name}}_Growth_Blueprint.pdf',
     fileSize: '2.4 MB',
     pageCount: '6 pages'
@@ -374,7 +374,7 @@ const OutreachCenter = () => {
         prompt: promptToUse,
         tone: aiTone,
         niche: previewLead?.fieldOfWork || previewLead?.category,
-        userBusinessName: user?.name || 'LeadPulse'
+        userBusinessName: user?.name || 'Strovr'
       }, {
         headers
       });
@@ -415,20 +415,20 @@ const OutreachCenter = () => {
         generated.col1Title = 'Option A: Managed System';
         generated.col1Body = `Let our team execute campaigns for {{business_name}} across {{location}}.`;
         generated.col1Cta = 'View Managed Setup';
-        generated.col1CtaUrl = 'https://leadpulse.io/managed';
+        generated.col1CtaUrl = 'https://www.strovr.space/managed';
         generated.col2Title = 'Option B: Self-Serve Suite';
         generated.col2Body = `Use our autonomous lead harvester with email and WhatsApp triggers.`;
         generated.col2Cta = 'Explore Software';
-        generated.col2CtaUrl = 'https://leadpulse.io/software';
+        generated.col2CtaUrl = 'https://www.strovr.space/software';
       } else if (selectedTemplateId === 'zig_zag') {
         generated.zig1Title = '1. Geographic Discovery';
         generated.zig1Text = `Extract verified contacts in {{location}} with zero scraping blocks.`;
         generated.zig1Cta = 'Learn More →';
-        generated.zig1CtaUrl = 'https://leadpulse.io/harvester';
+        generated.zig1CtaUrl = 'https://www.strovr.space/harvester';
         generated.zig2Title = '2. Autonomous Outreach';
         generated.zig2Text = `Send personalized merge tag emails directly to recipient inboxes.`;
         generated.zig2Cta = 'View Live Demo →';
-        generated.zig2CtaUrl = 'https://leadpulse.io/demo';
+        generated.zig2CtaUrl = 'https://www.strovr.space/demo';
       } else if (selectedTemplateId === 'f_pattern') {
         generated.fBullet1 = `Local Geo-Targeting: Reach verified businesses in {{location}} instantly.`;
         generated.fBullet2 = `Inbox Deliverability: 99.4% deliverability with compliance footers.`;
@@ -444,7 +444,7 @@ const OutreachCenter = () => {
             imageUrl: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600&auto=format&fit=crop&q=80',
             description: `Get started with verified local prospects in {{location}}.`,
             ctaText: 'Select Starter',
-            ctaUrl: 'https://leadpulse.io/checkout?plan=starter'
+            ctaUrl: 'https://www.strovr.space/checkout?plan=starter'
           },
           {
             name: 'Pro Multi-Channel Suite',
@@ -454,7 +454,7 @@ const OutreachCenter = () => {
             imageUrl: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&auto=format&fit=crop&q=80',
             description: `Full autonomous dispatch with dedicated worker node.`,
             ctaText: 'Select Pro',
-            ctaUrl: 'https://leadpulse.io/checkout?plan=pro'
+            ctaUrl: 'https://www.strovr.space/checkout?plan=pro'
           }
         ];
       }
@@ -501,8 +501,8 @@ const OutreachCenter = () => {
     const rating = targetLead.rating || '4.8';
 
     const senderName = user?.name || 'Workspace Operator';
-    const senderEmail = user?.email || 'outreach@leadpulse.io';
-    const senderCompany = user?.company_name || 'LeadPulse';
+    const senderEmail = user?.email || 'outreach@strovr.space';
+    const senderCompany = user?.company_name || 'Strovr';
 
     rendered = rendered.replace(/{{business_name}}/g, `<span class="bg-amber-100 text-amber-900 font-bold px-1 rounded">${bName}</span>`);
     rendered = rendered.replace(/{{location}}/g, `<span class="bg-gray-100 text-accent font-bold px-1 rounded">${loc}</span>`);
@@ -594,7 +594,7 @@ const OutreachCenter = () => {
         const result = uploadEvent.target?.result as string;
         setWhatsAppPdf({
           enabled: true,
-          url: result || `https://leadpulse.io/assets/${encodeURIComponent(file.name)}`,
+          url: result || `https://www.strovr.space/assets/${encodeURIComponent(file.name)}`,
           fileName: file.name,
           fileSize: sizeStr,
           pageCount: 'Doc'
@@ -648,7 +648,7 @@ const OutreachCenter = () => {
       if (whatsAppPdf.url && (whatsAppPdf.url.startsWith('http://') || whatsAppPdf.url.startsWith('https://'))) {
         mediaItems.push(`📄 *Document Attached:* ${cleanPdfName} (${whatsAppPdf.fileSize || 'PDF'})\n🔗 Access Link: ${whatsAppPdf.url}`);
       } else {
-        mediaItems.push(`📄 *Document Attached:* ${cleanPdfName} (${whatsAppPdf.fileSize || 'PDF'}) [📎 File Attached in LeadPulse]`);
+        mediaItems.push(`📄 *Document Attached:* ${cleanPdfName} (${whatsAppPdf.fileSize || 'PDF'}) [📎 File Attached in Strovr]`);
       }
     }
     if (whatsAppImage?.enabled) {
@@ -657,7 +657,7 @@ const OutreachCenter = () => {
       if (whatsAppImage.url && (whatsAppImage.url.startsWith('http://') || whatsAppImage.url.startsWith('https://'))) {
         mediaItems.push(`🖼️ *Visual Preview:* ${cleanImgName}${captionStr}\n🔗 Access Link: ${whatsAppImage.url}`);
       } else {
-        mediaItems.push(`🖼️ *Visual Preview:* ${cleanImgName}${captionStr} [📎 Visual Attached in LeadPulse]`);
+        mediaItems.push(`🖼️ *Visual Preview:* ${cleanImgName}${captionStr} [📎 Visual Attached in Strovr]`);
       }
     }
 
@@ -747,7 +747,7 @@ const OutreachCenter = () => {
         targetLead: previewLead,
         customRecipientEmail: previewLead.email,
         fromName: connectedMailbox?.fromName || user?.name || 'Workspace Operator',
-        fromEmail: connectedMailbox?.fromEmail || connectedMailbox?.user || user?.email || 'outreach@leadpulse.io'
+        fromEmail: connectedMailbox?.fromEmail || connectedMailbox?.user || user?.email || 'outreach@strovr.space'
       }, {
         headers
       });
@@ -1510,7 +1510,7 @@ const OutreachCenter = () => {
                                   type="url"
                                   value={whatsAppPdf.url}
                                   onChange={(e) => setWhatsAppPdf({ ...whatsAppPdf, url: e.target.value })}
-                                  placeholder="https://leadpulse.io/deck.pdf"
+                                  placeholder="https://www.strovr.space/deck.pdf"
                                   className="w-full bg-white border border-slate-200 rounded-md px-2.5 py-1.5 text-xs font-mono outline-none focus:border-rose-500"
                                 />
                               </div>
@@ -2193,12 +2193,12 @@ const OutreachCenter = () => {
                               </div>
                             </div>
 
-                            {/* LeadPulse Side */}
+                            {/* Strovr Side */}
                             <div className="p-3 bg-white border border-emerald-300 rounded-md space-y-2">
-                              <span className="text-[10px] font-delight font-bold text-emerald-700 uppercase">LeadPulse Autonomous Engine</span>
+                              <span className="text-[10px] font-delight font-bold text-emerald-700 uppercase">Strovr Autonomous Engine</span>
                               <input 
                                 type="text"
-                                placeholder="Pulse Title (e.g. LeadPulse Autonomous Engine)"
+                                placeholder="Pulse Title (e.g. Strovr Autonomous Engine)"
                                 value={templateData.comparisonPulse?.title || ''}
                                 onChange={(e) => setTemplateData({ 
                                   ...templateData, 
@@ -2408,7 +2408,7 @@ const OutreachCenter = () => {
                                   imageUrl: randomImg,
                                   description: 'Targeted client acquisition with automated outreach.',
                                   ctaText: 'Select Plan',
-                                  ctaUrl: 'https://leadpulse.io/order'
+                                  ctaUrl: 'https://www.strovr.space/order'
                                 };
                                 setTemplateData({
                                   ...templateData,
@@ -2956,10 +2956,10 @@ const OutreachCenter = () => {
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
                         <div className="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center font-bold text-[10px] shadow-2xs">
-                          LP
+                          ST
                         </div>
                         <div className="text-[11px] text-slate-600 font-medium">
-                          <span className="font-bold text-slate-900">{user?.name || 'Workspace Operator'}</span> &lt;{user?.email || 'outreach@leadpulse.io'}&gt;
+                          <span className="font-bold text-slate-900">{user?.name || 'Workspace Operator'}</span> &lt;{user?.email || 'outreach@strovr.space'}&gt;
                         </div>
                       </div>
                       <span className="text-[10px] font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200/70 px-2 py-0.5 rounded-full">
@@ -3094,7 +3094,7 @@ const OutreachCenter = () => {
                               {templateData.hostName || 'Alex Roberts'}
                             </h4>
                             <p className="text-[11px] text-slate-500 truncate">
-                              {templateData.hostTitle || 'Growth Director, LeadPulse'}
+                              {templateData.hostTitle || 'Growth Director, Strovr'}
                             </p>
                           </div>
                         </div>
@@ -3436,13 +3436,13 @@ const OutreachCenter = () => {
                           </div>
                         </div>
 
-                        {/* LeadPulse Solution */}
+                        {/* Strovr Solution */}
                         <div className="p-4 bg-emerald-50/70 border-2 border-emerald-400 rounded-lg space-y-2 shadow-xs">
                           <span className="text-[10px] font-delight font-bold uppercase tracking-wider text-emerald-800 bg-emerald-200 px-2 py-0.5 rounded">
                             {templateData.comparisonPulse?.badge || '8.4x Lower CAC'}
                           </span>
                           <h4 className="font-bold text-xs text-emerald-950 font-delight">
-                            {templateData.comparisonPulse?.title || 'LeadPulse Autonomous Engine'}
+                            {templateData.comparisonPulse?.title || 'Strovr Autonomous Engine'}
                           </h4>
                           <div className="text-xl font-extrabold text-emerald-900">
                             {templateData.comparisonPulse?.monthlyCost || '₹699 / mo'}
@@ -3732,7 +3732,7 @@ const OutreachCenter = () => {
                   {templateStyling.showComplianceFooter && (
                     <div className="bg-slate-50 p-4 border-t border-slate-200 text-center text-xs text-slate-500 space-y-1 font-delight font-normal">
                       <div className="font-medium text-slate-700 text-[11px]">
-                        LeadPulse Platform • BKC Financial Hub, Mumbai, India
+                        Strovr Platform • BKC Financial Hub, Mumbai, India • www.strovr.space
                       </div>
                       <p className="text-[10px] text-slate-400 leading-snug font-sans">
                         You received this communication because <strong>{previewLead.businessName}</strong> is listed in public directories for {previewLead.fieldOfWork} in {previewLead.location}.

@@ -4,7 +4,7 @@ import axios from 'axios';
 import { Lock, CheckCircle, AlertCircle, Eye, EyeOff, ArrowRight, ShieldCheck, Mail, KeyRound } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import API_URL from '../config/api';
-import leadPulseLogo from '../assets/LeadPulse-logo.png';
+import strovrLogo from '../assets/strovr-logo.png';
 
 const ResetPassword = () => {
   const [searchParams] = useSearchParams();
@@ -115,10 +115,10 @@ const ResetPassword = () => {
             title="Return to Landing Page"
           >
             <div className="w-8 h-8 rounded-md overflow-hidden bg-[#191716] flex items-center justify-center p-1 border border-slate-200 shadow-2xs group-hover:border-[#C85A32] group-hover:scale-105 transition-all">
-              <img src={leadPulseLogo} alt="LeadPulse Logo" className="w-full h-full object-contain" />
+              <img src={strovrLogo} alt="Strovr Logo" className="w-full h-full object-contain" />
             </div>
             <span className="font-extrabold text-lg tracking-tight text-slate-900 group-hover:text-[#C85A32] transition-colors leading-none">
-              LeadPulse
+              Strovr
             </span>
             <span className="text-[9px] font-delight font-bold uppercase bg-slate-100 text-[#C85A32] border border-slate-200 px-1 py-0.5 rounded tracking-wider">
               Security
@@ -188,7 +188,7 @@ const ResetPassword = () => {
                 All Set! Password Updated
               </h2>
               <p className="text-xs text-slate-600 mb-6 max-w-xs leading-relaxed">
-                Your new password is now active and your session has been securely authenticated. Redirecting to your LeadPulse dashboard...
+                Your new password is now active and your session has been securely authenticated. Redirecting to your Strovr dashboard...
               </p>
 
               <button

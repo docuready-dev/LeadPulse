@@ -71,7 +71,7 @@ const AppointmentMobileWhatsAppModal = ({
   const clientName = appointment?.customerName || appointment?.leadName || appointment?.businessName || 'Valued Client';
   const rawPhone = appointment?.customerPhone || appointment?.leadPhone || appointment?.phone || '';
   const serviceName = appointment?.serviceName || appointment?.title || 'Strategy Consultation';
-  const hostName = user?.company_name || user?.name || 'LeadPulse';
+  const hostName = user?.company_name || user?.name || 'Strovr';
   const meetLink = appointment?.meetLink || '';
 
   const formattedDate = appointment?.appointmentDate 
@@ -169,7 +169,7 @@ const AppointmentMobileWhatsAppModal = ({
                 </span>
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  <span>LeadPulse Confirmed</span>
+                  <span>Strovr Confirmed</span>
                 </span>
               </div>
 
@@ -527,7 +527,7 @@ const AppointmentMobileWhatsAppModal = ({
         <div className="px-5 py-3.5 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs font-delight">
           <div className="flex items-center gap-1.5 text-slate-500">
             <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-            <span>LeadPulse Direct WhatsApp Dispatch with Clean, Icon-Free Pre-typed Message</span>
+            <span>Strovr Direct WhatsApp Dispatch with Clean, Icon-Free Pre-typed Message</span>
           </div>
 
           <button

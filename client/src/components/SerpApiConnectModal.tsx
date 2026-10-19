@@ -28,8 +28,8 @@ const SerpApiConnectModal: React.FC<SerpApiConnectModalProps> = ({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  const leadPulsePlan = (user?.plan || 'free').toLowerCase();
-  const isPaidTier = leadPulsePlan === 'basic' || leadPulsePlan === 'pro';
+  const strovrPlan = (user?.plan || 'free').toLowerCase();
+  const isPaidTier = strovrPlan === 'basic' || strovrPlan === 'pro';
 
   // Load active connection status on mount
   useEffect(() => {
@@ -171,7 +171,7 @@ const SerpApiConnectModal: React.FC<SerpApiConnectModalProps> = ({
               <div className="min-w-0">
                 <div className="text-xs font-bold text-emerald-950 truncate flex items-center gap-1.5">
                   <span>SerpApi Engine Active</span>
-                  {/* Mention SerpApi tier only for Basic and Pro LeadPulse subscribers */}
+                  {/* Mention SerpApi tier only for Basic and Pro Strovr subscribers */}
                   {isPaidTier && (
                     <span className="text-[10px] uppercase font-bold px-2 py-0.5 bg-emerald-200/80 text-emerald-900 rounded-md">
                       {serpAccount.plan_name || 'Free'} Tier

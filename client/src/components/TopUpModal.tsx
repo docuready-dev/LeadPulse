@@ -263,7 +263,7 @@ const TopUpModal = () => {
               <div className={`p-5 rounded-md border transition-all flex flex-col justify-between relative ${currentPlan === 'basic' ? 'border-blue-600 bg-blue-50/20 ring-1 ring-blue-600' : 'border-slate-200 bg-white hover:border-slate-400'}`}>
                 <div>
                   <div className="flex justify-between items-center mb-2">
-                    <span className="text-[11px] font-delight uppercase tracking-wider text-blue-600 font-bold">LeadPulse Basic</span>
+                    <span className="text-[11px] font-delight uppercase tracking-wider text-blue-600 font-bold">Strovr Basic</span>
                     {currentPlan === 'basic' && (
                       <span className="text-[10px] font-delight font-semibold bg-blue-600 text-white px-2 py-0.5 rounded-sm">
                         Active Plan
@@ -309,7 +309,7 @@ const TopUpModal = () => {
 
                 <div className="pt-5">
                   <button 
-                    onClick={() => handlePhonePeCheckout('basic', 'LeadPulse Basic (₹699/mo)')}
+                    onClick={() => handlePhonePeCheckout('basic', 'Strovr Basic (₹699/mo)')}
                     disabled={currentPlan === 'basic' || loadingItem === 'basic'}
                     className="w-full h-8 rounded-md bg-slate-900 hover:bg-slate-800 text-white text-xs font-delight font-bold transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 border border-slate-900 cursor-pointer"
                   >
@@ -327,7 +327,7 @@ const TopUpModal = () => {
 
                 <div>
                   <div className="flex justify-between items-center mb-2 pt-1">
-                    <span className="text-[11px] font-delight uppercase tracking-wider text-purple-600 font-bold">LeadPulse Pro</span>
+                    <span className="text-[11px] font-delight uppercase tracking-wider text-purple-600 font-bold">Strovr Pro</span>
                     {currentPlan === 'pro' && (
                       <span className="text-[10px] font-delight font-semibold bg-purple-600 text-white px-2 py-0.5 rounded-sm">
                         Active Plan
@@ -373,7 +373,7 @@ const TopUpModal = () => {
 
                 <div className="pt-5">
                   <button 
-                    onClick={() => handlePhonePeCheckout('pro', 'LeadPulse Pro (₹1,999/mo)')}
+                    onClick={() => handlePhonePeCheckout('pro', 'Strovr Pro (₹1,999/mo)')}
                     disabled={currentPlan === 'pro' || loadingItem === 'pro'}
                     className="w-full h-8 rounded-md bg-purple-700 hover:bg-purple-800 text-white text-xs font-delight font-bold transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 border border-purple-700 cursor-pointer"
                   >
@@ -531,7 +531,7 @@ const TopUpModal = () => {
 
                   <div className="p-3 bg-emerald-50/50 rounded-sm border border-emerald-200 mb-5">
                     <div className="text-lg font-bold font-delight text-emerald-950 mb-0.5">+1,000 Extra Leads</div>
-                    <p className="text-[11px] text-emerald-700">Highest discount rate available across LeadPulse</p>
+                    <p className="text-[11px] text-emerald-700">Highest discount rate available across Strovr</p>
                   </div>
 
                   <ul className="space-y-2 text-xs text-slate-600 mb-5">

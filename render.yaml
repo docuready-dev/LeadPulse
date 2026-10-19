@@ -1,7 +1,7 @@
 services:
   # Unified Full-Stack Web Service (Serves Express API + Compiled React Frontend)
   - type: web
-    name: leadpulse-platform
+    name: strovr-platform
     runtime: node
     plan: starter
     buildCommand: npm run install:all && npm run build

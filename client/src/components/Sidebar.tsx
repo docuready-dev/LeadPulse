@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import docuReadyBlackLogo from '../assets/DocuReady-black.png';
-import leadPulseLogo from '../assets/LeadPulse-logo.png';
+import strovrLogo from '../assets/strovr-logo.png';
 
 const mainNav = [
   { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
@@ -94,19 +94,19 @@ const Sidebar = () => {
           className="flex items-center gap-2.5 group cursor-pointer hover:opacity-90 transition-all select-none"
           title="Go to Landing Page"
         >
-          <div className="w-8 h-8 rounded-lg overflow-hidden bg-[#191716] flex items-center justify-center p-0.5 border border-[#D6CFC2] shadow-2xs group-hover:border-[#C85A32] group-hover:scale-105 transition-all shrink-0">
+          <div className="w-8 h-8 rounded-lg overflow-hidden bg-transparent flex items-center justify-center p-0.5 border border-[#D6CFC2] shadow-2xs group-hover:border-[#C85A32] group-hover:scale-105 transition-all shrink-0">
             <img 
-              src={leadPulseLogo} 
-              alt="LeadPulse Logo" 
+              src={strovrLogo} 
+              alt="Strovr Logo" 
               className="w-full h-full object-contain" 
             />
           </div>
           <div className="flex flex-col">
             <span className="font-bold text-[15px] tracking-tight text-[#191716] group-hover:text-[#C85A32] transition-colors font-delight leading-none">
-              LeadPulse
+              Strovr
             </span>
-            <span className="text-[9.5px] font-delight font-medium text-[#6E675F] uppercase tracking-wider mt-0.5">
-              Workspace
+            <span className="text-[9px] font-delight font-medium text-[#6E675F] uppercase tracking-wider mt-0.5">
+              Growth Engine
             </span>
           </div>
         </Link>

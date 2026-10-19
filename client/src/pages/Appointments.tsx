@@ -96,7 +96,7 @@ const Appointments = () => {
       <Sidebar />
 
       <div className="flex-1 flex flex-col h-full min-h-0 overflow-hidden">
-        <Header title="LeadPulse Calendar &amp; Appointments Hub" />
+        <Header title="Strovr Calendar &amp; Appointments Hub" />
 
         <main className="flex-1 min-h-0 overflow-y-auto p-6 sm:p-8 custom-scrollbar overscroll-y-contain">
           <div className="max-w-[1360px] mx-auto space-y-6 pb-28">
@@ -115,13 +115,13 @@ const Appointments = () => {
                 <span className="text-[10px] font-bold uppercase tracking-wider font-delight">Calendar Engine</span>
                 <Calendar className="w-4 h-4 text-indigo-600" />
               </div>
-              <div className="text-base font-bold text-slate-900">LeadPulse Calendar</div>
+              <div className="text-base font-bold text-slate-900">Strovr Calendar</div>
               <div className="text-[11px] text-emerald-700 font-semibold mt-0.5 flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                 <span>
                   {calendarStatus?.syncMode === 'google_schedule' 
                     ? 'Google Schedule Linked' 
-                    : 'LeadPulse Active (Zero-Setup)'}
+                    : 'Strovr Active (Zero-Setup)'}
                 </span>
               </div>
             </div>
@@ -213,7 +213,7 @@ const Appointments = () => {
             <div className="bg-white border border-slate-200 rounded-xl shadow-2xs overflow-hidden flex flex-col">
               <div className="p-4 border-b border-slate-200 bg-[#FAF8F5] flex items-center justify-between">
                 <div>
-                  <h3 className="font-bold text-sm text-slate-900 tracking-tight">Confirmed LeadPulse Calendar Sessions</h3>
+                  <h3 className="font-bold text-sm text-slate-900 tracking-tight">Confirmed Strovr Calendar Sessions</h3>
                   <p className="text-xs text-slate-500 mt-0.5">
                     Real meetings scheduled with prospects and synchronized to your calendar. Click any session to preview and send via WhatsApp in Mobile View.
                   </p>
@@ -308,7 +308,7 @@ const Appointments = () => {
                 <div>
                   <h3 className="font-bold text-sm text-slate-900 tracking-tight">Active Pipeline Lead Dispatch</h3>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    1-Click invite prospects to book a LeadPulse Calendar session. Confirmed bookings automatically advance stage to Demo.
+                    1-Click invite prospects to book a Strovr Calendar session. Confirmed bookings automatically advance stage to Demo.
                   </p>
                 </div>
                 <button
@@ -359,9 +359,9 @@ const Appointments = () => {
                                     businessName: lead.businessName,
                                     appointmentDate: new Date(Date.now() + 86400000).toISOString(),
                                     timeSlot: '11:00 AM',
-                                    serviceName: '15-Min LeadPulse Walkthrough',
+                                    serviceName: '15-Min Strovr Walkthrough',
                                     meetLink: 'https://meet.google.com/new',
-                                    notes: `LeadPulse walkthrough invitation for ${lead.businessName}`
+                                    notes: `Strovr walkthrough invitation for ${lead.businessName}`
                                   });
                                   setShowWhatsAppModal(true);
                                 }}

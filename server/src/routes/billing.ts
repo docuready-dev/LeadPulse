@@ -21,7 +21,7 @@ const PRICING_CATALOG: Record<string, { name: string; amount: number; type: 'bun
     credits: 1000
   },
   basic: {
-    name: 'LeadPulse Basic Subscription',
+    name: 'Strovr Basic Subscription',
     amount: 699,
     type: 'subscription',
     plan: 'basic',
@@ -29,7 +29,7 @@ const PRICING_CATALOG: Record<string, { name: string; amount: number; type: 'bun
     dailyLimit: 600
   },
   pro: {
-    name: 'LeadPulse Pro Subscription',
+    name: 'Strovr Pro Subscription',
     amount: 1999,
     type: 'subscription',
     plan: 'pro',
@@ -51,7 +51,7 @@ router.post('/checkout', async (req, res) => {
   // PhonePe Payload Mocking / Gateway Protocol
   const frontendBase = (process.env.FRONTEND_URL || req.headers.origin || 'http://localhost:5173').replace(/\/$/, '');
   const phonePePayload = {
-    merchantId: process.env.PHONEPE_MERCHANT_ID || 'LEADPULSE_UAT',
+    merchantId: process.env.PHONEPE_MERCHANT_ID || 'STROVR_UAT',
     merchantTransactionId: transactionId,
     amount: item.amount * 100, // paise
     currency: 'INR',

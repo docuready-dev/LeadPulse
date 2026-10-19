@@ -121,7 +121,7 @@ export const DEFAULT_APPS: IntegrationApp[] = [
     configFields: [
       { key: 'apiKey', label: 'Resend API Key', type: 'password', placeholder: 're_123456789...', required: true },
       { key: 'fromEmail', label: 'Verified Sender Email', type: 'email', placeholder: 'outreach@yourdomain.com', required: true },
-      { key: 'fromName', label: 'Sender Display Name', type: 'text', placeholder: 'LeadPulse Growth Director' }
+      { key: 'fromName', label: 'Sender Display Name', type: 'text', placeholder: 'Strovr Growth Director' }
     ],
     lastSync: null,
     badge: 'High Deliverability',
@@ -331,7 +331,7 @@ const isLegacySandboxConfig = (appId: string, cfg: any): boolean => {
   if (!cfg) return false;
   if (appId === 'slack' && cfg.webhookUrl === 'https://hooks.slack.com/services/T00/B00/XXXXX' && !cfg.authType) return true;
   if (appId === 'hubspot' && cfg.accessToken === 'pat-na1-xxxx-xxxx-xxxx' && !cfg.authType) return true;
-  if (appId === 'gmail' && cfg.emailAddress === 'sales@leadpulse.io' && !cfg.authType) return true;
+  if (appId === 'gmail' && cfg.emailAddress === 'sales@strovr.space' && !cfg.authType) return true;
   if (appId === 'webhook' && !cfg.authType && (!cfg.webhookUrl || cfg.webhookUrl.includes('localhost:3001'))) return true;
   return false;
 };
@@ -481,7 +481,7 @@ router.post('/connect', async (req, res) => {
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-              properties: { title: 'LeadPulse CRM - Live Mirror' },
+              properties: { title: 'Strovr CRM - Live Mirror' },
               sheets: [
                 {
                   properties: {
@@ -593,7 +593,7 @@ const buildWorkspaceGoogleApiKey = (userId: string, appId: string): string => {
     return process.env.GOOGLE_API_KEY;
   }
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
-  const seed = `${userId}_${appId}_leadpulse_google_cloud_api_v4`;
+  const seed = `${userId}_${appId}_strovr_google_cloud_api_v4`;
   let hash = 2166136261;
   let out = 'AIzaSy';
   for (let i = 0; i < 33; i++) {
@@ -617,7 +617,7 @@ router.post('/google-autofetch', async (req, res) => {
     const userRef = db.collection('users').doc(userId);
     const doc = await userRef.get();
     const userData = doc.exists ? doc.data() : null;
-    const userEmail = userData?.email || 'workspace@leadpulse.io';
+    const userEmail = userData?.email || 'workspace@strovr.space';
     let currentList = DEFAULT_APPS;
     let logs = getUserLogs(userData);
 
@@ -658,7 +658,7 @@ router.post('/google-autofetch', async (req, res) => {
     } else if (appId === 'google-calendar') {
       autoConfig.calendarId = currentConfig.calendarId || userEmail || 'primary';
       autoConfig.oauthToken =
-        currentConfig.oauthToken || `ya29.a0AfB_byLeadPulseCalendar_${shortWs}`;
+        currentConfig.oauthToken || `ya29.a0AfB_byStrovrCalendar_${shortWs}`;
     } else if (appId === 'gmail-workspace') {
       autoConfig.emailAddress = currentConfig.emailAddress || userEmail;
       autoConfig.provider = currentConfig.provider || 'google_workspace';
@@ -790,14 +790,14 @@ router.post('/test', async (req, res) => {
     if (webhookTarget && webhookTarget.startsWith('http') && !webhookTarget.includes('localhost:3001')) {
       const payload =
         appId === 'slack'
-          ? { text: `✅ *LeadPulse Connection Verified*: Live webhook handshake succeeded for channel ${config.channel || '#sales-leads'}.` }
+          ? { text: `✅ *Strovr Connection Verified*: Live webhook handshake succeeded for channel ${config.channel || '#sales-leads'}.` }
           : appId === 'microsoft-teams'
-            ? { '@type': 'MessageCard', summary: 'LeadPulse Test', text: `✅ **LeadPulse Connection Verified**: Live webhook handshake succeeded.` }
+            ? { '@type': 'MessageCard', summary: 'Strovr Test', text: `✅ **Strovr Connection Verified**: Live webhook handshake succeeded.` }
             : {
-                event: 'leadpulse.connection_test',
+                event: 'strovr.connection_test',
                 appId,
                 timestamp: new Date().toISOString(),
-                message: `Live webhook test from LeadPulse to ${appName}`
+                message: `Live webhook test from Strovr to ${appName}`
               };
 
       const hookRes = await fetch(webhookTarget, {
@@ -1139,7 +1139,7 @@ router.post('/sync-leads', async (req, res) => {
               },
               body: JSON.stringify({
                 properties: {
-                  title: `LeadPulse CRM - Live Mirror (${docsToSync.length} Leads)`
+                  title: `Strovr CRM - Live Mirror (${docsToSync.length} Leads)`
                 },
                 sheets: [
                   {
@@ -1230,7 +1230,7 @@ router.post('/sync-leads', async (req, res) => {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              title: `LeadPulse CRM - Live Mirror (${docsToSync.length} Leads)`,
+              title: `Strovr CRM - Live Mirror (${docsToSync.length} Leads)`,
               sheetName,
               headers,
               rows,
@@ -1292,7 +1292,7 @@ router.post('/sync-leads', async (req, res) => {
       try {
         const inputs = syncedLeadSummaries.slice(0, 50).map(l => ({
           properties: {
-            email: l.email || `${l.id}@leadpulse-prospect.io`,
+            email: l.email || `${l.id}@strovr-prospect.io`,
             firstname: l.businessName,
             company: l.businessName,
             phone: l.phone || '',
@@ -1360,13 +1360,13 @@ router.post('/sync-leads', async (req, res) => {
           const payload =
             appId === 'slack'
               ? {
-                  text: `🚀 *LeadPulse CRM Sync*: Mirrored *${docsToSync.length} lead(s)*.\nTop Prospects:\n${syncedLeadSummaries
+                  text: `🚀 *Strovr CRM Sync*: Mirrored *${docsToSync.length} lead(s)*.\nTop Prospects:\n${syncedLeadSummaries
                     .slice(0, 5)
                     .map(l => `• *${l.businessName}* (${l.phone || l.email || 'No contact'}) - _${l.status}_`)
                     .join('\n')}`
                 }
               : {
-                  event: 'leadpulse.leads.synced',
+                  event: 'strovr.leads.synced',
                   count: docsToSync.length,
                   timestamp: new Date().toISOString(),
                   leads: syncedLeadSummaries
@@ -1545,9 +1545,9 @@ router.post('/notify', async (req, res) => {
       try {
         const outboundBody =
           appId === 'slack'
-            ? { text: `🔔 *LeadPulse Alert*: ${summary}` }
+            ? { text: `🔔 *Strovr Alert*: ${summary}` }
             : appId === 'microsoft-teams'
-              ? { '@type': 'MessageCard', summary: 'LeadPulse Alert', text: `🔔 **LeadPulse Alert**: ${summary}` }
+              ? { '@type': 'MessageCard', summary: 'Strovr Alert', text: `🔔 **Strovr Alert**: ${summary}` }
               : {
                   event: eventType,
                   summary,

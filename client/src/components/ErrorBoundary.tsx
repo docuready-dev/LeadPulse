@@ -21,7 +21,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('LeadPulse Caught Error:', error, errorInfo);
+    console.error('Strovr Caught Error:', error, errorInfo);
   }
 
   private handleReset = () => {
@@ -31,6 +31,7 @@ export class ErrorBoundary extends Component<Props, State> {
   };
 
   private handleClearAndHome = () => {
+    localStorage.removeItem('strovr-storage');
     localStorage.removeItem('leadpulse-storage');
     window.location.href = '/?reload=' + Date.now();
   };

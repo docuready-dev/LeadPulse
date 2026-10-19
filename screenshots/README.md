@@ -1,6 +1,6 @@
-# LeadPulse Platform Screenshot Index
+# Strovr Platform Screenshot Index
 
-This directory contains high-resolution screenshots capturing every panel, page, section, small option, card, and modal of the LeadPulse platform.
+This directory contains high-resolution screenshots capturing every panel, page, section, small option, card, and modal of the Strovr platform.
 
 ---
 

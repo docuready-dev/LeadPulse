@@ -53,7 +53,7 @@ const DEFAULT_FORMS: FormTemplate[] = [
     type: 'Embedded',
     submissions: 0,
     status: 'Active',
-    headline: 'See LeadPulse in Action',
+    headline: 'See Strovr in Action',
     subheadline: 'Schedule a 15-minute walkthrough tailored to your sales process.',
     buttonText: 'Request Demo Walkthrough',
     themeColor: '#191716'
@@ -372,7 +372,7 @@ const Audience = () => {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `LeadPulse_Audience_${Date.now()}.csv`);
+    link.setAttribute('download', `Strovr_Audience_${Date.now()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -458,7 +458,7 @@ const Audience = () => {
   // Copy embed HTML code with seamless AJAX submission
   const getEmbedHtmlCode = (form: FormTemplate) => {
     const endpoint = `${apiBase}/api/leads/form-submit/${user?._id || 'USER_ID'}`;
-    return `<!-- LeadPulse Inbound Capture Form: ${form.title} -->
+    return `<!-- Strovr Inbound Capture Form: ${form.title} -->
 <div id="lp-capture-container" style="font-family: system-ui, -apple-system, sans-serif; max-width: 440px; padding: 24px; border-radius: 12px; background: #ffffff; border: 1px solid #E2E8F0; box-shadow: 0 4px 20px rgba(0,0,0,0.06);">
   <h3 style="margin: 0 0 8px 0; font-size: 18px; font-weight: 700; color: #191716;">${form.headline}</h3>
   <p style="margin: 0 0 16px 0; font-size: 13px; color: #64748B;">${form.subheadline}</p>
@@ -944,7 +944,7 @@ const Audience = () => {
                           </span>
                         </div>
                         <p className="text-xs text-slate-500 mt-0.5">
-                          Stream inbound leads automatically into LeadPulse CRM from Zapier, Make, Typeform, Webflow, Calendly, or custom apps.
+                          Stream inbound leads automatically into Strovr CRM from Zapier, Make, Typeform, Webflow, Calendly, or custom apps.
                         </p>
                       </div>
                     </div>
@@ -1365,7 +1365,7 @@ const Audience = () => {
             {testSuccess ? (
               <div className="py-6 text-center space-y-2 font-delight font-medium">
                 <h4 className="text-sm font-bold text-emerald-700 tracking-tight">Lead Captured Successfully!</h4>
-                <p className="text-xs text-slate-500">Contact has been added to your LeadPulse database.</p>
+                <p className="text-xs text-slate-500">Contact has been added to your Strovr database.</p>
               </div>
             ) : (
               <form onSubmit={handleTestFormSubmit} className="space-y-3">

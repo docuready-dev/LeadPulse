@@ -36,8 +36,8 @@ const Settings = () => {
 
   // SendGrid & Mail Transport State
   const [sendgridApiKey, setSendgridApiKey] = useState((user as any)?.smtp_settings?.apiKey || '');
-  const [fromName, setFromName] = useState((user as any)?.smtp_settings?.fromName || user?.name || 'LeadPulse Outreach');
-  const [fromEmail, setFromEmail] = useState((user as any)?.smtp_settings?.fromEmail || user?.email || 'outreach@leadpulse.io');
+  const [fromName, setFromName] = useState((user as any)?.smtp_settings?.fromName || user?.name || 'Strovr Outreach');
+  const [fromEmail, setFromEmail] = useState((user as any)?.smtp_settings?.fromEmail || user?.email || 'outreach@strovr.space');
   const [replyTo, setReplyTo] = useState((user as any)?.smtp_settings?.replyTo || '');
   const [complianceFooter, setComplianceFooter] = useState(true);
 
@@ -256,7 +256,7 @@ const Settings = () => {
       const encodedUri = encodeURI(csvContent);
       const link = document.createElement('a');
       link.setAttribute('href', encodedUri);
-      link.setAttribute('download', `LeadPulse_Full_CRM_${Date.now()}.csv`);
+      link.setAttribute('download', `Strovr_Full_CRM_${Date.now()}.csv`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -722,7 +722,7 @@ const Settings = () => {
                 <div className="space-y-1">
                   <span className="text-xs font-bold text-slate-900 block">Render Cloud Egress Architecture</span>
                   <p className="text-slate-600 text-[11px] leading-relaxed">
-                    Render blocks standard SMTP ports 587 and 465 to prevent spam. LeadPulse routes all cold outreach campaigns through Twilio SendGrid's Web API over standard HTTPS (Port 443). Connect your free SendGrid API key below (includes 100 free emails per day).
+                    Render blocks standard SMTP ports 587 and 465 to prevent spam. Strovr routes all cold outreach campaigns through Twilio SendGrid's Web API over standard HTTPS (Port 443). Connect your free SendGrid API key below (includes 100 free emails per day).
                   </p>
                 </div>
               </div>
@@ -767,7 +767,7 @@ const Settings = () => {
                     type="text"
                     value={fromName}
                     onChange={(e) => setFromName(e.target.value)}
-                    placeholder="Alex Rivera | LeadPulse"
+                    placeholder="Alex Rivera | Strovr"
                     className="w-full h-8 px-2.5 bg-white border border-slate-200 rounded-md text-xs text-slate-900 outline-none focus:border-slate-400"
                   />
                   <span className="text-[10px] text-slate-400">Name prospects see in their email inbox.</span>
@@ -915,7 +915,7 @@ const Settings = () => {
               <div className="p-5 rounded-md bg-slate-950 border border-slate-800 text-white flex flex-wrap items-center justify-between gap-4">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <span className="text-base font-bold font-delight">{isFree ? 'Free Tier Compute' : `LeadPulse ${currentPlan.toUpperCase()}`}</span>
+                    <span className="text-base font-bold font-delight">{isFree ? 'Free Tier Compute' : `Strovr ${currentPlan.toUpperCase()}`}</span>
                     <span className="text-[10px] font-delight font-bold bg-blue-600 text-white px-2 py-0.5 rounded-sm">
                       {isFree ? '₹0 / forever' : currentPlan === 'basic' ? '₹699 / mo' : '₹1,999 / mo'}
                     </span>

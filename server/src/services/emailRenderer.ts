@@ -52,7 +52,7 @@ export function compileEmailHtml(payload: TemplatePayload, lead: LeadData): { su
   const subheadline = replaceMergeTags(templateData.subheadline || '', lead);
   const body = replaceMergeTags(templateData.body || '', lead);
   const ctaText = replaceMergeTags(templateData.ctaText || '', lead);
-  const ctaUrl = templateData.ctaUrl || 'https://leadpulse.io';
+  const ctaUrl = templateData.ctaUrl || 'https://www.strovr.space';
 
   const recipientEmail = lead.email || `contact@${lead.businessName.toLowerCase().replace(/[^a-z0-9]/g, '') || 'company'}.com`;
 
@@ -62,9 +62,9 @@ export function compileEmailHtml(payload: TemplatePayload, lead: LeadData): { su
         You received this verified direct outreach because <strong>${lead.businessName}</strong> operates in the ${lead.category || lead.fieldOfWork || 'local'} commercial sector across ${lead.location}.
       </p>
       <p style="margin: 0;">
-        Sent via LeadPulse Direct Dispatch Engine &bull; 
-        <a href="https://leadpulse.io/unsubscribe?email=${encodeURIComponent(recipientEmail)}" style="color: #71717A; text-decoration: underline;">Unsubscribe</a> &bull; 
-        <a href="https://leadpulse.io/privacy" style="color: #71717A; text-decoration: underline;">Privacy Policy</a> &bull; 
+        Sent via Strovr Direct Dispatch Engine &bull; 
+        <a href="https://www.strovr.space/unsubscribe?email=${encodeURIComponent(recipientEmail)}" style="color: #71717A; text-decoration: underline;">Unsubscribe</a> &bull; 
+        <a href="https://www.strovr.space/privacy" style="color: #71717A; text-decoration: underline;">Privacy Policy</a> &bull; 
         CAN-SPAM &amp; GDPR Compliant
       </p>
     </div>
@@ -77,7 +77,7 @@ export function compileEmailHtml(payload: TemplatePayload, lead: LeadData): { su
       bodyContent = `
         <div style="padding: 24px 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14px; line-height: 1.6; color: #18181B;">
           <div style="margin-bottom: 20px;">
-            <span style="background: #09090B; color: #FFFFFF; font-weight: 800; font-size: 11px; padding: 4px 8px; border-radius: 6px; letter-spacing: 0.5px;">LP DIRECT</span>
+            <span style="background: #09090B; color: #FFFFFF; font-weight: 800; font-size: 11px; padding: 4px 8px; border-radius: 6px; letter-spacing: 0.5px;">STROVR DIRECT</span>
           </div>
           <h2 style="font-size: 18px; font-weight: 800; margin: 0 0 16px 0; color: #09090B;">${headline}</h2>
           <div style="white-space: pre-wrap; margin-bottom: 24px;">${body}</div>
@@ -128,7 +128,7 @@ export function compileEmailHtml(payload: TemplatePayload, lead: LeadData): { su
       // Check if this is the modern Interactive Calendar booking template
       if (templateData.timeSlots || templateData.hostName || templateId === 'interactive_calendar') {
         const hostName = replaceMergeTags(templateData.hostName || 'Alex Roberts', lead);
-        const hostTitle = replaceMergeTags(templateData.hostTitle || 'Growth Director, LeadPulse', lead);
+        const hostTitle = replaceMergeTags(templateData.hostTitle || 'Growth Director, Strovr', lead);
         const hostAvatar = templateData.hostAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80';
         const duration = templateData.duration || '15 mins';
         const timeSlots = templateData.timeSlots || [
@@ -308,7 +308,7 @@ export function compileEmailHtml(payload: TemplatePayload, lead: LeadData): { su
           badge: 'Legacy Method'
         };
         const pulse = templateData.comparisonPulse || {
-          title: 'LeadPulse Autonomous Engine',
+          title: 'Strovr Autonomous Engine',
           monthlyCost: '₹699 / mo',
           timeSpent: '15 mins / week',
           replyRate: '28.4% Response Rate',
@@ -339,7 +339,7 @@ export function compileEmailHtml(payload: TemplatePayload, lead: LeadData): { su
             ${subheadline ? `<p style="font-size: 13px; color: #64748B; text-align: center; margin: 0 0 20px 0; font-weight: 500;">${subheadline}</p>` : ''}
             <div style="font-size: 13px; line-height: 1.6; color: #334155; margin-bottom: 24px; white-space: pre-wrap;">${body}</div>
 
-            <!-- Comparative Matrix: Legacy vs LeadPulse -->
+            <!-- Comparative Matrix: Legacy vs Strovr -->
             <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;">
               <tr>
                 <!-- Legacy Method Card -->
@@ -355,10 +355,10 @@ export function compileEmailHtml(payload: TemplatePayload, lead: LeadData): { su
 
                 <td width="4%"></td>
 
-                <!-- LeadPulse Card -->
+                <!-- Strovr Card -->
                 <td width="48%" valign="top" style="background: #F0FDF4; border: 2px solid #86EFAC; border-radius: 12px; padding: 18px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.1);">
                   <span style="display: inline-block; background: #DCFCE7; color: #15803D; font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 6px; text-transform: uppercase; margin-bottom: 8px;">
-                    ${pulse.badge || 'LeadPulse Solution'}
+                    ${pulse.badge || 'Strovr Solution'}
                   </span>
                   <div style="font-size: 13px; font-weight: 800; color: #14532D; margin-bottom: 12px; line-height: 1.3;">${pulse.title}</div>
                   <div style="font-size: 22px; font-weight: 900; color: #166534; margin-bottom: 8px;">${pulse.monthlyCost}</div>

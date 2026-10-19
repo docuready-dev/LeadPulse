@@ -133,8 +133,8 @@ const DispatchTrackerModal = ({
           ? availableLeads.map(l => l._id).filter(Boolean)
           : audienceMode === 'single' && currentPreviewLead._id ? [currentPreviewLead._id] : [],
         fallbackLeads: selectedLeadsToDispatch,
-        fromName: connectedMailbox?.fromName || (user?.name ? `${user.name} | LeadPulse` : 'LeadPulse Growth Engine'),
-        fromEmail: connectedMailbox?.fromEmail || connectedMailbox?.user || user?.email || 'outreach@leadpulse.io'
+        fromName: connectedMailbox?.fromName || (user?.name ? `${user.name} | Strovr` : 'Strovr Growth Engine'),
+        fromEmail: connectedMailbox?.fromEmail || connectedMailbox?.user || user?.email || 'outreach@strovr.space'
       };
 
       setProgressPercent(45);
@@ -516,7 +516,7 @@ const DispatchTrackerModal = ({
               {/* TAB 2: TERMINAL PROTOCOL LOGS */}
               {activeTab === 'terminal' && (
                 <div className="bg-slate-950 text-emerald-400 font-delight font-medium text-xs rounded-md p-4 max-h-72 overflow-y-auto custom-scrollbar space-y-1.5 border border-slate-800">
-                  <div className="text-slate-500 text-[11px]">=== LEADPULSE OUTBOUND DISPATCH TELEMETRY STREAM ===</div>
+                  <div className="text-slate-500 text-[11px]">=== STROVR OUTBOUND DISPATCH TELEMETRY STREAM ===</div>
                   <div>[SOCKET] Handshake established with direct mail transport gateway.</div>
                   {deliveryLogs.map((log, i) => (
                     <div key={i} className="space-y-0.5">

@@ -79,8 +79,8 @@ router.get('/status', async (req: Request, res: Response) => {
     return res.json({
       isConnected: true,
       syncMode: 'smart_direct',
-      calendarId: 'leadpulse-smart-scheduler',
-      summary: 'LeadPulse Smart Calendar (Google Meet & 1-Click Sync Active)',
+      calendarId: 'strovr-smart-scheduler',
+      summary: 'Strovr Smart Calendar (Google Meet & 1-Click Sync Active)',
       appointmentScheduleUrl: userSettings?.appointmentScheduleUrl || null,
       icalFeedUrl,
       publicUrl: userSettings?.appointmentScheduleUrl || `${protocol}://${host}/appointments`,
@@ -90,8 +90,8 @@ router.get('/status', async (req: Request, res: Response) => {
     res.json({
       isConnected: true,
       syncMode: 'smart_direct',
-      calendarId: 'leadpulse-smart-scheduler',
-      summary: 'LeadPulse Smart Calendar (Active)',
+      calendarId: 'strovr-smart-scheduler',
+      summary: 'Strovr Smart Calendar (Active)',
       icalFeedUrl,
       timestamp: new Date().toISOString()
     });
@@ -163,7 +163,7 @@ router.post('/configure', async (req: Request, res: Response) => {
       console.warn('[Booking Route] Could not persist googleCalendarSettings to Firestore (cached in-memory):', dbErr);
     }
 
-    let successMessage = 'LeadPulse Smart Scheduler active! Zero API setup required.';
+    let successMessage = 'Strovr Smart Scheduler active! Zero API setup required.';
     if (resolvedMode === 'google_schedule') {
       successMessage = 'Google Appointment Schedule linked successfully! Your live calendar schedule is now embedded.';
     } else if (resolvedMode === 'service_account') {
@@ -261,7 +261,7 @@ router.post('/create', async (req: Request, res: Response) => {
     // 1. Insert into Google Calendar via SDK / Universal Template
     const calendarResult = await createGoogleCalendarBooking(slotDetails, userSettings);
 
-    const title = `LeadPulse Calendar: ${serviceName} with ${leadName}`;
+    const title = `Strovr Calendar: ${serviceName} with ${leadName}`;
     const textDetails = `${serviceName} scheduled on ${new Date(startTime).toLocaleString('en-US', { timeZone })}${calendarResult.meetLink ? ' | Video Meet: ' + calendarResult.meetLink : ''}.${notes ? ' Notes: ' + notes : ''}`;
 
     let resolvedLeadId = dealId || `lead_${Date.now()}`;
@@ -305,7 +305,7 @@ router.post('/create', async (req: Request, res: Response) => {
             text: textDetails,
             date: startTime.split('T')[0],
             timeSlot: new Date(startTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-            author: 'LeadPulse Calendar Sync',
+            author: 'Strovr Calendar Sync',
             meetLink: calendarResult.meetLink || null,
             status: 'Confirmed'
           });
@@ -338,7 +338,7 @@ router.post('/create', async (req: Request, res: Response) => {
             text: textDetails,
             date: startTime.split('T')[0],
             timeSlot: new Date(startTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-            author: 'LeadPulse Calendar Sync',
+            author: 'Strovr Calendar Sync',
             meetLink: calendarResult.meetLink || null,
             status: 'Confirmed'
           });
@@ -364,7 +364,7 @@ router.post('/create', async (req: Request, res: Response) => {
             status: 'Demo',
             appointmentDate: startTime,
             timeSlot: new Date(startTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-            tags: ['LeadPulse Calendar Booking', 'Direct Lead'],
+            tags: ['Strovr Calendar Booking', 'Direct Lead'],
             saved: true,
             activities: [
               {
@@ -374,7 +374,7 @@ router.post('/create', async (req: Request, res: Response) => {
                 text: textDetails,
                 date: startTime.split('T')[0],
                 timeSlot: new Date(startTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-                author: 'LeadPulse Calendar Sync',
+                author: 'Strovr Calendar Sync',
                 meetLink: calendarResult.meetLink || null,
                 status: 'Confirmed'
               }
@@ -399,13 +399,13 @@ router.post('/create', async (req: Request, res: Response) => {
             ${serviceName}
           </h2>
           <p style="margin: 0 0 20px 0; font-size: 14px; line-height: 1.6; color: #475569;">
-            Hi ${leadName}, your consultation session has been confirmed on LeadPulse Calendar.
+            Hi ${leadName}, your consultation session has been confirmed on Strovr Calendar.
           </p>
           <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; margin-bottom: 24px; font-size: 13px; color: #1e293b; line-height: 1.6;">
             <strong>Date &amp; Time:</strong> ${new Date(startTime).toLocaleString('en-US', { timeZone, dateStyle: 'full', timeStyle: 'short' })}<br/>
             <strong>Topic:</strong> ${serviceName}<br/>
             ${calendarResult.meetLink ? `<strong>Meeting Link:</strong> <a href="${calendarResult.meetLink}" style="color: #4f46e5; font-weight: 600;">Join Video Meeting</a><br/>` : ''}
-            <strong>Calendar:</strong> LeadPulse Smart Scheduler
+            <strong>Calendar:</strong> Strovr Smart Scheduler
           </div>
           <div style="text-align: center; margin-bottom: 20px;">
             <a href="${calendarResult.htmlLink}" style="display: inline-block; background: #4f46e5; color: #ffffff; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-size: 13px; font-weight: 700;">
@@ -413,7 +413,7 @@ router.post('/create', async (req: Request, res: Response) => {
             </a>
           </div>
           <p style="margin: 0; font-size: 12px; color: #94a3b8; text-align: center;">
-            LeadPulse Autonomous B2B Outreach &amp; Calendar Scheduling Engine
+            Strovr Autonomous B2B Outreach &amp; Calendar Scheduling Engine
           </p>
         </div>
       `;
@@ -552,7 +552,7 @@ router.get('/feed/:userId.ics', async (req: Request, res: Response) => {
             appointments.push({
               id: act.id || doc.id,
               summary: act.title || `Consultation with ${data.firstName || data.businessName}`,
-              description: act.text || 'LeadPulse Scheduled Session',
+              description: act.text || 'Strovr Scheduled Session',
               startDate: act.date || data.appointmentDate,
               meetLink: act.meetLink,
               customerEmail: data.email
@@ -562,7 +562,7 @@ router.get('/feed/:userId.ics', async (req: Request, res: Response) => {
           appointments.push({
             id: `app-${doc.id}`,
             summary: `Consultation with ${data.firstName || data.businessName}`,
-            description: `LeadPulse Demo with ${data.businessName}`,
+            description: `Strovr Demo with ${data.businessName}`,
             startDate: data.appointmentDate,
             meetLink: null,
             customerEmail: data.email
@@ -581,10 +581,10 @@ router.get('/feed/:userId.ics', async (req: Request, res: Response) => {
     let icsContent = [
       'BEGIN:VCALENDAR',
       'VERSION:2.0',
-      'PRODID:-//LeadPulse//LeadPulse Google Calendar Sync//EN',
+      'PRODID:-//Strovr//Strovr Google Calendar Sync//EN',
       'CALSCALE:GREGORIAN',
       'METHOD:PUBLISH',
-      'X-WR-CALNAME:LeadPulse Scheduled Bookings',
+      'X-WR-CALNAME:Strovr Scheduled Bookings',
       'X-WR-TIMEZONE:Asia/Kolkata'
     ];
 
@@ -593,11 +593,11 @@ router.get('/feed/:userId.ics', async (req: Request, res: Response) => {
       const dtEnd = formatIcsDate(new Date(new Date(app.startDate || Date.now()).getTime() + 30 * 60 * 1000).toISOString());
       icsContent.push(
         'BEGIN:VEVENT',
-        `UID:lp-${app.id || idx}-${userId}@leadpulse.io`,
+        `UID:st-${app.id || idx}-${userId}@strovr.space`,
         `DTSTAMP:${formatIcsDate(new Date().toISOString())}`,
         `DTSTART:${dtStart}`,
         `DTEND:${dtEnd}`,
-        `SUMMARY:${(app.summary || 'LeadPulse Booking').replace(/,/g, '\\,')}`,
+        `SUMMARY:${(app.summary || 'Strovr Booking').replace(/,/g, '\\,')}`,
         `DESCRIPTION:${(app.description || 'Consultation session').replace(/\n/g, '\\n')}`,
         app.meetLink ? `URL:${app.meetLink}` : '',
         'STATUS:CONFIRMED',
@@ -608,7 +608,7 @@ router.get('/feed/:userId.ics', async (req: Request, res: Response) => {
     icsContent.push('END:VCALENDAR');
 
     res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
-    res.setHeader('Content-Disposition', `inline; filename="leadpulse-${userId}.ics"`);
+    res.setHeader('Content-Disposition', `inline; filename="strovr-${userId}.ics"`);
     res.send(icsContent.filter(Boolean).join('\r\n'));
   } catch (err: any) {
     res.status(500).send('Error generating calendar feed');

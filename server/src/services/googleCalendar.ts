@@ -188,10 +188,10 @@ export async function checkGoogleCalendarStatus(settings?: GoogleCalendarSetting
   const setupInstructions = [
     '1. Go to Google Cloud Console (console.cloud.google.com) and enable the Google Calendar API.',
     '2. Create a Service Account (or OAuth 2.0 Client) and download the JSON key file.',
-    '3. Create a dedicated Google Calendar in your Google account (e.g. "LeadPulse Bookings").',
+    '3. Create a dedicated Google Calendar in your Google account (e.g. "Strovr Bookings").',
     '4. Under Calendar Settings, copy the Calendar ID (ends in @group.calendar.google.com).',
     '5. Share the calendar with your service account email with "Make changes to events" permission.',
-    '6. Paste your Calendar ID and Service Account JSON in LeadPulse Calendar Settings.'
+    '6. Paste your Calendar ID and Service Account JSON in Strovr Calendar Settings.'
   ];
 
   if (!isConfigured || !calendar) {
@@ -352,14 +352,14 @@ export async function createGoogleCalendarBooking(
 
   const eventSummary = `Call with ${slotDetails.leadName}`;
   const eventDescription = [
-    `Lead Generation booking via LeadPulse.`,
+    `Lead Generation booking via Strovr.`,
     `Lead Name: ${slotDetails.leadName}`,
     `Email: ${slotDetails.leadEmail}`,
     slotDetails.leadPhone ? `Phone: ${slotDetails.leadPhone}` : null,
     slotDetails.companyName ? `Company: ${slotDetails.companyName}` : null,
     slotDetails.serviceName ? `Topic: ${slotDetails.serviceName}` : null,
     slotDetails.notes ? `Notes: ${slotDetails.notes}` : null,
-    `\nPowered by LeadPulse B2B Revenue Engine`
+    `\nPowered by Strovr B2B Revenue Engine`
   ].filter(Boolean).join('\n');
 
   if (isConfigured && calendar) {
@@ -432,7 +432,7 @@ export async function createGoogleCalendarBooking(
         leadName: slotDetails.leadName,
         leadEmail: slotDetails.leadEmail,
         isGoogleCalendarSynced: false,
-        message: `Booking created in LeadPulse. (Google Calendar API returned: ${apiErr.message})`,
+        message: `Booking created in Strovr. (Google Calendar API returned: ${apiErr.message})`,
         error: apiErr.message
       };
     }
@@ -455,6 +455,6 @@ export async function createGoogleCalendarBooking(
     leadName: slotDetails.leadName,
     leadEmail: slotDetails.leadEmail,
     isGoogleCalendarSynced: false,
-    message: 'Booking confirmed in LeadPulse scheduler. Connect Google Calendar API in Calendar Settings for automated two-way cloud sync.'
+    message: 'Booking confirmed in Strovr scheduler. Connect Google Calendar API in Calendar Settings for automated two-way cloud sync.'
   };
 }

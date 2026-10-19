@@ -87,8 +87,8 @@ const requireAuth = async (req: any, res: any, next: any) => {
     if (!userData) {
       req.user = { 
         _id: userId, 
-        name: 'LeadPulse Growth User', 
-        email: userId.includes('@') ? userId : 'user@leadpulse.io', 
+        name: 'Strovr Growth User', 
+        email: userId.includes('@') ? userId : 'user@strovr.space', 
         plan: 'free' 
       };
       return next();
@@ -101,7 +101,7 @@ const requireAuth = async (req: any, res: any, next: any) => {
     };
     next();
   } catch (err) {
-    req.user = { _id: userId, name: 'LeadPulse Growth User', email: 'user@leadpulse.io', plan: 'free' };
+    req.user = { _id: userId, name: 'Strovr Growth User', email: 'user@strovr.space', plan: 'free' };
     next();
   }
 };
@@ -267,7 +267,7 @@ router.post('/dispatch-batch', requireAuth, async (req: any, res: any) => {
         subject: compiled.subject,
         html: compiled.html,
         text: compiled.text,
-        fromName: fromName || req.user.name || 'LeadPulse Growth Director',
+        fromName: fromName || req.user.name || 'Strovr Growth Director',
         fromEmail: fromEmail || req.user.email,
         userSmtp: userSmtpSettings
       });
@@ -314,7 +314,7 @@ router.post('/dispatch-batch', requireAuth, async (req: any, res: any) => {
             messageId: result.messageId,
             previewUrl: resolvedPreview,
             status: 'Delivered',
-            author: fromName || req.user.name || 'LeadPulse Operator'
+            author: fromName || req.user.name || 'Strovr Operator'
           });
 
           await leadRef.update({
@@ -468,7 +468,7 @@ router.post('/dispatch-single', requireAuth, async (req: any, res: any) => {
       subject: compiled.subject,
       html: compiled.html,
       text: compiled.text,
-      fromName: fromName || req.user.name || 'LeadPulse Growth Director',
+      fromName: fromName || req.user.name || 'Strovr Growth Director',
       fromEmail: fromEmail || req.user.email,
       userSmtp: userSmtpSettings
     });
@@ -511,7 +511,7 @@ router.post('/dispatch-single', requireAuth, async (req: any, res: any) => {
             messageId: result.messageId,
             previewUrl: result.previewUrl || null,
             status: 'Delivered',
-            author: fromName || req.user.name || 'LeadPulse Operator'
+            author: fromName || req.user.name || 'Strovr Operator'
           });
 
           await leadRef.update({
@@ -573,7 +573,7 @@ router.get('/mailbox', requireAuth, async (req: any, res: any) => {
       provider: 'sendgrid',
       apiKey: process.env.SENDGRID_API_KEY,
       fromEmail: process.env.SENDGRID_FROM_EMAIL || req.user.email,
-      fromName: req.user.name || 'LeadPulse Operator',
+      fromName: req.user.name || 'Strovr Operator',
       replyTo: process.env.SENDGRID_FROM_EMAIL || req.user.email,
       isRenderEnv: true,
       verifiedAt: new Date().toISOString()
@@ -639,7 +639,7 @@ router.post('/verify-mailbox', requireAuth, async (req: any, res: any) => {
 
   const resolvedApiKey = (apiKey || (user === 'apikey' ? pass : '') || process.env.SENDGRID_API_KEY || '').trim();
   const cleanFromEmail = (fromEmail !== undefined ? fromEmail : (user || req.user.email || '')).trim();
-  const cleanFromName = (fromName || req.user.name || 'LeadPulse Operator').trim();
+  const cleanFromName = (fromName || req.user.name || 'Strovr Operator').trim();
   const cleanReplyTo = (replyTo || cleanFromEmail).trim();
 
   // Primary pathway: SendGrid Web API over HTTPS (Port 443)
@@ -901,7 +901,7 @@ router.get('/preview-delivered/:id', (req: any, res: any) => {
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>${msg.subject} - LeadPulse Inbox Inspector</title>
+        <title>${msg.subject} - Strovr Inbox Inspector</title>
         <style>
           * { box-sizing: border-box; }
           body { margin: 0; padding: 0; background: #F8FAFC; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #0F172A; }
@@ -916,7 +916,7 @@ router.get('/preview-delivered/:id', (req: any, res: any) => {
       <body>
         <div class="inspector-header">
           <div style="display: flex; align-items: center; gap: 12px;">
-            <strong>LeadPulse Direct Delivery Inspector</strong>
+            <strong>Strovr Direct Delivery Inspector</strong>
             <span class="badge">Delivered (250 OK)</span>
           </div>
           <div style="color: #94A3B8; font-size: 12px;">Transport: ${msg.provider}</div>
@@ -1091,7 +1091,7 @@ router.get('/unsubscribe', async (req: express.Request, res: express.Response) =
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Unsubscribed | LeadPulse</title>
+      <title>Unsubscribed | Strovr</title>
       <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background-color: #F8FAFC; color: #0F172A; }
         .card { max-width: 440px; padding: 36px; background: #FFFFFF; border-radius: 16px; border: 1px solid #E2E8F0; text-align: center; box-shadow: 0 4px 16px rgba(0,0,0,0.06); }
@@ -1105,8 +1105,8 @@ router.get('/unsubscribe', async (req: express.Request, res: express.Response) =
       <div class="card">
         <div class="badge">Unsubscribed Successfully</div>
         <h2>You Have Been Opted Out</h2>
-        <p>The address <span class="email-pill">${email || 'your email'}</span> has been permanently unsubscribed from all future LeadPulse outreach campaigns.</p>
-        <p style="font-size: 11px; color: #94A3B8; margin: 0;">LeadPulse CAN-SPAM &amp; GDPR Opt-Out Compliance Registry</p>
+        <p>The address <span class="email-pill">${email || 'your email'}</span> has been permanently unsubscribed from all future Strovr outreach campaigns.</p>
+        <p style="font-size: 11px; color: #94A3B8; margin: 0;">Strovr CAN-SPAM &amp; GDPR Opt-Out Compliance Registry</p>
       </div>
     </body>
     </html>

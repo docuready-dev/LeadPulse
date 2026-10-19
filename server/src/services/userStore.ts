@@ -174,7 +174,7 @@ class UserStore {
       email: cleanEmail,
       password: user.password !== undefined ? user.password : existing?.password,
       googleId: user.googleId || existing?.googleId,
-      name: isSuperAdmin ? 'Ashley' : (user.name || (isBiconEmail ? 'Bicon Ghose' : existing?.name || 'LeadPulse User')),
+      name: isSuperAdmin ? 'Ashley' : (user.name || (isBiconEmail ? 'Bicon Ghose' : existing?.name || 'Strovr User')),
       role: isSuperAdmin ? 'SUPER_ADMIN' : (user.role || existing?.role || 'USER'),
       plan: isSuperAdmin ? 'pro' : ((existing?.plan && existing.plan !== 'free' && (!user.plan || user.plan === 'free')) ? existing.plan : (user.plan || existing?.plan || 'free')),
       lead_credits: user.lead_credits !== undefined ? user.lead_credits : (existing?.lead_credits !== undefined ? existing.lead_credits : (isSuperAdmin ? 1000 : 15)),

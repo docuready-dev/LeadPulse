@@ -178,7 +178,7 @@ const EmailProviderModal = ({ isOpen, onClose, user, onSaved }: EmailProviderMod
             <div className="flex items-center gap-2.5 text-slate-300">
               <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
               <span>
-                <strong className="text-white font-medium">Render Cloud Egress Notice:</strong> Render blocks outbound SMTP ports 587 and 465. LeadPulse transmits cold outreach via SendGrid Web API over standard HTTPS (Port 443).
+                <strong className="text-white font-medium">Render Cloud Egress Notice:</strong> Render blocks outbound SMTP ports 587 and 465. Strovr transmits cold outreach via SendGrid Web API over standard HTTPS (Port 443).
               </span>
             </div>
             <div className="shrink-0 hidden sm:flex items-center gap-1.5 px-2 py-1 rounded-md bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[11px] font-medium">
@@ -370,7 +370,7 @@ const EmailProviderModal = ({ isOpen, onClose, user, onSaved }: EmailProviderMod
                       type="text"
                       value={fromName}
                       onChange={(e) => setFromName(e.target.value)}
-                      placeholder="e.g. Alex Rivera | LeadPulse"
+                      placeholder="e.g. Alex Rivera | Strovr"
                       className="w-full h-9 px-3 bg-slate-950 border border-slate-800 rounded-lg text-xs text-white placeholder:text-slate-600 focus:outline-none focus:border-blue-500 transition-colors"
                     />
                     <span className="text-[10px] text-slate-500">Name shown to email recipients.</span>
@@ -428,7 +428,7 @@ const EmailProviderModal = ({ isOpen, onClose, user, onSaved }: EmailProviderMod
                 <span>Zero-Config Render Environment Variables</span>
               </div>
               <p className="text-xs text-slate-400 leading-relaxed">
-                If you prefer not to enter your API key in the UI, you can inject it directly through your Render Dashboard. LeadPulse automatically detects system environment keys!
+                If you prefer not to enter your API key in the UI, you can inject it directly through your Render Dashboard. Strovr automatically detects system environment keys!
               </p>
 
               <div className="p-3 rounded-lg bg-slate-950 border border-slate-800 space-y-2 font-mono text-[11px]">

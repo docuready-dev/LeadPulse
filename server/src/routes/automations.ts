@@ -15,7 +15,7 @@ const DEFAULT_STARTER_JOURNEYS = [
       {
         id: 'step_1',
         type: 'trigger',
-        title: 'Trigger: Contact Enters LeadPulse',
+        title: 'Trigger: Contact Enters Strovr',
         description: 'New contact captured via Form or harvested in Lead Finder.',
         config: {}
       },
@@ -26,7 +26,7 @@ const DEFAULT_STARTER_JOURNEYS = [
         description: 'Send dynamic hook referencing their business niche & location.',
         config: {
           emailSubject: 'Quick question regarding your growth at {{company}}',
-          emailBody: 'Hi {{name}}, saw your team is expanding in {{location}}. Would love to share how LeadPulse automates your pipeline.'
+          emailBody: 'Hi {{name}}, saw your team is expanding in {{location}}. Would love to share how Strovr automates your pipeline.'
         }
       },
       {

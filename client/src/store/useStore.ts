@@ -118,6 +118,15 @@ interface AppState {
   notifyIntegration: (appId: string, summary: string, payload?: any) => Promise<any>;
 }
 
+if (typeof window !== 'undefined') {
+  try {
+    const legacy = localStorage.getItem('leadpulse-storage');
+    if (legacy && !localStorage.getItem('strovr-storage')) {
+      localStorage.setItem('strovr-storage', legacy);
+    }
+  } catch {}
+}
+
 export const useStore = create<AppState>()(
   persist(
     (set, get) => ({
@@ -265,7 +274,7 @@ export const useStore = create<AppState>()(
       }
     }),
     {
-      name: 'leadpulse-storage',
+      name: 'strovr-storage',
       partialize: (state) => ({
         user: normalizeUserCredits(state.user),
         token: state.token,

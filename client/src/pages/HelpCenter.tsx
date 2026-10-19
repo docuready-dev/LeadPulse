@@ -52,14 +52,14 @@ const HELP_CATEGORIES: TopicCategory[] = [
     description: 'Workspace onboarding, architecture overview & first campaign checklist',
     articles: [
       {
-        id: 'welcome-leadpulse',
-        title: 'Welcome to LeadPulse by DocuReady',
+        id: 'welcome-strovr',
+        title: 'Welcome to Strovr by DocuReady',
         readingTime: '3 min read',
         lastUpdated: 'Updated Today',
         route: '/dashboard',
         routeLabel: 'Open Dashboard',
         summary:
-          'LeadPulse is an enterprise B2B spatial lead harvesting, multi-channel outreach (Email + WhatsApp), and customizable Kanban CRM platform engineered by DocuReady. Unlike bloated legacy CRMs that charge $150+/seat, LeadPulse unifies real-time local business discovery and direct outreach into one high-velocity workspace.',
+          'Strovr (Derived from "Strove" - striving for growth) is an enterprise B2B spatial lead harvesting, multi-channel outreach (Email + WhatsApp), and customizable Kanban CRM platform engineered by DocuReady. Unlike bloated legacy CRMs that charge $150+/seat, Strovr unifies real-time local business discovery and direct outreach into one high-velocity workspace.',
         keyTakeaways: [
           'Unified workflow: Scrape B2B prospects -> Enrich Email/WhatsApp -> Manage in Resizable Kanban -> Automate follow-ups.',
           'Transparent contact accounting: 1 Token = 1 Scraped Contact across all tiers.',
@@ -87,7 +87,7 @@ const HELP_CATEGORIES: TopicCategory[] = [
         ],
         proTip:
           'Bookmark the Help Center or press "/" anywhere on this page to instantly search across all setup guides, token rules, and webhook schemas.',
-        codeTitle: 'LeadPulse End-to-End Pipeline Architecture',
+        codeTitle: 'Strovr End-to-End Pipeline Architecture',
         codeBlock: `[1. Lead Finder] ──(1 Token = 1 Contact)──> [2. Resizable Kanban CRM]
                                                     │
          ┌──────────────────────────────────────────┴──────────────────────────────────────────┐
@@ -156,7 +156,7 @@ Dispatch AI Cold Email Sequence                                                1
         route: '/settings',
         routeLabel: 'Manage Billing & Tokens',
         summary:
-          'LeadPulse enforces a transparent, contact-based credit ledger: 1 Token = 1 Scraped Contact. You never lose tokens for empty searches, and your pool is strictly deducted by the exact number of business contacts harvested.',
+          'Strovr enforces a transparent, contact-based credit ledger: 1 Token = 1 Scraped Contact. You never lose tokens for empty searches, and your pool is strictly deducted by the exact number of business contacts harvested.',
         keyTakeaways: [
           'Strict 1:1 Accounting: If a search scrapes 10 contacts, exactly 10 tokens are deducted from your available pool.',
           'Free Tier Allocation: Includes 15 verified contact tokens (replenished every 4 days up to the 15-token cap).',
@@ -167,7 +167,7 @@ Dispatch AI Cold Email Sequence                                                1
           {
             title: 'Pre-Flight Token Check Before Scraping',
             detail:
-              'When you initiate a harvest in Lead Finder, the server verifies your live Firestore token balance. If you have fewer tokens than the requested batch size, LeadPulse automatically caps the scrape to your remaining tokens so your job still succeeds.'
+              'When you initiate a harvest in Lead Finder, the server verifies your live Firestore token balance. If you have fewer tokens than the requested batch size, Strovr automatically caps the scrape to your remaining tokens so your job still succeeds.'
           },
           {
             title: 'Exact Per-Contact Deduction',
@@ -201,7 +201,7 @@ const newCredits = Math.max(0, availableCredits - tokensUsed);`
         route: '/dashboard',
         routeLabel: 'View Quota Meter',
         summary:
-          'DocuReady engineered LeadPulse pricing to deliver 80% lower TCO than legacy data brokers while providing enterprise-grade spatial scraping, multi-seat governance, and OAuth integrations.',
+          'DocuReady engineered Strovr pricing to deliver 80% lower TCO than legacy data brokers while providing enterprise-grade spatial scraping, multi-seat governance, and OAuth integrations.',
         keyTakeaways: [
           'Free Tier ($0): 15 Contact Tokens / 4 days, 1 Operator Seat, Core Lead Finder & Kanban CRM.',
           'Basic Tier ($15/mo): 400 Contact Tokens / 4 days, 3 Team Seats, Email & WhatsApp Outreach Studio, CSV Export.',
@@ -240,7 +240,7 @@ const newCredits = Math.max(0, availableCredits - tokensUsed);`
         route: '/dashboard',
         routeLabel: 'Open Dashboard Widgets',
         summary:
-          'Your LeadPulse Dashboard is a modular command center equipped with 8 interactive widgets designed for high-tempo B2B sales operators.',
+          'Your Strovr Dashboard is a modular command center equipped with 8 interactive widgets designed for high-tempo B2B sales operators.',
         keyTakeaways: [
           'World Clock & Sprint Timer: Live analog/digital clock, B2B calling window statuses (IST, GMT, EST), and a 25-minute Pomodoro outreach sprint timer.',
           'Follow-Up & Campaign Calendar: Monthly interactive calendar where clicking any date lets you schedule time-stamped call reminders.',
@@ -274,7 +274,7 @@ const newCredits = Math.max(0, availableCredits - tokensUsed);`
         route: '/dashboard',
         routeLabel: 'Customize Dashboard Layout',
         summary:
-          'Every operator works differently. LeadPulse lets you switch between 6 curated prebuilt layouts in 1 click or enter "Edit Layout" mode to drag, reorder, resize, and hide/show any widget.',
+          'Every operator works differently. Strovr lets you switch between 6 curated prebuilt layouts in 1 click or enter "Edit Layout" mode to drag, reorder, resize, and hide/show any widget.',
         keyTakeaways: [
           '6 Prebuilt Layouts: Executive Command, Time & Schedule Focus, Sales Velocity & Funnel, Compact Bento Grid, Outbound SDR Cockpit, and Minimalist Focus.',
           'Drag-and-Drop Reordering: Click "Edit Layout" and drag any widget header to reposition it.',
@@ -360,7 +360,7 @@ const newCredits = Math.max(0, availableCredits - tokensUsed);`
         route: '/crm',
         routeLabel: 'Open Kanban Pipeline',
         summary:
-          'LeadPulse features an interactive, developer-grade Kanban board where every stage column can be resized horizontally, vertically, or diagonally using your mouse, and reordered by dragging the column header.',
+          'Strovr features an interactive, developer-grade Kanban board where every stage column can be resized horizontally, vertically, or diagonally using your mouse, and reordered by dragging the column header.',
         keyTakeaways: [
           'Mouse-Resizable Width & Height: Drag the right edge, bottom edge, or bottom-right corner handle of any Kanban column to resize it between 210px-640px wide and 260px-920px tall.',
           'Live Dimension Readout: A live `W × H` pixel badge appears in the column header while resizing.',
@@ -400,7 +400,7 @@ const newCredits = Math.max(0, availableCredits - tokensUsed);`
         route: '/crm',
         routeLabel: 'Open CRM Pipeline',
         summary:
-          'Many local businesses list a mobile/WhatsApp number on Google Maps without publishing an email on their website. LeadPulse turns those phone-only records into verified email leads using a 1-click WhatsApp bridge script.',
+          'Many local businesses list a mobile/WhatsApp number on Google Maps without publishing an email on their website. Strovr turns those phone-only records into verified email leads using a 1-click WhatsApp bridge script.',
         keyTakeaways: [
           'Automatically identifies "Phone Only / No Email Found" prospects.',
           'Launches WhatsApp with a pre-filled, high-conversion script requesting the decision maker’s best email for a custom proposal.',
@@ -415,7 +415,7 @@ const newCredits = Math.max(0, availableCredits - tokensUsed);`
           {
             title: 'Trigger the WhatsApp Capture Script',
             detail:
-              'Click "Request Email via WhatsApp". LeadPulse opens WhatsApp with a tailored message addressed to the business.'
+              'Click "Request Email via WhatsApp". Strovr opens WhatsApp with a tailored message addressed to the business.'
           },
           {
             title: 'Save the Captured Email Inline',
@@ -514,7 +514,7 @@ const newCredits = Math.max(0, availableCredits - tokensUsed);`
         route: '/integrations',
         routeLabel: 'Open Integrations Hub',
         summary:
-          'LeadPulse connects to HubSpot, Salesforce, Google Sheets, Slack, Microsoft Teams, Zapier, Make, Notion, Airtable, and Custom Webhooks through official vendor authorization portals and live HTTP webhook handshakes.',
+          'Strovr connects to HubSpot, Salesforce, Google Sheets, Slack, Microsoft Teams, Zapier, Make, Notion, Airtable, and Custom Webhooks through official vendor authorization portals and live HTTP webhook handshakes.',
         keyTakeaways: [
           'Vendor Authorization Flow: Clicking Connect opens the provider’s authorization portal window (e.g., HubSpot, Slack, Google OAuth) to complete workspace linking and scope verification.',
           'Active / Connected Filter Toggle: Use the top filter bar in Integrations to toggle between "All Integrations", "Connected / Active", and "Not Connected".',
@@ -541,10 +541,10 @@ const newCredits = Math.max(0, availableCredits - tokensUsed);`
           'Use the "Connected" filter toggle in the Integrations header anytime to audit which external systems currently have live sync access to your workspace.',
         codeTitle: 'Sample Outbound Webhook JSON Payload (POST)',
         codeBlock: `{
-  "event": "leadpulse.crm.stage_changed",
+  "event": "strovr.crm.stage_changed",
   "timestamp": "2026-10-12T08:00:00.000Z",
   "workspace": "DocuReady Enterprise",
-  "operator": "operator@leadpulse.io",
+  "operator": "operator@strovr.space",
   "data": {
     "leadId": "lp_994821a",
     "businessName": "Apex Industrial Systems",
@@ -572,7 +572,7 @@ const newCredits = Math.max(0, availableCredits - tokensUsed);`
         route: '/team',
         routeLabel: 'Open Team & Seats',
         summary:
-          'Manage multi-operator seats across Free (1 seat), Basic (3 seats), and Pro (10 seats) workspaces, and get answers to the most common questions about LeadPulse.',
+          'Manage multi-operator seats across Free (1 seat), Basic (3 seats), and Pro (10 seats) workspaces, and get answers to the most common questions about Strovr.',
         keyTakeaways: [
           'Role-based access control: Super Admin, Campaign Manager, and SDR Operator roles.',
           'Isolated tenant data in Firestore with encrypted credential storage.',
@@ -634,7 +634,7 @@ const HelpCenter = () => {
   const [expandedCatIds, setExpandedCatIds] = useState<string[]>(
     HELP_CATEGORIES.map(c => c.id)
   );
-  const [activeArticleId, setActiveArticleId] = useState<string>('welcome-leadpulse');
+  const [activeArticleId, setActiveArticleId] = useState<string>('welcome-strovr');
   const [completedSteps, setCompletedSteps] = useState<Record<string, boolean>>({});
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
@@ -1266,7 +1266,7 @@ const HelpCenter = () => {
                         </div>
                         {helpfulVote ? (
                           <div className="text-xs font-delight font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-md">
-                            ✓ Thank you! Your feedback helps DocuReady improve the LeadPulse guide.
+                            ✓ Thank you! Your feedback helps DocuReady improve the Strovr guide.
                           </div>
                         ) : (
                           <div className="flex items-center gap-2">
@@ -1423,7 +1423,7 @@ const HelpCenter = () => {
                         Need custom scraper concurrency, enterprise SSO, or dedicated webhook onboarding?
                       </p>
                       <a
-                        href="mailto:support@docuready.io?subject=LeadPulse%20Enterprise%20Support"
+                        href="mailto:support@strovr.space?subject=Strovr%20Enterprise%20Support"
                         className="inline-flex items-center gap-1.5 text-xs font-delight font-bold text-[#C85A32] hover:underline"
                       >
                         <span>Contact DocuReady Engineering →</span>

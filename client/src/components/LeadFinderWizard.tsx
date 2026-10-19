@@ -308,7 +308,7 @@ const LeadFinderWizard = ({ onHarvestStarted }: WizardProps) => {
             >
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
               <span>SerpApi: Connected</span>
-              {/* Mention SerpApi tier only for Basic and Pro LeadPulse subscribers */}
+              {/* Mention SerpApi tier only for Basic and Pro Strovr subscribers */}
               {!isFree && (
                 <span className="text-[10px] text-emerald-700 font-bold bg-emerald-100/70 px-1.5 py-0.2 rounded-md">
                   {serpApiStatus.account?.plan_name || 'Free'} Tier ({serpApiStatus.account?.plan_searches_left ?? 100} left)

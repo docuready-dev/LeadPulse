@@ -7,7 +7,7 @@ import MeshBackground from '../components/MeshBackground';
 import { useStore } from '../store/useStore';
 import docuReadyBlackLogo from '../assets/DocuReady-black.png';
 import docuReadyWhiteLogo from '../assets/DocuReady-white.png';
-import leadPulseLogo from '../assets/LeadPulse-logo.png';
+import strovrLogo from '../assets/strovr-logo.png';
 
 const companies = [
   { name: 'Acme Corp', icon: Database },
@@ -25,12 +25,12 @@ const benchmarkProfiles = {
     leadsPerMo: '500 Leads/mo',
     marketTotal: '₹9,200',
     marketAnnual: '₹1,10,400',
-    leadPulsePlan: 'Basic Plan',
-    leadPulseTotal: '₹699',
-    leadPulseAnnual: '₹8,388',
+    strovrPlan: 'Basic Plan',
+    strovrTotal: '₹699',
+    strovrAnnual: '₹8,388',
     annualSavings: '₹1,02,012',
     savingsPct: '92%',
-    leadPulseBarPct: 8,
+    strovrBarPct: 8,
     instances: [
       {
         id: '01',
@@ -85,12 +85,12 @@ const benchmarkProfiles = {
     leadsPerMo: '600 to 1,500 Leads/mo',
     marketTotal: '₹24,500',
     marketAnnual: '₹2,94,000',
-    leadPulsePlan: 'Basic / Pro Shared Pool',
-    leadPulseTotal: '₹699 to ₹1,999',
-    leadPulseAnnual: '₹8,388',
+    strovrPlan: 'Basic / Pro Shared Pool',
+    strovrTotal: '₹699 to ₹1,999',
+    strovrAnnual: '₹8,388',
     annualSavings: '₹2,70,000+',
     savingsPct: '94%',
-    leadPulseBarPct: 6,
+    strovrBarPct: 6,
     instances: [
       {
         id: '01',
@@ -145,12 +145,12 @@ const benchmarkProfiles = {
     leadsPerMo: '1,500+ Leads/mo',
     marketTotal: '₹44,900',
     marketAnnual: '₹5,38,800',
-    leadPulsePlan: 'Pro Tier (100% Seats)',
-    leadPulseTotal: '₹1,999',
-    leadPulseAnnual: '₹23,988',
+    strovrPlan: 'Pro Tier (100% Seats)',
+    strovrTotal: '₹1,999',
+    strovrAnnual: '₹23,988',
     annualSavings: '₹5,14,800+',
     savingsPct: '95%',
-    leadPulseBarPct: 5,
+    strovrBarPct: 5,
     instances: [
       {
         id: '01',
@@ -267,19 +267,19 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
           <a 
             href="/" 
             className="flex items-center gap-2.5 group cursor-pointer hover:opacity-90 transition-all select-none"
-            title="LeadPulse Home"
+            title="Strovr Home"
           >
             <div className="w-8 h-8 rounded-[6px] overflow-hidden bg-[#191716] flex items-center justify-center p-1 border border-[#E5E0D5] shadow-2xs group-hover:border-[#C85A32] group-hover:scale-105 transition-all shrink-0">
               <img 
-                src={leadPulseLogo} 
-                alt="LeadPulse Logo" 
+                src={strovrLogo} 
+                alt="Strovr Logo" 
                 className="w-full h-full object-contain" 
               />
             </div>
             <div className="flex flex-col">
               <div className="flex items-center gap-1.5">
                 <span className="font-extrabold text-[17px] tracking-tight text-[#191716] group-hover:text-[#C85A32] transition-colors leading-none">
-                  LeadPulse
+                  Strovr
                 </span>
                 <span className="text-[9.5px] font-delight font-bold uppercase bg-[#F5F2EB] text-[#C85A32] border border-[#E5E0D5] px-1.5 py-0.5 rounded-[4px] tracking-wider leading-none">
                   v1.0
@@ -332,7 +332,7 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
               variants={itemVars}
               className="mb-6 inline-flex items-center gap-2 px-3 py-1 rounded-[5px] border border-[#E5E0D5] bg-[#F5F2EB] text-[11px] font-delight font-bold text-[#57524B] tracking-wide"
             >
-              <span>LEADPULSE 3.0 // ARCHITECTURE RELEASE</span>
+              <span>STROVR 3.0 // ARCHITECTURE RELEASE</span>
               <span className="w-1 h-1 rounded-full bg-[#D6CFC2] mx-0.5"></span>
               <a href="#product" className="text-[#C85A32] hover:underline flex items-center gap-1">
                 Specs &rarr;
@@ -353,7 +353,7 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
               variants={itemVars}
               className="text-sm md:text-[15.5px] text-[#57524B] font-normal max-w-lg mb-8 leading-relaxed"
             >
-              Consolidate disconnected prospecting point solutions. LeadPulse unifies precision entity discovery, generative AI message synthesis, and multi-channel pipeline dispatch in one developer-grade console.
+              Consolidate disconnected prospecting point solutions. Strovr (derived from Strove: striving for growth) unifies precision entity discovery, generative AI message synthesis, and multi-channel pipeline dispatch in one developer-grade console.
             </motion.p>
 
             <motion.div variants={itemVars} className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
@@ -491,7 +491,7 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
             Three core engines. One integrated workspace.
           </h2>
           <p className="text-sm md:text-[15px] text-[#57524B] font-normal leading-relaxed">
-            Eliminate fragmented tools. LeadPulse connects precision prospect harvesting, generative AI email &amp; WhatsApp delivery, and visual CRM pipeline automation into an interconnected ledger.
+            Eliminate fragmented tools. Strovr connects precision prospect harvesting, generative AI email &amp; WhatsApp delivery, and visual CRM pipeline automation into an interconnected ledger.
           </p>
         </motion.div>
 
@@ -589,7 +589,7 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
             Engineered capabilities for predictable pipeline growth.
           </h2>
           <p className="text-sm md:text-[15px] text-[#57524B] font-normal leading-relaxed">
-            By fusing spatial audience data with AI-assisted delivery, LeadPulse ensures outbound messages are targeted, context-rich, and free from automated spam markers.
+            By fusing spatial audience data with AI-assisted delivery, Strovr ensures outbound messages are targeted, context-rich, and free from automated spam markers.
           </p>
         </motion.div>
 
@@ -803,7 +803,7 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
         </div>
       </section>
 
-      {/* ================= 6. WHY DOCUREADY ENGINEERED LEADPULSE (id="docuready") ================= */}
+      {/* ================= 6. WHY DOCUREADY ENGINEERED STROVR (id="docuready") ================= */}
       <section id="docuready" className="py-20 px-6 md:px-12 max-w-7xl mx-auto w-full relative z-10 scroll-mt-20">
         <div className="grid lg:grid-cols-12 gap-10 items-start">
           
@@ -824,7 +824,7 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
             </div>
 
             <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight text-[#191716] leading-[1.12]">
-              How we as <span className="text-[#C85A32] font-serif italic font-normal">DocuReady</span> focused on making LeadPulse genuinely worth it.
+              How we as <span className="text-[#C85A32] font-serif italic font-normal">DocuReady</span> focused on making Strovr genuinely worth it.
             </h2>
 
             <p className="text-sm md:text-[14.5px] text-[#57524B] leading-relaxed">
@@ -832,14 +832,14 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
             </p>
 
             <p className="text-sm md:text-[14.5px] text-[#57524B] leading-relaxed">
-              We engineered <strong>LeadPulse</strong> as a flagship <strong>DocuReady Entity</strong> with one uncompromising mandate: collapse that entire fragmented stack into a single, self-contained revenue operating system, priced so transparently that a single closed deal pays for an entire year of compute.
+              We engineered <strong>Strovr</strong> (derived from &quot;Strove&quot; - striving for growth) as a flagship <strong>DocuReady Entity</strong> with one uncompromising mandate: collapse that entire fragmented stack into a single, self-contained revenue operating system, priced so transparently that a single closed deal pays for an entire year of compute.
             </p>
 
             {/* What We Offer Pillar Box */}
             <div className="bg-white border border-[#E5E0D5] rounded-lg p-6 space-y-4 shadow-2xs">
               <div className="flex items-center justify-between border-b border-[#E5E0D5] pb-3">
                 <span className="text-[11px] font-delight font-bold uppercase tracking-wider text-[#191716]">
-                  What DocuReady Delivers Inside LeadPulse
+                  What DocuReady Delivers Inside Strovr
                 </span>
                 <img src={docuReadyBlackLogo} alt="DocuReady" className="h-3.5 w-auto object-contain opacity-80" />
               </div>
@@ -883,7 +883,7 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
                       <span>REAL-WORLD COST BENCHMARKING // LIVE STACK AUDIT</span>
                     </div>
                     <h3 className="text-lg sm:text-xl font-extrabold text-[#191716] tracking-tight">
-                      Fragmented Market Stack vs. DocuReady&apos;s LeadPulse
+                      Fragmented Market Stack vs. DocuReady&apos;s Strovr
                     </h3>
                   </div>
                   <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[5px] bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-delight font-bold shadow-2xs">
@@ -948,22 +948,22 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
                     </div>
                   </div>
 
-                  {/* LeadPulse Burn Bar */}
+                  {/* Strovr Burn Bar */}
                   <div className="space-y-1">
                     <div className="flex items-center justify-between text-xs font-delight">
                       <span className="font-extrabold text-[#191716] flex items-center gap-1.5">
                         <span className="w-2 h-2 rounded-xs bg-[#C85A32]"></span>
-                        LeadPulse Unified OS ({activeBenchmark.leadPulsePlan})
+                        Strovr Unified OS ({activeBenchmark.strovrPlan})
                       </span>
                       <span className="font-extrabold text-[#C85A32] tabular-nums">
-                        {activeBenchmark.leadPulseTotal} / mo
+                        {activeBenchmark.strovrTotal} / mo
                       </span>
                     </div>
                     <div className="w-full h-2.5 rounded-full bg-[#FDF3EF] overflow-hidden border border-[#F2D0C2]">
                       <motion.div
                         className="h-full bg-[#C85A32] rounded-full"
                         initial={false}
-                        animate={{ width: `${activeBenchmark.leadPulseBarPct}%` }}
+                        animate={{ width: `${activeBenchmark.strovrBarPct}%` }}
                         transition={{ type: "spring", stiffness: 130, damping: 18 }}
                         style={{ willChange: "width" }}
                       />
@@ -1014,11 +1014,11 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
                           </div>
                         </div>
 
-                        {/* LeadPulse Native Card */}
+                        {/* Strovr Native Card */}
                         <div className="p-3.5 rounded-lg bg-[#FDF6F3] border border-[#C85A32]/40 flex flex-col justify-between space-y-2 relative overflow-hidden">
                           <div>
                             <div className="flex items-center justify-between gap-1 text-[10px] uppercase tracking-wider text-[#C85A32] font-bold">
-                              <span>LeadPulse by DocuReady</span>
+                              <span>Strovr by DocuReady</span>
                               <span className="text-[9.5px] px-1.5 py-0.5 rounded bg-[#C85A32] text-white font-bold">
                                 {item.ourBadge}
                               </span>
@@ -1049,7 +1049,7 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
                     <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm font-delight font-bold text-white">
                       <span>Market Stack: <span className="line-through text-[#A8A096]">{activeBenchmark.marketTotal}/mo</span></span>
                       <span className="text-[#C85A32]">&rarr;</span>
-                      <span>LeadPulse: <span className="text-[#E07A5F]">{activeBenchmark.leadPulseTotal}/mo</span></span>
+                      <span>Strovr: <span className="text-[#E07A5F]">{activeBenchmark.strovrTotal}/mo</span></span>
                     </div>
                     <div className="text-[11px] font-delight text-[#A8A096]">
                       Keep <strong className="text-emerald-400">{activeBenchmark.annualSavings} every year</strong> inside your business, or start right now with 15 free tokens.
@@ -1167,7 +1167,7 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
             </div>
           </div>
 
-          {/* TIER 2: LEADPULSE BASIC (HIGHLIGHTED SWEET SPOT) */}
+          {/* TIER 2: STROVR BASIC (HIGHLIGHTED SWEET SPOT) */}
           <div className="bg-white border-2 border-[#C85A32] rounded-lg p-7 flex flex-col justify-between relative shadow-md">
             <div className="absolute -top-3 left-6 bg-[#C85A32] text-white text-[10px] font-delight font-bold px-3 py-0.5 rounded-[4px] uppercase tracking-wider">
               Most Popular • Just ₹23 / Day
@@ -1176,7 +1176,7 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
             <div>
               <div className="flex items-center justify-between mb-3 pt-1">
                 <span className="text-[11px] font-delight font-bold uppercase tracking-wider text-[#C85A32]">
-                  LeadPulse Basic
+                  Strovr Basic
                 </span>
                 <span className="text-[10px] font-delight font-bold px-2 py-0.5 rounded-[4px] bg-[#C85A32]/10 text-[#C85A32] border border-[#C85A32]/25">
                   1,500 Emails + 600 Leads
@@ -1235,12 +1235,12 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
             </div>
           </div>
 
-          {/* TIER 3: LEADPULSE PRO */}
+          {/* TIER 3: STROVR PRO */}
           <div className="bg-[#191716] text-[#FAF8F5] border border-[#2E2A27] rounded-lg p-7 flex flex-col justify-between relative shadow-2xs">
             <div>
               <div className="flex items-center justify-between mb-3">
                 <span className="text-[11px] font-delight font-bold uppercase tracking-wider text-[#E07A5F]">
-                  LeadPulse Pro
+                  Strovr Pro
                 </span>
                 <span className="text-[10px] font-delight font-bold px-2 py-0.5 rounded-[4px] bg-white/10 text-[#FAF8F5] border border-white/15">
                   5,000+ Emails / mo
@@ -1372,7 +1372,7 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
                 Detailed Capability &amp; Unit-Economics Bifurcation Matrix
               </h4>
               <p className="text-[11px] font-delight text-[#78716A]">
-                Every feature, compute quota, and unit cost broken down across LeadPulse tiers vs. current market rates.
+                Every feature, compute quota, and unit cost broken down across Strovr tiers vs. current market rates.
               </p>
             </div>
             <button
@@ -1475,7 +1475,7 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
             Check in and test your first harvest in 30 seconds.
           </h2>
           <p className="text-sm md:text-base text-[#B8B0A4] mb-8 max-w-xl leading-relaxed">
-            See why teams are replacing ₹12,000+/month of bloated outreach tools with DocuReady&apos;s unified LeadPulse engine. Start free and upgrade only when you see the pipeline results.
+            See why teams are replacing ₹12,000+/month of bloated outreach tools with DocuReady&apos;s unified Strovr engine. Start free and upgrade only when you see the pipeline results.
           </p>
           <motion.button
             whileHover={{ scale: 1.02 }}
@@ -1500,13 +1500,13 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
               <a 
                 href="/" 
                 className="flex items-center gap-2 group cursor-pointer hover:opacity-90 transition-all select-none"
-                title="LeadPulse Home"
+                title="Strovr Home"
               >
                 <div className="w-6 h-6 rounded overflow-hidden bg-[#191716] flex items-center justify-center p-0.5 border border-[#E5E0D5] group-hover:border-[#C85A32] transition-all shrink-0">
-                  <img src={leadPulseLogo} alt="LeadPulse Logo" className="w-full h-full object-contain" />
+                  <img src={strovrLogo} alt="Strovr Logo" className="w-full h-full object-contain" />
                 </div>
                 <span className="font-extrabold tracking-tight text-[#191716] group-hover:text-[#C85A32] transition-colors text-base">
-                  LeadPulse
+                  Strovr
                 </span>
                 <span className="text-[9px] font-delight font-bold uppercase bg-[#FAF8F5] text-[#C85A32] border border-[#E5E0D5] px-1 py-0.5 rounded tracking-wider">
                   v1.0
@@ -1546,10 +1546,10 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
 
           <div className="pt-5 border-t border-[#E5E0D5] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs font-delight text-[#78716A]">
             <p>
-              LeadPulse is a <strong>DocuReady Entity</strong>. Engineered to deliver enterprise B2B discovery, AI outreach synthesis, and pipeline automation at a fraction of current market rates.
+              Strovr is a <strong>DocuReady Entity</strong> (Derived from &quot;Strove&quot; - striving for growth). Engineered to deliver enterprise B2B discovery, AI outreach synthesis, and pipeline automation at a fraction of current market rates.
             </p>
             <p className="shrink-0">
-              &copy; {new Date().getFullYear()} DocuReady / LeadPulse Inc. All rights reserved.
+              &copy; {new Date().getFullYear()} DocuReady / Strovr. All rights reserved. www.strovr.space
             </p>
           </div>
         </div>
@@ -1561,8 +1561,8 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
           <div className="bg-white rounded-lg shadow-xl border border-[#D6CFC2] max-w-2xl w-full max-h-[85vh] flex flex-col overflow-hidden text-[#191716]">
             <div className="p-5 border-b border-[#E5E0D5] flex items-center justify-between bg-[#F5F2EB]">
               <div>
-                <h3 className="text-base font-extrabold tracking-tight text-[#191716]">LeadPulse Privacy Policy</h3>
-                <p className="text-[11px] font-delight text-[#78716A]">Effective Date: October 2026 • GDPR &amp; CCPA Compliant</p>
+                <h3 className="text-base font-extrabold tracking-tight text-[#191716]">Strovr Privacy Policy</h3>
+                <p className="text-[11px] font-delight text-[#78716A]">Effective Date: October 2026 • GDPR &amp; CCPA Compliant • www.strovr.space</p>
               </div>
               <button onClick={() => setIsPrivacyOpen(false)} className="text-[#78716A] hover:text-[#191716] transition-colors cursor-pointer">
                 <X className="w-4 h-4" />
@@ -1573,14 +1573,14 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
               <section className="space-y-1">
                 <h4 className="font-bold text-xs uppercase tracking-wider text-[#191716] font-delight">1. Information We Collect</h4>
                 <p>
-                  LeadPulse collects account credentials (name, email address), workspace profile configurations, and outreach preferences. In order to power your B2B prospect discovery, we access verified public professional records adhering strictly to data protection guidelines.
+                  Strovr collects account credentials (name, email address), workspace profile configurations, and outreach preferences. In order to power your B2B prospect discovery, we access verified public professional records adhering strictly to data protection guidelines.
                 </p>
               </section>
 
               <section className="space-y-1">
                 <h4 className="font-bold text-xs uppercase tracking-wider text-[#191716] font-delight">2. How We Use and Protect Data</h4>
                 <p>
-                  We use collected telemetry solely to provide, refine, and secure the LeadPulse service. All CRM contacts, email templates, and automated workflows are encrypted both in transit (TLS 1.3) and at rest via Google Cloud Firestore. We never sell or rent your private database to third parties.
+                  We use collected telemetry solely to provide, refine, and secure the Strovr service. All CRM contacts, email templates, and automated workflows are encrypted both in transit (TLS 1.3) and at rest via Google Cloud Firestore. We never sell or rent your private database to third parties.
                 </p>
               </section>
 
@@ -1594,7 +1594,7 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
               <section className="space-y-1">
                 <h4 className="font-bold text-xs uppercase tracking-wider text-[#191716] font-delight">4. Data Inquiries &amp; Contact</h4>
                 <p>
-                  For any privacy questions or data deletion requests, contact our Data Protection Officer at <a href="mailto:privacy@leadpulse.io" className="text-[#C85A32] font-delight font-semibold underline">privacy@leadpulse.io</a>.
+                  For any privacy questions or data deletion requests, contact our Data Protection Officer at <a href="mailto:privacy@strovr.space" className="text-[#C85A32] font-delight font-semibold underline">privacy@strovr.space</a>.
                 </p>
               </section>
             </div>
@@ -1615,7 +1615,7 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
             <div className="p-5 border-b border-[#E5E0D5] flex items-center justify-between bg-[#F5F2EB]">
               <div>
                 <h3 className="text-base font-extrabold tracking-tight text-[#191716]">Terms of Service</h3>
-                <p className="text-[11px] font-delight text-[#78716A]">Master Subscription Agreement • LeadPulse Inc.</p>
+                <p className="text-[11px] font-delight text-[#78716A]">Master Subscription Agreement • Strovr (www.strovr.space)</p>
               </div>
               <button onClick={() => setIsTermsOpen(false)} className="text-[#78716A] hover:text-[#191716] transition-colors cursor-pointer">
                 <X className="w-4 h-4" />
@@ -1626,14 +1626,14 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
               <section className="space-y-1">
                 <h4 className="font-bold text-xs uppercase tracking-wider text-[#191716] font-delight">1. Acceptance of Terms</h4>
                 <p>
-                  By launching your workspace or accessing the LeadPulse platform, you agree to be bound by these Terms of Service. If you are entering into this agreement on behalf of a company, you represent that you have authority to bind that entity.
+                  By launching your workspace or accessing the Strovr platform, you agree to be bound by these Terms of Service. If you are entering into this agreement on behalf of a company, you represent that you have authority to bind that entity.
                 </p>
               </section>
 
               <section className="space-y-1">
                 <h4 className="font-bold text-xs uppercase tracking-wider text-[#191716] font-delight">2. Acceptable Outreach &amp; CAN-SPAM Policy</h4>
                 <p>
-                  You agree to use LeadPulse outreach tools (Email, WhatsApp, SMS) strictly for lawful, legitimate B2B communication. Sending unsolicited deceptive spam, phishing, harassment, or violating national anti-spam statutes (CAN-SPAM, CASL, PECR) will result in immediate workspace termination.
+                  You agree to use Strovr outreach tools (Email, WhatsApp, SMS) strictly for lawful, legitimate B2B communication. Sending unsolicited deceptive spam, phishing, harassment, or violating national anti-spam statutes (CAN-SPAM, CASL, PECR) will result in immediate workspace termination.
                 </p>
               </section>
 
@@ -1647,7 +1647,7 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
               <section className="space-y-1">
                 <h4 className="font-bold text-xs uppercase tracking-wider text-[#191716] font-delight">4. Limitation of Liability</h4>
                 <p>
-                  LeadPulse provides AI suggestions and contact intelligence on an &ldquo;as is&rdquo; and &ldquo;as available&rdquo; basis. We do not guarantee specific sales outcomes, conversion rates, or email inbox placement rates which depend on external recipient mail servers.
+                  Strovr provides AI suggestions and contact intelligence on an &ldquo;as is&rdquo; and &ldquo;as available&rdquo; basis. We do not guarantee specific sales outcomes, conversion rates, or email inbox placement rates which depend on external recipient mail servers.
                 </p>
               </section>
             </div>
@@ -1668,7 +1668,7 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
             <div className="flex items-center justify-between pb-3 border-b border-[#E5E0D5]">
               <div>
                 <h3 className="text-sm font-extrabold tracking-tight text-[#191716]">Technical Support &amp; Inquiries</h3>
-                <p className="text-[10px] font-delight text-[#78716A]">LeadPulse Engineering Relay • A DocuReady Entity</p>
+                <p className="text-[10px] font-delight text-[#78716A]">Strovr Engineering Relay • A DocuReady Entity</p>
               </div>
               <button onClick={() => setIsContactOpen(false)} className="text-[#78716A] hover:text-[#191716] transition-colors cursor-pointer">
                 <X className="w-4 h-4" />
@@ -1723,7 +1723,7 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
             )}
 
             <div className="pt-2 border-t border-[#E5E0D5] flex items-center justify-between text-[11px] font-delight text-[#78716A]">
-              <span>support@leadpulse.io</span>
+              <span>support@strovr.space</span>
               <span>SLA: &lt; 2 hrs</span>
             </div>
           </div>

@@ -350,7 +350,7 @@ const AdminPanel = () => {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `LeadPulse_Master_Leads_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.setAttribute('download', `Strovr_Master_Leads_${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -361,7 +361,7 @@ const AdminPanel = () => {
     const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(globalLeads, null, 2));
     const downloadAnchor = document.createElement('a');
     downloadAnchor.setAttribute('href', dataStr);
-    downloadAnchor.setAttribute('download', `LeadPulse_Database_Dump_${new Date().toISOString().slice(0, 10)}.json`);
+    downloadAnchor.setAttribute('download', `Strovr_Database_Dump_${new Date().toISOString().slice(0, 10)}.json`);
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
@@ -761,7 +761,7 @@ const AdminPanel = () => {
                           <tr key={u._id} className="hover:bg-[#FAF8F5] transition-colors">
                             <td className="p-4">
                               <div className="font-bold text-[#191716] flex items-center gap-1.5">
-                                <span>{u.name || 'LeadPulse User'}</span>
+                                <span>{u.name || 'Strovr User'}</span>
                                 {isSuperAshley && (
                                   <span className="text-[9.5px] font-bold bg-[#E07A5F]/20 text-[#C85A32] px-1.5 py-0.2 rounded border border-[#E07A5F]/40">
                                     IMMUTABLE

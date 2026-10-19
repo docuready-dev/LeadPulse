@@ -188,12 +188,12 @@ export const WHATSAPP_MEDIA_PRESETS: WhatsAppMediaPreset[] = [
     description: 'B2B company credentials, growth metrics infographic, and 6-page presentation deck.',
     image: {
       url: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&auto=format&fit=crop&q=80',
-      caption: 'LeadPulse Growth Analytics & Live Performance Overview',
+      caption: 'Strovr Growth Analytics & Live Performance Overview',
       fileName: 'Executive_Analytics_Dashboard.jpg'
     },
     pdf: {
-      url: 'https://leadpulse.io/assets/LeadPulse_Executive_Deck.pdf',
-      fileName: 'LeadPulse_Executive_Deck.pdf',
+      url: 'https://www.strovr.space/assets/Strovr_Executive_Deck.pdf',
+      fileName: 'Strovr_Executive_Deck.pdf',
       fileSize: '2.4 MB',
       pageCount: '6 pages'
     }
@@ -209,7 +209,7 @@ export const WHATSAPP_MEDIA_PRESETS: WhatsAppMediaPreset[] = [
       fileName: 'Competitor_Gap_Analysis.png'
     },
     pdf: {
-      url: 'https://leadpulse.io/assets/Local_Market_Growth_Blueprint.pdf',
+      url: 'https://www.strovr.space/assets/Local_Market_Growth_Blueprint.pdf',
       fileName: '{{business_name}}_Growth_Blueprint.pdf',
       fileSize: '1.8 MB',
       pageCount: '4 pages'
@@ -226,8 +226,8 @@ export const WHATSAPP_MEDIA_PRESETS: WhatsAppMediaPreset[] = [
       fileName: 'Workflow_Architecture_Diagram.jpg'
     },
     pdf: {
-      url: 'https://leadpulse.io/assets/LeadPulse_Service_Catalog.pdf',
-      fileName: 'LeadPulse_Service_Catalog_2026.pdf',
+      url: 'https://www.strovr.space/assets/Strovr_Service_Catalog.pdf',
+      fileName: 'Strovr_Service_Catalog_2026.pdf',
       fileSize: '3.1 MB',
       pageCount: '8 pages'
     }

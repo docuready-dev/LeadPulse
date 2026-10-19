@@ -358,7 +358,7 @@ const Analytics = () => {
           <div className="bg-slate-950 border border-slate-800 text-white p-5 rounded-md space-y-3">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="font-bold text-sm text-white">LeadPulse AI Growth Recommendations</h3>
+                <h3 className="font-bold text-sm text-white">Strovr AI Growth Recommendations</h3>
                 <p className="text-xs text-slate-400 font-sans">Actionable advice based on real-time pipeline telemetry</p>
               </div>
               <span className="text-[10px] font-delight font-bold bg-blue-600 text-white px-2 py-0.5 rounded-sm uppercase tracking-wider">

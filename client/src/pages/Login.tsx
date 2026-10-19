@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import API_URL from '../config/api';
-import leadPulseLogo from '../assets/LeadPulse-logo.png';
+import strovrLogo from '../assets/strovr-logo.png';
 
 interface LoginProps {
   onBack?: () => void;
@@ -297,7 +297,7 @@ const Login = ({ onBack }: LoginProps) => {
         <div className="p-8 flex flex-col justify-center">
           <div className="max-w-sm w-full mx-auto">
             
-            {/* LeadPulse Brand Header */}
+            {/* Strovr Brand Header */}
             <div className="text-center mb-6">
               <a 
                 href="/" 
@@ -305,10 +305,10 @@ const Login = ({ onBack }: LoginProps) => {
                 title="Return to Landing Page"
               >
                 <div className="w-8 h-8 rounded-md overflow-hidden bg-[#191716] flex items-center justify-center p-1 border border-slate-200 shadow-2xs group-hover:border-[#C85A32] group-hover:scale-105 transition-all">
-                  <img src={leadPulseLogo} alt="LeadPulse Logo" className="w-full h-full object-contain" />
+                  <img src={strovrLogo} alt="Strovr Logo" className="w-full h-full object-contain" />
                 </div>
                 <span className="font-extrabold text-lg tracking-tight text-slate-900 group-hover:text-[#C85A32] transition-colors leading-none">
-                  LeadPulse
+                  Strovr
                 </span>
                 <span className="text-[9px] font-delight font-bold uppercase bg-slate-100 text-[#C85A32] border border-slate-200 px-1 py-0.5 rounded tracking-wider">
                   v1.0
@@ -347,7 +347,7 @@ const Login = ({ onBack }: LoginProps) => {
                   ? 'Enter your registered mobile number to receive a reset code.'
                   : viewMode === 'reset_otp'
                   ? `Enter code sent to ${phoneMasked} and choose a new password.`
-                  : 'Enter your credentials to access your LeadPulse workspace.'}
+                  : 'Enter your credentials to access your Strovr workspace.'}
               </p>
             </div>
 

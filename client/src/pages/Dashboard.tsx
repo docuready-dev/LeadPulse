@@ -213,12 +213,12 @@ const Dashboard = () => {
 
   // Layout & Drag-and-Drop State
   const [activePresetId, setActivePresetId] = useState<string>(() => {
-    return localStorage.getItem('leadpulse-dashboard-preset-v1') || 'executive';
+    return localStorage.getItem('strovr-dashboard-preset-v1') || localStorage.getItem('leadpulse-dashboard-preset-v1') || 'executive';
   });
 
   const [widgets, setWidgets] = useState<WidgetConfig[]>(() => {
     try {
-      const saved = localStorage.getItem('leadpulse-dashboard-layout-v1');
+      const saved = localStorage.getItem('strovr-dashboard-layout-v1') || localStorage.getItem('leadpulse-dashboard-layout-v1');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length === Object.keys(WIDGET_META).length) {
@@ -271,7 +271,7 @@ const Dashboard = () => {
   const [newEventTime, setNewEventTime] = useState('11:00');
   const [calendarEvents, setCalendarEvents] = useState<CalendarEventItem[]>(() => {
     try {
-      const saved = localStorage.getItem('leadpulse-dashboard-calendar-v1');
+      const saved = localStorage.getItem('strovr-dashboard-calendar-v1') || localStorage.getItem('leadpulse-dashboard-calendar-v1');
       if (saved) return JSON.parse(saved);
     } catch {}
     const todayKey = formatDateKey(new Date());
@@ -288,13 +288,14 @@ const Dashboard = () => {
   // Operator Scratchpad & Checklist State
   const [scratchpadText, setScratchpadText] = useState<string>(() => {
     return (
+      localStorage.getItem('strovr-dashboard-scratchpad-v1') ||
       localStorage.getItem('leadpulse-dashboard-scratchpad-v1') ||
       '• Focus Niche: B2B SaaS & Healthcare Clinics\n• Use WhatsApp Bridge template #1 before sending PDF deck.'
     );
   });
   const [checklist, setChecklist] = useState<ChecklistItem[]>(() => {
     try {
-      const saved = localStorage.getItem('leadpulse-dashboard-checklist-v1');
+      const saved = localStorage.getItem('strovr-dashboard-checklist-v1') || localStorage.getItem('leadpulse-dashboard-checklist-v1');
       if (saved) return JSON.parse(saved);
     } catch {}
     return [
@@ -384,8 +385,8 @@ const Dashboard = () => {
   // Save layout helper
   const persistWidgets = (next: WidgetConfig[], presetId = activePresetId) => {
     setWidgets(next);
-    localStorage.setItem('leadpulse-dashboard-layout-v1', JSON.stringify(next));
-    localStorage.setItem('leadpulse-dashboard-preset-v1', presetId);
+    localStorage.setItem('strovr-dashboard-layout-v1', JSON.stringify(next));
+    localStorage.setItem('strovr-dashboard-preset-v1', presetId);
   };
 
   const handleSelectPreset = (presetId: string) => {
@@ -458,7 +459,7 @@ const Dashboard = () => {
     };
     const updated = [...calendarEvents, item];
     setCalendarEvents(updated);
-    localStorage.setItem('leadpulse-dashboard-calendar-v1', JSON.stringify(updated));
+    localStorage.setItem('strovr-dashboard-calendar-v1', JSON.stringify(updated));
     setNewEventTitle('');
     showToast('Scheduled reminder saved to calendar');
   };
@@ -466,14 +467,14 @@ const Dashboard = () => {
   const handleDeleteCalendarEvent = (id: string) => {
     const updated = calendarEvents.filter(ev => ev.id !== id);
     setCalendarEvents(updated);
-    localStorage.setItem('leadpulse-dashboard-calendar-v1', JSON.stringify(updated));
+    localStorage.setItem('strovr-dashboard-calendar-v1', JSON.stringify(updated));
   };
 
   // Checklist & Scratchpad Helpers
   const handleToggleChecklist = (id: string) => {
     const updated = checklist.map(item => (item.id === id ? { ...item, done: !item.done } : item));
     setChecklist(updated);
-    localStorage.setItem('leadpulse-dashboard-checklist-v1', JSON.stringify(updated));
+    localStorage.setItem('strovr-dashboard-checklist-v1', JSON.stringify(updated));
   };
 
   const handleAddChecklistTask = (e: React.FormEvent) => {
@@ -481,14 +482,14 @@ const Dashboard = () => {
     if (!newTaskText.trim()) return;
     const updated = [...checklist, { id: `chk-${Date.now()}`, text: newTaskText.trim(), done: false }];
     setChecklist(updated);
-    localStorage.setItem('leadpulse-dashboard-checklist-v1', JSON.stringify(updated));
+    localStorage.setItem('strovr-dashboard-checklist-v1', JSON.stringify(updated));
     setNewTaskText('');
   };
 
   const handleDeleteChecklistTask = (id: string) => {
     const updated = checklist.filter(item => item.id !== id);
     setChecklist(updated);
-    localStorage.setItem('leadpulse-dashboard-checklist-v1', JSON.stringify(updated));
+    localStorage.setItem('strovr-dashboard-checklist-v1', JSON.stringify(updated));
   };
 
   // Derived Telemetry
@@ -1122,7 +1123,7 @@ const Dashboard = () => {
                 value={scratchpadText}
                 onChange={e => {
                   setScratchpadText(e.target.value);
-                  localStorage.setItem('leadpulse-dashboard-scratchpad-v1', e.target.value);
+                  localStorage.setItem('strovr-dashboard-scratchpad-v1', e.target.value);
                 }}
                 placeholder="Jot down objection notes, script tweaks, or target cities..."
                 className="w-full p-2.5 text-xs font-delight bg-[#FAF8F5] border border-[#E5E0D5] rounded-md text-[#191716] focus:outline-none focus:border-[#C85A32] resize-none"
@@ -1144,7 +1145,7 @@ const Dashboard = () => {
                     {user?.name || 'Ashley G.'}
                   </div>
                   <div className="text-[11px] text-[#6E675F] font-delight font-normal truncate">
-                    {user?.email || 'operator@leadpulse.io'}
+                    {user?.email || 'operator@strovr.space'}
                   </div>
                 </div>
                 <span className="inline-flex items-center gap-1 text-[9px] font-delight bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded border border-emerald-200 font-bold">

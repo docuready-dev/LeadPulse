@@ -31,13 +31,13 @@ try {
     initializeApp({ credential: credentialSource });
     console.log('Connected to Google Cloud Firestore via Service Account.');
   } else if (getApps().length === 0) {
-    initializeApp({ projectId: process.env.FIREBASE_PROJECT_ID || 'leadpulse-local-dev' });
+    initializeApp({ projectId: process.env.FIREBASE_PROJECT_ID || 'strovr-local-dev' });
     console.log('Connected to Firestore using project context.');
   }
 } catch (error) {
   console.warn('WARNING: Service account initialization failed. Falling back to default project context.', error);
   if (getApps().length === 0) {
-    initializeApp({ projectId: process.env.FIREBASE_PROJECT_ID || 'leadpulse-local-dev' });
+    initializeApp({ projectId: process.env.FIREBASE_PROJECT_ID || 'strovr-local-dev' });
   }
 }
 export const db = getFirestore();
@@ -127,7 +127,7 @@ if (fs.existsSync(path.join(clientDistPath, 'index.html'))) {
 
 const PORT = Number(process.env.PORT) || 3001;
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`LeadPulse Server listening on 0.0.0.0:${PORT} (${process.env.NODE_ENV || 'development'})`);
+  console.log(`Strovr Server listening on 0.0.0.0:${PORT} (${process.env.NODE_ENV || 'development'})`);
   // Start the background automation & drip worker
   automationWorker.start();
 });

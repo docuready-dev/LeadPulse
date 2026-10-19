@@ -71,7 +71,7 @@ const CrmPipeline = () => {
   // Kanban Column Order (Drag-to-Reposition) State
   const [columnOrder, setColumnOrder] = useState<string[]>(() => {
     try {
-      const saved = localStorage.getItem('leadpulse-kanban-order-v1');
+      const saved = localStorage.getItem('strovr-kanban-order-v1') || localStorage.getItem('leadpulse-kanban-order-v1');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length === KANBAN_STAGES.length && KANBAN_STAGES.every(s => parsed.includes(s))) {
@@ -87,7 +87,7 @@ const CrmPipeline = () => {
   // Kanban Column Dimensions (Mouse-Resizable Width & Height) State
   const [columnSizes, setColumnSizes] = useState<Record<string, { width: number; height: number }>>(() => {
     try {
-      const saved = localStorage.getItem('leadpulse-kanban-sizes-v1');
+      const saved = localStorage.getItem('strovr-kanban-sizes-v1') || localStorage.getItem('leadpulse-kanban-sizes-v1');
       if (saved) {
         return JSON.parse(saved);
       }
@@ -229,7 +229,7 @@ const CrmPipeline = () => {
   // Lead Card Drag and Drop Event Handlers
   const handleDragStart = (e: React.DragEvent, leadId: string) => {
     e.stopPropagation();
-    e.dataTransfer.setData('application/x-leadpulse-lead', leadId);
+    e.dataTransfer.setData('application/x-strovr-lead', leadId);
     e.dataTransfer.setData('text/plain', leadId);
     e.dataTransfer.effectAllowed = 'move';
     setDraggedLeadId(leadId);
@@ -257,7 +257,7 @@ const CrmPipeline = () => {
 
   const handleDrop = async (e: React.DragEvent, targetStage: string) => {
     e.preventDefault();
-    const colStage = e.dataTransfer.getData('application/x-leadpulse-col') || draggedColStage;
+    const colStage = e.dataTransfer.getData('application/x-strovr-col') || e.dataTransfer.getData('application/x-leadpulse-col') || draggedColStage;
     if (colStage) {
       setDragOverColStage(null);
       setDraggedColStage(null);
@@ -270,7 +270,7 @@ const CrmPipeline = () => {
             next.splice(fromIdx, 1);
             next.splice(toIdx, 0, colStage);
           }
-          localStorage.setItem('leadpulse-kanban-order-v1', JSON.stringify(next));
+          localStorage.setItem('strovr-kanban-order-v1', JSON.stringify(next));
           return next;
         });
         showToast(`Repositioned "${colStage}" column board`);
@@ -278,7 +278,7 @@ const CrmPipeline = () => {
       return;
     }
 
-    const leadId = e.dataTransfer.getData('application/x-leadpulse-lead') || e.dataTransfer.getData('text/plain') || draggedLeadId;
+    const leadId = e.dataTransfer.getData('application/x-strovr-lead') || e.dataTransfer.getData('application/x-leadpulse-lead') || e.dataTransfer.getData('text/plain') || draggedLeadId;
     setDragOverStage(null);
     setDraggedLeadId(null);
 
@@ -299,7 +299,7 @@ const CrmPipeline = () => {
 
   // Kanban Column Header Drag-to-Reposition Handlers
   const handleColDragStart = (e: React.DragEvent, stage: string) => {
-    e.dataTransfer.setData('application/x-leadpulse-col', stage);
+    e.dataTransfer.setData('application/x-strovr-col', stage);
     e.dataTransfer.effectAllowed = 'move';
     setDraggedColStage(stage);
     setDraggedLeadId(null);
@@ -349,7 +349,7 @@ const CrmPipeline = () => {
           ...prev,
           [resizingCol.stage]: { width: Math.round(nextWidth), height: Math.round(nextHeight) }
         };
-        localStorage.setItem('leadpulse-kanban-sizes-v1', JSON.stringify(updated));
+        localStorage.setItem('strovr-kanban-sizes-v1', JSON.stringify(updated));
         return updated;
       });
     };
@@ -369,7 +369,9 @@ const CrmPipeline = () => {
   const handleResetKanbanLayout = () => {
     setColumnOrder(KANBAN_STAGES);
     setColumnSizes({});
+    localStorage.removeItem('strovr-kanban-order-v1');
     localStorage.removeItem('leadpulse-kanban-order-v1');
+    localStorage.removeItem('strovr-kanban-sizes-v1');
     localStorage.removeItem('leadpulse-kanban-sizes-v1');
     showToast('Kanban board positions & dimensions restored to default');
   };
@@ -1250,7 +1252,7 @@ const CrmPipeline = () => {
                         </div>
                         <h4 className="text-sm font-bold text-slate-900 tracking-tight">No Verified Dispatches Yet</h4>
                         <p className="text-xs text-slate-500 leading-relaxed font-delight">
-                          LeadPulse enforces strict delivery verification. Only communications confirmed as delivered by the underlying gateway (SMTP 250 OK, WhatsApp, or Google Calendar) are logged here.
+                          Strovr enforces strict delivery verification. Only communications confirmed as delivered by the underlying gateway (SMTP 250 OK, WhatsApp, or Google Calendar) are logged here.
                         </p>
                         <button
                           type="button"
@@ -1307,7 +1309,7 @@ const CrmPipeline = () => {
                                   {activity.title || activity.subject || activity.text || `Verified delivery to ${lead.businessName}`}
                                 </td>
                                 <td className="py-2.5 px-3 border-r border-slate-200 text-slate-700 font-medium">
-                                  {activity.author || user?.name || 'LeadPulse Operator'}
+                                  {activity.author || user?.name || 'Strovr Operator'}
                                 </td>
                                 <td className="py-2.5 px-3 border-r border-slate-200 text-center">
                                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 shadow-2xs">

@@ -174,9 +174,9 @@ const TemplateGalleryModal = ({
                 <span className="text-[8px] font-extrabold text-rose-800 line-through">₹45k/mo</span>
                 <div className="w-full h-1 bg-rose-200 rounded-xs" />
               </div>
-              {/* LeadPulse card */}
+              {/* Strovr card */}
               <div className="bg-emerald-50 border border-emerald-300 p-1 rounded-xs flex flex-col space-y-0.5 shadow-2xs">
-                <span className="text-[6.5px] font-bold text-emerald-700 uppercase">LeadPulse</span>
+                <span className="text-[6.5px] font-bold text-emerald-700 uppercase">Strovr</span>
                 <span className="text-[9px] font-extrabold text-emerald-800">₹699/mo</span>
                 <span className="text-[6.5px] font-semibold text-emerald-600">8.4x Lower CAC</span>
               </div>

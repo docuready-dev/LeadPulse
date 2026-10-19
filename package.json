@@ -1,8 +1,8 @@
 {
-  "name": "leadpulse-platform",
+  "name": "strovr-platform",
   "version": "3.0.0",
   "private": true,
-  "description": "LeadPulse B2B Revenue Operating Engine (Full-Stack Workspace)",
+  "description": "Strovr B2B Revenue Operating Engine (Full-Stack Workspace)",
   "scripts": {
     "install:all": "npm --prefix server install --include=dev && npm --prefix client install --include=dev",
     "build:client": "npm --prefix client run build",

@@ -59,7 +59,7 @@ const TEMPLATE_PRESETS = [
         title: 'Instant Confirmation & Value Deck',
         description: 'Send greeting within 60 seconds.',
         config: {
-          emailSubject: 'Welcome! Here is your LeadPulse access deck',
+          emailSubject: 'Welcome! Here is your Strovr access deck',
           emailBody: 'Hi {{name}}, thanks for reaching out. Here is what you need to scale your outreach.'
         }
       },
@@ -90,7 +90,7 @@ const TEMPLATE_PRESETS = [
         id: 's1',
         type: 'trigger' as const,
         title: 'Trigger: Contact Added to Database',
-        description: 'Harvested or imported into LeadPulse.',
+        description: 'Harvested or imported into Strovr.',
         config: {}
       },
       {

@@ -27,10 +27,10 @@ interface ServiceOption {
 const AVAILABLE_SERVICES: ServiceOption[] = [
   {
     id: 'walkthrough',
-    name: '15-Min LeadPulse Walkthrough',
+    name: '15-Min Strovr Walkthrough',
     duration: 15,
     tag: 'Quick Demo',
-    description: 'High-speed overview of LeadPulse autonomous lead scraper and enrichment pipeline.'
+    description: 'High-speed overview of Strovr autonomous lead scraper and enrichment pipeline.'
   },
   {
     id: 'strategy',
@@ -55,7 +55,7 @@ const AVAILABLE_SERVICES: ServiceOption[] = [
   }
 ];
 
-export const DEFAULT_GOOGLE_SCHEDULE_URL = 'https://leadpulse-n4q2.onrender.com/85ff9e3b00380e263dcc3c8d4bb23a81c32683d5';
+export const DEFAULT_GOOGLE_SCHEDULE_URL = 'https://www.strovr.space/85ff9e3b00380e263dcc3c8d4bb23a81c32683d5';
 
 export const BookingWidget: React.FC<BookingWidgetProps> = ({
   leadContext,
@@ -64,7 +64,7 @@ export const BookingWidget: React.FC<BookingWidgetProps> = ({
   const { user } = useStore();
   const apiBase = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3001';
 
-  // LeadPulse Calendar Connection Status
+  // Strovr Calendar Connection Status
   const [calendarStatus, setCalendarStatus] = useState<any>(null);
   const [isCheckingStatus, setIsCheckingStatus] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
@@ -150,7 +150,7 @@ export const BookingWidget: React.FC<BookingWidgetProps> = ({
         setModalTab(res.data.syncMode === 'google_schedule' ? 'schedule_url' : 'smart_direct');
       }
     } catch {
-      setCalendarStatus({ isConnected: true, syncMode: 'smart_direct', calendarId: 'leadpulse-smart-scheduler' });
+      setCalendarStatus({ isConnected: true, syncMode: 'smart_direct', calendarId: 'strovr-smart-scheduler' });
     } finally {
       setIsCheckingStatus(false);
     }
@@ -206,7 +206,7 @@ export const BookingWidget: React.FC<BookingWidgetProps> = ({
     fetchSlots();
   }, [selectedDateObj.dateStr, selectedService.id]);
 
-  // Handle Save LeadPulse Calendar Settings
+  // Handle Save Strovr Calendar Settings
   const handleSaveSettings = async (overrideMode?: 'schedule_url' | 'smart_direct') => {
     const targetMode = overrideMode || modalTab;
     setIsSavingSettings(true);
@@ -293,14 +293,14 @@ export const BookingWidget: React.FC<BookingWidgetProps> = ({
           <div>
             <div className="flex items-center gap-2">
               <h3 className="text-base font-bold text-white tracking-tight">
-                LeadPulse Calendar Live Scheduler
+                Strovr Calendar Live Scheduler
               </h3>
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wide uppercase bg-emerald-400/20 text-emerald-200 border border-emerald-400/40">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                 <span>
                   {calendarStatus?.syncMode === 'google_schedule' 
                     ? 'Google Schedule Linked' 
-                    : 'LeadPulse Active (Zero-Setup)'}
+                    : 'Strovr Active (Zero-Setup)'}
                 </span>
               </span>
             </div>
@@ -315,7 +315,7 @@ export const BookingWidget: React.FC<BookingWidgetProps> = ({
             type="button"
             onClick={fetchStatus}
             disabled={isCheckingStatus}
-            title="Refresh LeadPulse Calendar status"
+            title="Refresh Strovr Calendar status"
             className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/15 transition-colors cursor-pointer text-xs flex items-center gap-1.5"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isCheckingStatus ? 'animate-spin' : ''}`} />
@@ -355,7 +355,7 @@ export const BookingWidget: React.FC<BookingWidgetProps> = ({
           <div className="p-5 bg-slate-50 border border-slate-200 rounded-2xl text-left text-xs space-y-2.5 text-slate-700 shadow-2xs">
             <div className="flex items-center justify-between pb-2 border-b border-slate-200">
               <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Appointment Details</span>
-              <span className="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 text-[10px]">LeadPulse Calendar</span>
+              <span className="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 text-[10px]">Strovr Calendar</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-slate-500 font-medium">Attendee:</span>
@@ -644,12 +644,12 @@ export const BookingWidget: React.FC<BookingWidgetProps> = ({
                 {isSubmitting ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Booking with LeadPulse Calendar...</span>
+                    <span>Booking with Strovr Calendar...</span>
                   </>
                 ) : (
                   <>
                     <Calendar className="w-4 h-4" />
-                    <span>Confirm &amp; Book with LeadPulse Calendar ({selectedSlot || 'Select Slot'})</span>
+                    <span>Confirm &amp; Book with Strovr Calendar ({selectedSlot || 'Select Slot'})</span>
                   </>
                 )}
               </button>
@@ -658,7 +658,7 @@ export const BookingWidget: React.FC<BookingWidgetProps> = ({
         </div>
       )}
 
-      {/* LeadPulse Calendar Settings Modal */}
+      {/* Strovr Calendar Settings Modal */}
       {showSettingsModal && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
           <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col animate-in fade-in">
@@ -667,7 +667,7 @@ export const BookingWidget: React.FC<BookingWidgetProps> = ({
             <div className="p-4 bg-slate-900 text-white flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Calendar className="w-4 h-4 text-emerald-400" />
-                <h4 className="text-sm font-bold text-white">LeadPulse Calendar Setup</h4>
+                <h4 className="text-sm font-bold text-white">Strovr Calendar Setup</h4>
               </div>
               <button
                 onClick={() => setShowSettingsModal(false)}
@@ -689,7 +689,7 @@ export const BookingWidget: React.FC<BookingWidgetProps> = ({
                 }`}
               >
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>Zero-Setup LeadPulse Calendar</span>
+                <span>Zero-Setup Strovr Calendar</span>
               </button>
 
               <button
@@ -715,7 +715,7 @@ export const BookingWidget: React.FC<BookingWidgetProps> = ({
                   <div className="p-3.5 bg-emerald-50/80 border border-emerald-200 rounded-xl space-y-2">
                     <span className="font-bold text-emerald-950 flex items-center gap-1.5 text-xs">
                       <Sparkles className="w-4 h-4 text-emerald-600" />
-                      <span>Zero-Setup LeadPulse Calendar (Active &amp; Ready)</span>
+                      <span>Zero-Setup Strovr Calendar (Active &amp; Ready)</span>
                     </span>
                     <p className="text-slate-600 text-[11px] leading-relaxed">
                       No Google Cloud Console, no API keys, and no service account credentials required! It is 100% functional right now:
@@ -743,7 +743,7 @@ export const BookingWidget: React.FC<BookingWidgetProps> = ({
                       className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 cursor-pointer"
                     >
                       {isSavingSettings ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
-                      <span>Keep LeadPulse Calendar Active</span>
+                      <span>Keep Strovr Calendar Active</span>
                     </button>
                   </div>
                 </div>
@@ -771,7 +771,7 @@ export const BookingWidget: React.FC<BookingWidgetProps> = ({
                         type="url"
                         value={settingsScheduleUrl}
                         onChange={(e) => setSettingsScheduleUrl(e.target.value)}
-                        placeholder="https://leadpulse-n4q2.onrender.com/85ff9e3b00380e263dcc3c8d4bb23a81c32683d5"
+                        placeholder="https://www.strovr.space/85ff9e3b00380e263dcc3c8d4bb23a81c32683d5"
                         className="w-full p-2.5 bg-white border border-slate-200 rounded-xl outline-none text-xs focus:border-indigo-500 font-mono"
                       />
                       <div className="flex items-center justify-between text-[11px]">

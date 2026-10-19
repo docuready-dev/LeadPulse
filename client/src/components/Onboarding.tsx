@@ -195,7 +195,7 @@ const Onboarding = () => {
               try {
                 const res = await axios.post('http://localhost:3001/api/auth/onboarding', {
                   userId: user?._id,
-                  company_name: 'LeadPulse Growth Team',
+                  company_name: 'Strovr Growth Team',
                   field_of_work: 'B2B Sales',
                   niche: 'B2B',
                   target_audience: 'Founders & Sales Leaders',

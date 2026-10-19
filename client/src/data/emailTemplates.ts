@@ -148,9 +148,9 @@ Best regards,
       subheadline: 'A custom growth package tailored specifically for {{field_of_work}}',
       body: `Traditional marketing methods in {{location}} are becoming increasingly noisy and expensive.
 
-With LeadPulse, {{business_name}} gains direct access to an autonomous local pipeline engine that scrapes, enriches, and initiates conversations with verified buyers every day.`,
+With Strovr, {{business_name}} gains direct access to an autonomous local pipeline engine that scrapes, enriches, and initiates conversations with verified buyers every day.`,
       ctaText: 'Explore Partner Program',
-      ctaUrl: 'https://leadpulse.io/partner-program'
+      ctaUrl: 'https://www.strovr.space/partner-program'
     }
   },
 
@@ -174,7 +174,7 @@ We have engineered an autonomous outreach engine that helps local operators acqu
 
 Select an available time slot below to lock in a quick 15-minute introductory chat:`,
       hostName: 'Alex Roberts',
-      hostTitle: 'Growth Director, LeadPulse',
+      hostTitle: 'Growth Director, Strovr',
       hostAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
       duration: '15 mins',
       timeSlots: [
@@ -207,15 +207,15 @@ Select an available time slot below to lock in a quick 15-minute introductory ch
       subheadline: 'Key trends affecting local enterprises in {{location}}',
       body: `We surveyed over 500 business owners across {{location}} to uncover how high-performing companies in {{field_of_work}} are acquiring clients this quarter.`,
       ctaText: 'Download Full Benchmark Report',
-      ctaUrl: 'https://leadpulse.io/reports',
+      ctaUrl: 'https://www.strovr.space/reports',
       col1Title: 'Local Scraper Trends',
       col1Body: 'Why multi-channel outreach is outpacing standalone email marketing by 3.4x.',
       col1Cta: 'Read Article',
-      col1CtaUrl: 'https://leadpulse.io/trends',
+      col1CtaUrl: 'https://www.strovr.space/trends',
       col2Title: 'Conversion Playbook',
       col2Body: 'How {{business_name}} can improve reply rates with automated merge tags.',
       col2Cta: 'View Playbook',
-      col2CtaUrl: 'https://leadpulse.io/playbook'
+      col2CtaUrl: 'https://www.strovr.space/playbook'
     }
   },
 
@@ -233,7 +233,7 @@ Select an available time slot below to lock in a quick 15-minute introductory ch
       subheadline: 'A limited compute allocation has been reserved for your team in {{location}}.',
       body: `We’re offering {{business_name}} 500 complimentary verified leads and zero platform setup fees this month. Claim your dedicated compute node before local slots in {{location}} close.`,
       ctaText: 'Claim Your 500 Leads Now',
-      ctaUrl: 'https://leadpulse.io/claim-leads'
+      ctaUrl: 'https://www.strovr.space/claim-leads'
     }
   },
 
@@ -242,13 +242,13 @@ Select an available time slot below to lock in a quick 15-minute introductory ch
     name: '6. Interactive ROI & Benchmark Card',
     tagline: 'Visual Cost & Revenue Multiplier Comparison',
     bestFor: 'Competitive displacement, ROI proposals, value audits, enterprise pitches',
-    purpose: 'Drives conversions through an interactive side-by-side benchmark card contrasting legacy manual costs with LeadPulse autonomous efficiency.',
+    purpose: 'Drives conversions through an interactive side-by-side benchmark card contrasting legacy manual costs with Strovr autonomous efficiency.',
     category: 'promotional',
     defaultData: {
       subject: 'ROI Analysis & Cost Benchmark for {{business_name}}',
       preheader: 'See how {{business_name}} compares to {{field_of_work}} standards',
       headline: 'Calculate {{business_name}}’s Projected Outreach ROI',
-      subheadline: 'Compare legacy manual agency fees vs LeadPulse autonomous engine',
+      subheadline: 'Compare legacy manual agency fees vs Strovr autonomous engine',
       body: `We analyzed lead generation economics for over 500 businesses in {{location}}. Operators in {{field_of_work}} frequently overpay for manual prospecting and outdated agency retainers.
 
 Review the live cost-efficiency comparison below to see what your team could save:`,
@@ -260,7 +260,7 @@ Review the live cost-efficiency comparison below to see what your team could sav
         badge: 'Legacy Method'
       },
       comparisonPulse: {
-        title: 'LeadPulse Autonomous Engine',
+        title: 'Strovr Autonomous Engine',
         monthlyCost: '₹699 / mo',
         timeSpent: '15 mins / week',
         replyRate: '28.4% Response Rate',
@@ -277,7 +277,7 @@ Review the live cost-efficiency comparison below to see what your team could sav
         'Two-way CRM pipeline synchronization with HubSpot, Google Sheets & Slack'
       ],
       ctaText: 'Claim {{business_name}}’s Growth Tier →',
-      ctaUrl: 'https://leadpulse.io/pricing'
+      ctaUrl: 'https://www.strovr.space/pricing'
     }
   },
 
@@ -299,7 +299,7 @@ Review the live cost-efficiency comparison below to see what your team could sav
       fBullet3: 'Compliance Evolution: Updated CAN-SPAM and GDPR guidelines for outbound B2B messaging.',
       fBottomNote: 'Summary: Proactive outreach that incorporates local context continues to yield the highest ROI for {{business_name}}.',
       ctaText: 'Access Executive Dashboard',
-      ctaUrl: 'https://leadpulse.io/dashboard'
+      ctaUrl: 'https://www.strovr.space/dashboard'
     }
   },
 
@@ -325,7 +325,7 @@ Review the live cost-efficiency comparison below to see what your team could sav
           imageUrl: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600&auto=format&fit=crop&q=80',
           description: 'Extract 300+ geo-targeted leads every month with live ratings & phone contacts.',
           ctaText: 'Select Plan',
-          ctaUrl: 'https://leadpulse.io/checkout?plan=starter'
+          ctaUrl: 'https://www.strovr.space/checkout?plan=starter'
         },
         {
           name: 'Multi-Channel Pro Suite',
@@ -335,7 +335,7 @@ Review the live cost-efficiency comparison below to see what your team could sav
           imageUrl: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&auto=format&fit=crop&q=80',
           description: 'Autonomous direct-to-inbox dispatch with 10 structured WhatsApp scripts & zero rate limits.',
           ctaText: 'Select Plan',
-          ctaUrl: 'https://leadpulse.io/checkout?plan=pro'
+          ctaUrl: 'https://www.strovr.space/checkout?plan=pro'
         },
         {
           name: 'Dedicated Headless Cluster',
@@ -345,11 +345,11 @@ Review the live cost-efficiency comparison below to see what your team could sav
           imageUrl: 'https://images.unsplash.com/photo-1504868584819-f8e8b4b6d7e3?w=600&auto=format&fit=crop&q=80',
           description: 'Dedicated Chromium crawler nodes with custom webhooks & CRM two-way sync.',
           ctaText: 'Select Plan',
-          ctaUrl: 'https://leadpulse.io/checkout?plan=enterprise'
+          ctaUrl: 'https://www.strovr.space/checkout?plan=enterprise'
         }
       ],
       ctaText: 'Customize Your Package',
-      ctaUrl: 'https://leadpulse.io/pricing'
+      ctaUrl: 'https://www.strovr.space/pricing'
     }
   },
 
@@ -374,7 +374,7 @@ We have engineered an autonomous outreach engine that helps local operators acqu
 
 Select an available time slot below to lock in a quick 15-minute introductory chat:`,
       hostName: 'Alex Roberts',
-      hostTitle: 'Growth Director, LeadPulse',
+      hostTitle: 'Growth Director, Strovr',
       hostAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
       duration: '15 mins',
       timeSlots: [
@@ -398,13 +398,13 @@ Select an available time slot below to lock in a quick 15-minute introductory ch
     name: '6. Interactive ROI & Benchmark Card',
     tagline: 'Visual Cost & Revenue Multiplier Comparison',
     bestFor: 'Competitive displacement, ROI proposals, value audits, enterprise pitches',
-    purpose: 'Drives conversions through an interactive side-by-side benchmark card contrasting legacy manual costs with LeadPulse autonomous efficiency.',
+    purpose: 'Drives conversions through an interactive side-by-side benchmark card contrasting legacy manual costs with Strovr autonomous efficiency.',
     category: 'promotional',
     defaultData: {
       subject: 'ROI Analysis & Cost Benchmark for {{business_name}}',
       preheader: 'See how {{business_name}} compares to {{field_of_work}} standards',
       headline: 'Calculate {{business_name}}’s Projected Outreach ROI',
-      subheadline: 'Compare legacy manual agency fees vs LeadPulse autonomous engine',
+      subheadline: 'Compare legacy manual agency fees vs Strovr autonomous engine',
       body: `We analyzed lead generation economics for over 500 businesses in {{location}}. Operators in {{field_of_work}} frequently overpay for manual prospecting and outdated agency retainers.
 
 Review the live cost-efficiency comparison below to see what your team could save:`,
@@ -416,7 +416,7 @@ Review the live cost-efficiency comparison below to see what your team could sav
         badge: 'Legacy Method'
       },
       comparisonPulse: {
-        title: 'LeadPulse Autonomous Engine',
+        title: 'Strovr Autonomous Engine',
         monthlyCost: '₹699 / mo',
         timeSpent: '15 mins / week',
         replyRate: '28.4% Response Rate',
@@ -433,7 +433,7 @@ Review the live cost-efficiency comparison below to see what your team could sav
         'Two-way CRM pipeline synchronization with HubSpot, Google Sheets & Slack'
       ],
       ctaText: 'Claim {{business_name}}’s Growth Tier →',
-      ctaUrl: 'https://leadpulse.io/pricing'
+      ctaUrl: 'https://www.strovr.space/pricing'
     }
   }
 };

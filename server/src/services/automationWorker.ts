@@ -287,7 +287,7 @@ class AutomationWorkerService {
           executedSteps++;
         } else if (step.type === 'email') {
           // Dispatch Cold Email via SendGrid / SMTP
-          const user: any = userStore.getUserById(enr.userId) || { name: 'LeadPulse Team', email: 'sales@leadpulse.io' };
+          const user: any = userStore.getUserById(enr.userId) || { name: 'Strovr Team', email: 'sales@strovr.space' };
           const userSmtp = user.smtp_settings;
 
           const emailSubject = this.interpolate(step.config?.emailSubject || 'Quick question regarding {{company}}', enr);
@@ -302,7 +302,7 @@ class AutomationWorkerService {
               subject: emailSubject,
               html: emailHtml,
               text: rawBody,
-              fromName: user.name || 'LeadPulse Operator',
+              fromName: user.name || 'Strovr Operator',
               fromEmail: userSmtp?.fromEmail || user.email,
               userSmtp
             });

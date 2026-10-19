@@ -270,7 +270,7 @@ const getAppSteps = (app: IntegrationApp) => {
   return [
     `Copy your API credentials or endpoint from ${name}`,
     `Enter your configuration below and run "Test Live Connection"`,
-    `Save & activate ${name} across your LeadPulse workspace`
+    `Save & activate ${name} across your Strovr workspace`
   ];
 };
 
@@ -388,7 +388,7 @@ const INTEGRATION_PORTALS: Record<string, { authUrl: string; consoleUrl: string;
     authUrl: 'https://console.developers.google.com/apis/api/sheets.googleapis.com/overview?project=540549140912',
     consoleUrl: 'https://docs.google.com/spreadsheets/',
     docsUrl: 'https://developers.google.com/sheets/api/guides/concepts',
-    portalLabel: 'Google Sheets API Console (leadpulse-3fe7e)'
+    portalLabel: 'Google Sheets API Console (strovr-cloud)'
   },
   'microsoft-excel': {
     authUrl: 'https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade',
@@ -442,7 +442,7 @@ const INTEGRATION_PORTALS: Record<string, { authUrl: string; consoleUrl: string;
     authUrl: 'https://console.developers.google.com/apis/api/drive.googleapis.com/overview?project=540549140912',
     consoleUrl: 'https://drive.google.com/',
     docsUrl: 'https://developers.google.com/drive/api/guides/about-sdk',
-    portalLabel: 'Google Drive API Console (leadpulse-3fe7e)'
+    portalLabel: 'Google Drive API Console (strovr-cloud)'
   },
   'onedrive': {
     authUrl: 'https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade',
@@ -553,7 +553,7 @@ const INTEGRATION_PORTALS: Record<string, { authUrl: string; consoleUrl: string;
     portalLabel: 'Google Maps Platform Credentials'
   },
   'github': {
-    authUrl: 'https://github.com/settings/tokens/new?description=LeadPulse+Workspace+Connector&scopes=repo,workflow,read:org',
+    authUrl: 'https://github.com/settings/tokens/new?description=Strovr+Workspace+Connector&scopes=repo,workflow,read:org',
     consoleUrl: 'https://github.com/settings/apps',
     docsUrl: 'https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens',
     portalLabel: 'GitHub Token & OAuth Authorization'
@@ -614,7 +614,7 @@ const GOOGLE_APPS_SCRIPT_SNIPPET = `function doPost(e) {
   var body = JSON.parse(e.postData.contents);
   var ss = null;
   try { ss = SpreadsheetApp.getActiveSpreadsheet(); } catch (err) {}
-  if (!ss) ss = SpreadsheetApp.create(body.title || 'LeadPulse CRM - Live Mirror');
+  if (!ss) ss = SpreadsheetApp.create(body.title || 'Strovr CRM - Live Mirror');
   var sheet = ss.getSheets()[0];
   sheet.clear();
   if (body.headers) sheet.appendRow(body.headers);
@@ -721,7 +721,7 @@ const Integrations = () => {
       const top = Math.max(0, Math.round(window.screenY + (window.outerHeight - height) / 2));
       window.open(
         portalInfo.authUrl,
-        `leadpulse_google_api_${selectedApp.id}`,
+        `strovr_google_api_${selectedApp.id}`,
         `width=${width},height=${height},left=${left},top=${top},noopener,noreferrer`
       );
     }
@@ -1152,7 +1152,7 @@ const Integrations = () => {
               <div>
                 <h1 className="text-2xl font-bold text-[#191716] tracking-tight font-delight">Integrations &amp; Connectors</h1>
                 <p className="text-slate-500 font-normal text-xs mt-1">
-                  Connect your CRM, spreadsheets, enrichment APIs, and team channels to unlock 1-click actions across LeadPulse.
+                  Connect your CRM, spreadsheets, enrichment APIs, and team channels to unlock 1-click actions across Strovr.
                 </p>
               </div>
 
@@ -1437,7 +1437,7 @@ const Integrations = () => {
                           {app.description}
                         </p>
 
-                        {/* Linked in LeadPulse Badge */}
+                        {/* Linked in Strovr Badge */}
                         {app.linkedTitle && (
                           <div className="flex items-center gap-1.5 px-2 py-1 bg-slate-50 border border-slate-200/80 rounded text-[10px] text-slate-700 font-medium">
                             <Zap className="w-3 h-3 text-amber-500 shrink-0" />
@@ -1720,7 +1720,7 @@ const Integrations = () => {
                 {/* 1. Numbered Step-by-Step Instructions */}
                 <div className="space-y-2 bg-slate-50/60 border border-slate-200/80 rounded-lg p-3.5">
                   <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider font-delight">
-                    How {selectedApp.name} Connects to LeadPulse
+                    How {selectedApp.name} Connects to Strovr
                   </div>
                   {getAppSteps(selectedApp).map((step, idx) => (
                     <div key={idx} className="flex items-start gap-2.5 text-xs text-slate-700 font-delight font-medium">
@@ -2150,7 +2150,7 @@ const Integrations = () => {
             <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
               <div className="flex items-center gap-2.5">
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900 tracking-tight">LeadPulse Developer REST API</h3>
+                  <h3 className="text-sm font-bold text-slate-900 tracking-tight">Strovr Developer REST API</h3>
                   <p className="text-[11px] font-delight font-normal text-slate-400">REST endpoints for programmatic CRM sync and outreach dispatch.</p>
                 </div>
               </div>

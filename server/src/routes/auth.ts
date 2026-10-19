@@ -392,8 +392,8 @@ router.get('/me', async (req, res) => {
     if (!userData) {
       const fallbackRecord = {
         _id: docId,
-        email: isSuperAshley ? 'ashleyghose64@gmail.com' : isBicon ? 'ashleyghose28@gmail.com' : (userId.includes('@') ? userId : `${userId}@leadpulse.io`),
-        name: isSuperAshley ? 'Ashley' : isBicon ? 'Bicon Ghose' : 'LeadPulse User',
+        email: isSuperAshley ? 'ashleyghose64@gmail.com' : isBicon ? 'ashleyghose28@gmail.com' : (userId.includes('@') ? userId : `${userId}@strovr.space`),
+        name: isSuperAshley ? 'Ashley' : isBicon ? 'Bicon Ghose' : 'Strovr User',
         role: isSuperAshley ? 'SUPER_ADMIN' : 'USER',
         plan: isSuperAshley ? 'pro' : 'free',
         lead_credits: isSuperAshley ? 1000 : 15,
@@ -457,7 +457,7 @@ router.post('/google', async (req, res) => {
           _id: userId,
           googleId,
           email,
-          name: isSuper ? 'Ashley' : (name || 'LeadPulse User'),
+          name: isSuper ? 'Ashley' : (name || 'Strovr User'),
           role,
           lead_credits,
           plan,
@@ -1052,14 +1052,14 @@ router.post('/forgot-password', async (req, res) => {
     } catch {}
 
     // Resolve base client URL for the verification link
-    const origin = req.headers.origin || req.headers.referer || process.env.CLIENT_URL || 'https://leadpulse-n4q2.onrender.com';
+    const origin = req.headers.origin || req.headers.referer || process.env.CLIENT_URL || 'https://www.strovr.space';
     const cleanOrigin = String(origin).replace(/\/+$/, '').split('?')[0].split('#')[0];
     const resetVerificationLink = `${cleanOrigin}/reset-password?token=${resetToken}&email=${encodeURIComponent(normalizedEmail)}`;
 
     console.log(`[Auth] Dispatched password reset verification link for ${normalizedEmail}: ${resetVerificationLink}`);
 
     // Dispatch verification link via email (SendGrid Web API over HTTPS)
-    await sendPasswordResetEmail(normalizedEmail, rawUser.name || 'LeadPulse User', resetVerificationLink);
+    await sendPasswordResetEmail(normalizedEmail, rawUser.name || 'Strovr User', resetVerificationLink);
 
     return res.json({
       success: true,

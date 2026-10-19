@@ -1,12 +1,12 @@
 services:
   # ---------------------------------------------------------------------------
-  # LeadPulse Node.js / Express Backend
+  # Strovr Node.js / Express Backend
   # ---------------------------------------------------------------------------
   server:
     build:
       context: ./server
       dockerfile: Dockerfile
-    container_name: leadpulse-server
+    container_name: strovr-server
     restart: unless-stopped
     ports:
       - "3001:3001"
@@ -15,16 +15,16 @@ services:
       NODE_ENV: development
       GOOGLE_CALENDAR_ID: "${GOOGLE_CALENDAR_ID:-}"
     networks:
-      - leadpulse-network
+      - strovr-network
 
   # ---------------------------------------------------------------------------
-  # LeadPulse React / Vite Frontend
+  # Strovr React / Vite Frontend
   # ---------------------------------------------------------------------------
   client:
     build:
       context: ./client
       dockerfile: Dockerfile
-    container_name: leadpulse-client
+    container_name: strovr-client
     restart: unless-stopped
     ports:
       - "5173:5173"
@@ -33,8 +33,8 @@ services:
     depends_on:
       - server
     networks:
-      - leadpulse-network
+      - strovr-network
 
 networks:
-  leadpulse-network:
+  strovr-network:
     driver: bridge
