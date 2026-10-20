@@ -1075,49 +1075,6 @@ const OutreachCenter = () => {
                   <span>{activeSmsTransport ? activeSmsTransport.name : 'Direct Web Bridge'}</span>
                 </span>
               </div>
-
-              <div className="h-4 w-px bg-slate-200 hidden md:block" />
-
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Booking:</span>
-                <a 
-                  href={resolvedBookingUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-delight font-semibold text-xs text-indigo-700 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200/80 px-2.5 py-0.5 rounded-full inline-flex items-center gap-1.5 transition-all shadow-2xs group"
-                  title="Open Google Calendar Scheduling Engine"
-                >
-                  <span>Book an Appointment</span>
-                  <ExternalLink className="w-3 h-3 group-hover:translate-x-0.5 transition-transform text-indigo-600" />
-                </a>
-                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-delight font-semibold ${
-                  bookingOnline 
-                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
-                    : 'bg-indigo-50 text-indigo-700 border border-indigo-200'
-                }`}>
-                  <span className={`w-1.5 h-1.5 rounded-full ${bookingOnline ? 'bg-emerald-500 animate-pulse' : 'bg-indigo-500'}`} />
-                  <span>Google Calendar</span>
-                </span>
-                <Link 
-                  to="/appointments" 
-                  className="text-[11px] font-delight font-semibold text-indigo-600 hover:text-indigo-800 underline ml-0.5"
-                  title="Open Google Calendar Hub"
-                >
-                  (Hub)
-                </Link>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => insertTag('{{booking_link}}')}
-                className="px-3.5 py-1.5 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white rounded-xl text-xs font-delight font-bold transition-all shadow-xs hover:shadow-indigo-200 cursor-pointer flex items-center gap-1.5"
-                title="Insert Google Calendar booking link into template"
-              >
-                <Calendar className="w-3.5 h-3.5" />
-                <span>+ Insert 'Book an Appointment'</span>
-              </button>
             </div>
           </div>
 
@@ -2160,7 +2117,7 @@ const OutreachCenter = () => {
                                 type="text" 
                                 value={templateData.ctaText}
                                 onChange={(e) => setTemplateData({ ...templateData, ctaText: e.target.value })}
-                                placeholder="Book an Appointment "
+                                placeholder="Get in Touch / Claim Offer"
                                 className="flex-1 text-xs font-sans font-semibold text-slate-900 bg-transparent border-0 outline-none p-0"
                               />
                             </div>
@@ -2170,7 +2127,7 @@ const OutreachCenter = () => {
                                 type="text" 
                                 value={templateData.ctaUrl || ''}
                                 onChange={(e) => setTemplateData({ ...templateData, ctaUrl: e.target.value })}
-                                 placeholder="https://calendar.google.com/... (Google Calendar)"
+                                 placeholder="https://..."
                                 className="flex-1 text-xs font-delight font-medium text-indigo-600 bg-transparent border-0 outline-none p-0"
                               />
                             </div>
@@ -3563,7 +3520,7 @@ const OutreachCenter = () => {
                           className="inline-block px-6 py-2.5 rounded-md text-xs font-delight font-semibold text-white shadow-xs hover:opacity-95 transition-all cursor-pointer"
                           style={{ backgroundColor: templateStyling.accentColor }}
                         >
-                          {templateData.ctaText || 'Book an Appointment '}
+                          {templateData.ctaText || 'Get in Touch'}
                         </a>
                         <p className="text-[11px] text-slate-400 font-sans mt-2">
                           Direct Google Meet invite &bull; Instant calendar sync

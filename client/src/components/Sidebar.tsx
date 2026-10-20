@@ -19,7 +19,6 @@ const mainNav = [
 const pipelineNav = [
   { name: 'Lead Gen', icon: Search, path: '/finder' },
   { name: 'CRM Pipeline', icon: FolderKanban, path: '/crm' },
-  { name: 'Appointments', icon: Calendar, path: '/appointments' },
 ];
 
 const toolsNav = [

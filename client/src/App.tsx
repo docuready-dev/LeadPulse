@@ -107,7 +107,7 @@ const App = () => {
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/finder" element={<ProtectedRoute><LeadFinder /></ProtectedRoute>} />
             <Route path="/crm" element={<ProtectedRoute><CrmPipeline /></ProtectedRoute>} />
-            <Route path="/appointments" element={<ProtectedRoute><Appointments /></ProtectedRoute>} />
+            <Route path="/appointments" element={<Navigate to="/crm" replace />} />
             <Route path="/outreach" element={<ProtectedRoute><OutreachCenter /></ProtectedRoute>} />
             <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
             
