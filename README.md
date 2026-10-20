@@ -100,7 +100,7 @@ Strovr replaces generic boilerplate strings with an intent-driven, high-converti
 
 ## Multi-Channel Outbox Architecture
 
-`
+```
                 +-----------------------------+
                 |        Strovr Web App       |
                 |   (Outreach Center Studio)  |
