@@ -22,7 +22,7 @@
 ## Table of Contents
 
 - [Core Features](#core-features)
-- [Interactive Email Frameworks (All 10 Blueprints)](#interactive-email-frameworks-all-10-blueprints)
+- [Interactive Email Frameworks](#interactive-email-frameworks-all-10-blueprints)
 - [Universal Email Attachments Engine](#universal-email-attachments-engine)
 - [Executive AI Co-Pilot](#executive-ai-co-pilot)
 - [Multi-Channel Outbox Architecture](#multi-channel-outbox-architecture)
@@ -56,7 +56,7 @@
 
 ---
 
-## Interactive Email Frameworks (All 10 Blueprints)
+## Interactive Email Frameworks
 
 Strovr includes 10 production-tested, responsive email blueprints designed for cross-client inbox rendering:
 
