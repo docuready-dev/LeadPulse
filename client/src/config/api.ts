@@ -8,13 +8,19 @@ import axios from 'axios';
  */
 export const API_URL: string = (
   import.meta.env.VITE_API_URL ||
-  (import.meta.env.DEV ? 'http://localhost:3001' : window.location.origin)
+  (typeof window !== 'undefined'
+    ? (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+        ? 'http://localhost:3001'
+        : (window.location.port === '5173' || window.location.port === '3000'
+            ? `http://${window.location.hostname}:3001`
+            : window.location.origin))
+    : 'http://localhost:3001')
 ).replace(/\/$/, '');
 
 /**
  * Global Axios Request Interceptor
  * Automatically rewrites any legacy 'http://localhost:3001' request URLs
- * to the active production API_URL so no call ever fails in production.
+ * to the active production/LAN API_URL so no call ever fails on mobile or deployed domains.
  */
 axios.interceptors.request.use((config) => {
   if (config.url && config.url.startsWith('http://localhost:3001')) {

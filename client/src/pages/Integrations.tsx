@@ -11,6 +11,7 @@ import {
 import { useStore } from '../store/useStore';
 import { confirmDialog, alertDialog } from '../components/AppConfirmModal';
 import axios from 'axios';
+import API_URL from '../config/api';
 
 interface ConfigField {
   key: string;
@@ -590,7 +591,7 @@ const getIntegrationPortal = (app: IntegrationApp) => {
   };
 };
 
-const API_BASE = (import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:3001' : window.location.origin)).replace(/\/$/, '');
+const API_BASE = API_URL;
 
 const GOOGLE_OAUTH_APP_IDS = [
   'google-sheets',
@@ -2212,7 +2213,7 @@ const Integrations = () => {
                   <span className="text-slate-400">• Fetch Audience & CRM Deals</span>
                 </div>
                 <pre className="p-3 bg-slate-900 text-slate-100 rounded-md font-delight font-normal text-[11px] overflow-x-auto leading-relaxed border border-slate-800">
-{`curl ${(import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:3001' : window.location.origin)).replace(/\/$/, '')}/api/leads \\
+{`curl ${API_URL}/api/leads \\
   -H "userid: ${user?._id || 'YOUR_USER_ID'}"`}
                 </pre>
               </div>

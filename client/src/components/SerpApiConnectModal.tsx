@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import API_URL from '../config/api';
 import { alertDialog } from './AppConfirmModal';
 import { 
   X, Check, Loader2, CheckCircle2, AlertCircle, 
@@ -37,7 +38,7 @@ const SerpApiConnectModal: React.FC<SerpApiConnectModalProps> = ({
     const fetchStatus = async () => {
       setIsLoadingStatus(true);
       try {
-        const res = await axios.get('http://localhost:3001/api/leads/serpapi/status', {
+        const res = await axios.get(`${API_URL}/api/leads/serpapi/status`, {
           headers: { userid: user._id }
         });
         if (res.data?.isConnected && res.data.account) {
@@ -88,7 +89,7 @@ const SerpApiConnectModal: React.FC<SerpApiConnectModalProps> = ({
 
     try {
       const res = await axios.post(
-        'http://localhost:3001/api/leads/serpapi/connect',
+        `${API_URL}/api/leads/serpapi/connect`,
         { apiKey: cleanKey },
         { headers: { userid: user?._id } }
       );
@@ -111,7 +112,7 @@ const SerpApiConnectModal: React.FC<SerpApiConnectModalProps> = ({
   const handleDisconnect = async () => {
     setIsDisconnecting(true);
     try {
-      await axios.delete('http://localhost:3001/api/leads/serpapi/disconnect', {
+      await axios.delete(`${API_URL}/api/leads/serpapi/disconnect`, {
         headers: { userid: user?._id }
       });
       setSerpAccount(null);

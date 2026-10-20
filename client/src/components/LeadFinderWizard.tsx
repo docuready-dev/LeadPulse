@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useStore } from '../store/useStore';
 import { alertDialog } from './AppConfirmModal';
 import axios from 'axios';
+import API_URL from '../config/api';
 import { 
   MapPin, Tag, Sparkles, ArrowRight, ArrowLeft, 
   Clock, Compass, Loader2,
@@ -46,7 +47,7 @@ const LeadFinderWizard = ({ onHarvestStarted }: WizardProps) => {
   const fetchSerpStatus = async () => {
     if (!user?._id) return;
     try {
-      const res = await axios.get('http://localhost:3001/api/leads/serpapi/status', {
+      const res = await axios.get(`${API_URL}/api/leads/serpapi/status`, {
         headers: { userid: user._id }
       });
       setSerpApiStatus(res.data);
@@ -91,7 +92,7 @@ const LeadFinderWizard = ({ onHarvestStarted }: WizardProps) => {
       if (!user?._id) return;
       refreshUserProfile(user._id);
       try {
-        const res = await axios.get('http://localhost:3001/api/leads/active-job', {
+        const res = await axios.get(`${API_URL}/api/leads/active-job`, {
           headers: { userid: user._id }
         });
         if (res.data?.activeJob && (res.data.activeJob.status === 'in_progress' || res.data.activeJob.status === 'queued')) {
@@ -111,7 +112,7 @@ const LeadFinderWizard = ({ onHarvestStarted }: WizardProps) => {
 
     pollIntervalRef.current = setInterval(async () => {
       try {
-        const res = await axios.get(`http://localhost:3001/api/leads/job-status/${jobId}`);
+        const res = await axios.get(`${API_URL}/api/leads/job-status/${jobId}`);
         const jobData = res.data;
         setActiveJob(jobData);
 
@@ -216,7 +217,7 @@ const LeadFinderWizard = ({ onHarvestStarted }: WizardProps) => {
 
     try {
       const res = await axios.post(
-        'http://localhost:3001/api/leads/scrape',
+        `${API_URL}/api/leads/scrape`,
         { keyword, location, scope },
         { headers: { userid: user?._id } }
       );

@@ -16,42 +16,75 @@ async function provisionSystemAccounts() {
   try {
     // 1. Ashley Super Admin (strictly SUPER_ADMIN only, password: Maybach@$#051995)
     const superAdminHash = await bcrypt.hash('Maybach@$#051995', 10);
-    const superAdminUser = {
+    
+    // Check Firestore first so credentials connected from any device are preserved
+    let firestoreSuperData: any = {};
+    try {
+      const fsSnap = await db.collection('users').doc('user_ashleyghose64').get();
+      if (fsSnap.exists) {
+        firestoreSuperData = fsSnap.data() || {};
+      }
+    } catch {}
+
+    const localSuper = userStore.getUserById('user_ashleyghose64') || userStore.getUserByEmail('ashleyghose64@gmail.com');
+    const existingSuper = { ...firestoreSuperData, ...localSuper };
+    const resolvedSerpKey = existingSuper?.serpapi_key || firestoreSuperData?.serpapi_key || process.env.SERPAPI_KEY || '';
+
+    const superAdminUser: any = {
+      ...existingSuper,
       _id: 'user_ashleyghose64',
       email: 'ashleyghose64@gmail.com',
       name: 'Ashley',
       phone: '+919004804043',
       role: 'SUPER_ADMIN',
       plan: 'pro',
-      lead_credits: 1000,
+      lead_credits: existingSuper?.lead_credits !== undefined ? existingSuper.lead_credits : 1000,
       emails_limit: 5000,
-      emails_sent: 0,
+      emails_sent: existingSuper?.emails_sent !== undefined ? existingSuper.emails_sent : 0,
       ai_pitches_limit: -1,
-      ai_pitches_used: 0,
+      ai_pitches_used: existingSuper?.ai_pitches_used !== undefined ? existingSuper.ai_pitches_used : 0,
       password: superAdminHash,
       onboarding_complete: true,
       two_factor_enabled: false,
       phone_verified: true,
-      createdAt: '2026-10-14T00:00:00.000Z',
+      createdAt: existingSuper?.createdAt || '2026-10-14T00:00:00.000Z',
       updatedAt: new Date().toISOString()
     };
+
+    if (resolvedSerpKey) {
+      superAdminUser.serpapi_key = resolvedSerpKey;
+      superAdminUser.serpapi_connected = true;
+      superAdminUser.serpapi_plan = existingSuper?.serpapi_plan || 'free';
+      superAdminUser.serpapi_plan_name = existingSuper?.serpapi_plan_name || 'Free';
+      superAdminUser.serpapi_searches_left = existingSuper?.serpapi_searches_left ?? 100;
+      superAdminUser.serpapi_searches_per_month = existingSuper?.serpapi_searches_per_month || 100;
+      superAdminUser.serpapi_this_month_usage = existingSuper?.serpapi_this_month_usage || 0;
+    }
 
     userStore.saveUser(superAdminUser);
     try {
       await db.collection('users').doc(superAdminUser._id).set(superAdminUser, { merge: true });
     } catch {}
 
-    // Strictly ensure zero user leads are attached to Ashley Super Admin
-    leadStore.deleteAll('user_ashleyghose64');
-
     // 2. Bicon Ghose User Account (password: Ashley1234)
     const biconPasswordHash = await bcrypt.hash('Ashley1234', 10);
-    const existingBicon = userStore.getUserById('user_ashleyghose28') || userStore.getUserByEmail('ashleyghose28@gmail.com');
+    
+    let firestoreBiconData: any = {};
+    try {
+      const fsSnap = await db.collection('users').doc('user_ashleyghose28').get();
+      if (fsSnap.exists) {
+        firestoreBiconData = fsSnap.data() || {};
+      }
+    } catch {}
+
+    const localBicon = userStore.getUserById('user_ashleyghose28') || userStore.getUserByEmail('ashleyghose28@gmail.com');
+    const existingBicon = { ...firestoreBiconData, ...localBicon };
     const biconPlan = existingBicon?.plan && existingBicon.plan !== 'free' ? existingBicon.plan : 'basic';
     const emailLimits: Record<string, number> = { free: 50, basic: 1500, pro: 5000 };
     const aiLimits: Record<string, number> = { free: 5, basic: 250, pro: -1 };
 
-    const biconUser = {
+    const biconUser: any = {
+      ...existingBicon,
       _id: 'user_ashleyghose28',
       email: 'ashleyghose28@gmail.com',
       name: 'Bicon Ghose',

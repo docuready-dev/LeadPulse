@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useStore } from '../store/useStore';
 import axios from 'axios';
+import API_URL from '../config/api';
 import { 
   Calendar, Clock, CheckCircle2, Copy, Check, 
   Send, MessageCircle, Sparkles,
@@ -26,7 +27,7 @@ const Appointments = () => {
   const [toastMessage, setToastMessage] = useState('');
   const [calendarStatus, setCalendarStatus] = useState<any>(null);
 
-  const apiBase = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3001';
+  const apiBase = API_URL;
   const publicBookingUrl = typeof window !== 'undefined' ? `${window.location.origin}/appointments` : '/appointments';
 
   const showToast = (msg: string) => {

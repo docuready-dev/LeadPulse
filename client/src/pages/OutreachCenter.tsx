@@ -36,8 +36,7 @@ const OutreachCenter = () => {
   useEffect(() => {
     const checkBookingStatus = async () => {
       try {
-        const apiBase = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3001';
-        const res = await axios.get(`${apiBase}/api/booking/status`, { 
+        const res = await axios.get(`${API_URL}/api/booking/status`, { 
           headers: { userid: user?._id },
           timeout: 3500 
         });
@@ -238,7 +237,7 @@ const OutreachCenter = () => {
     const fetchUserLeads = async () => {
       if (!user?._id) return;
       try {
-        const res = await axios.get('http://localhost:3001/api/leads', {
+        const res = await axios.get(`${API_URL}/api/leads`, {
           headers: { userid: user._id }
         });
         if (Array.isArray(res.data) && res.data.length > 0) {

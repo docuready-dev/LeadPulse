@@ -73,9 +73,11 @@ class LeadStore {
     }
   }
 
-  getLeads(userId?: string): LeadRecord[] {
+  getLeads(userId?: string, altUserId?: string): LeadRecord[] {
     const all = Array.from(this.leads.values());
-    const filtered = userId ? all.filter(l => l.userId === userId) : all;
+    const filtered = userId 
+      ? all.filter(l => l.userId === userId || (altUserId && l.userId === altUserId)) 
+      : all;
     return filtered.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
   }
 

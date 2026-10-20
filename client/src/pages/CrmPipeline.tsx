@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useStore } from '../store/useStore';
 import { confirmDialog, alertDialog } from '../components/AppConfirmModal';
 import axios from 'axios';
+import API_URL from '../config/api';
 import { 
   Search, List, Kanban, 
   Plus, Phone, Globe, MapPin,
@@ -120,7 +121,7 @@ const CrmPipeline = () => {
 
   const fetchLeads = async () => {
     try {
-      const res = await axios.get('http://localhost:3001/api/leads', {
+      const res = await axios.get(`${API_URL}/api/leads`, {
         headers: { userid: user?._id }
       });
       setLeads(res.data);
@@ -157,7 +158,7 @@ const CrmPipeline = () => {
 
     try {
       setLeads(prev => prev.map(l => l._id === leadId ? { ...l, status: newStatus } : l));
-      await axios.patch(`http://localhost:3001/api/leads/${leadId}`, { status: newStatus }, {
+      await axios.patch(`${API_URL}/api/leads/${leadId}`, { status: newStatus }, {
         headers: { userid: user?._id }
       });
 
@@ -191,7 +192,7 @@ const CrmPipeline = () => {
       if (selectedLeadDetails?._id === updatedLead._id) {
         setSelectedLeadDetails(updatedLead);
       }
-      await axios.patch(`http://localhost:3001/api/leads/${updatedLead._id}`, updatedLead, {
+      await axios.patch(`${API_URL}/api/leads/${updatedLead._id}`, updatedLead, {
         headers: { userid: user?._id }
       });
       showToast(`Saved updates for "${updatedLead.businessName}"`);
@@ -396,7 +397,7 @@ const CrmPipeline = () => {
         status: 'Email Verified & Captured'
       } : l));
 
-      await axios.patch(`http://localhost:3001/api/leads/${leadId}`, {
+      await axios.patch(`${API_URL}/api/leads/${leadId}`, {
         email: capturedEmailInput,
         emailStatus: 'Verified Email',
         status: 'Email Verified & Captured'
@@ -434,7 +435,7 @@ const CrmPipeline = () => {
         location: editingLead.location || '',
         status: editingLead.status || 'New'
       };
-      const res = await axios.patch(`http://localhost:3001/api/leads/${editingLead._id}`, payload, {
+      const res = await axios.patch(`${API_URL}/api/leads/${editingLead._id}`, payload, {
         headers: { userid: user?._id }
       });
       const updated = res.data?.lead || { ...editingLead, ...payload };
@@ -578,7 +579,7 @@ const CrmPipeline = () => {
                 <button 
                   onClick={async () => {
                     for (const id of selectedLeads) {
-                      await axios.delete(`http://localhost:3001/api/leads/${id}`, { headers: { userid: user?._id } }).catch(() => {});
+                      await axios.delete(`${API_URL}/api/leads/${id}`, { headers: { userid: user?._id } }).catch(() => {});
                     }
                     setSelectedLeads([]);
                     fetchLeads();

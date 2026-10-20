@@ -38,6 +38,8 @@ export interface UserRecord {
   two_factor_enabled?: boolean;
   phone_verified?: boolean;
   has_topup?: boolean;
+  integrations?: any;
+  integrationLogs?: any;
   createdAt: string;
   updatedAt?: string;
 }

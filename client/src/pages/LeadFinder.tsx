@@ -3,6 +3,7 @@ import { useStore } from '../store/useStore';
 import { alertDialog } from '../components/AppConfirmModal';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import API_URL from '../config/api';
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
 import LeadFinderWizard from '../components/LeadFinderWizard';
@@ -29,7 +30,7 @@ const LeadFinder = () => {
   const fetchSerpStatus = async () => {
     if (!user?._id) return;
     try {
-      const res = await axios.get('http://localhost:3001/api/leads/serpapi/status', {
+      const res = await axios.get(`${API_URL}/api/leads/serpapi/status`, {
         headers: { userid: user._id }
       });
       setSerpApiStatus(res.data);
@@ -66,7 +67,7 @@ const LeadFinder = () => {
     if (!user?._id) return;
     setLoading(true);
     try {
-      const res = await axios.get('http://localhost:3001/api/leads', {
+      const res = await axios.get(`${API_URL}/api/leads`, {
         headers: { userid: user._id }
       });
       setLeads(res.data);
@@ -86,7 +87,7 @@ const LeadFinder = () => {
     if (!editingLead?._id || !user?._id) return;
     setIsSavingEdit(true);
     try {
-      await axios.patch(`http://localhost:3001/api/leads/${editingLead._id}`, {
+      await axios.patch(`${API_URL}/api/leads/${editingLead._id}`, {
         businessName: editingLead.businessName,
         email: editingLead.email || '',
         phone: editingLead.phone || '',

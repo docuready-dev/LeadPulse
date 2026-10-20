@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useStore } from '../store/useStore';
 import axios from 'axios';
+import API_URL from '../config/api';
 import { motion } from 'framer-motion';
 
 const Onboarding = () => {
@@ -16,7 +17,7 @@ const Onboarding = () => {
     e.preventDefault();
     try {
       const finalFieldOfWork = fieldOfWork === 'Other' ? customFieldOfWork : fieldOfWork;
-      const res = await axios.post('http://localhost:3001/api/auth/onboarding', {
+      const res = await axios.post(`${API_URL}/api/auth/onboarding`, {
         userId: user?._id,
         company_name: companyName,
         field_of_work: finalFieldOfWork,
@@ -193,7 +194,7 @@ const Onboarding = () => {
             type="button" 
             onClick={async () => {
               try {
-                const res = await axios.post('http://localhost:3001/api/auth/onboarding', {
+                const res = await axios.post(`${API_URL}/api/auth/onboarding`, {
                   userId: user?._id,
                   company_name: 'Strovr Growth Team',
                   field_of_work: 'B2B Sales',

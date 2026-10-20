@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
 import { 
@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import axios from 'axios';
+import API_URL from '../config/api';
 
 interface TeamMember {
   _id: string;
@@ -120,8 +121,8 @@ const Team = () => {
     setLoading(true);
     try {
       const [membersRes, limitsRes] = await Promise.all([
-        axios.get('http://localhost:3001/api/team', { headers: { userid: user._id } }),
-        axios.get('http://localhost:3001/api/team/limits', { headers: { userid: user._id } })
+        axios.get(`${API_URL}/api/team`, { headers: { userid: user._id } }),
+        axios.get(`${API_URL}/api/team/limits`, { headers: { userid: user._id } })
       ]);
       setMembers(membersRes.data);
       setLimits(limitsRes.data);
@@ -153,7 +154,7 @@ const Team = () => {
     setIsSendingInvite(true);
     setInviteError('');
     try {
-      const res = await axios.post('http://localhost:3001/api/team', {
+      const res = await axios.post(`${API_URL}/api/team`, {
         name: inviteName,
         email: inviteEmail,
         role: finalRole,
@@ -212,7 +213,7 @@ const Team = () => {
     setIsUpdating(true);
     const finalEditRole = isEditCustomRole && editCustomRoleInput.trim() ? editCustomRoleInput.trim() : editRole;
     try {
-      const res = await axios.patch(`http://localhost:3001/api/team/${activeMember._id}`, {
+      const res = await axios.patch(`${API_URL}/api/team/${activeMember._id}`, {
         role: finalEditRole,
         monthlyQuota: editQuota
       }, {
@@ -242,7 +243,7 @@ const Team = () => {
     if (!memberToDelete || !user?._id) return;
     setIsDeleting(true);
     try {
-      await axios.delete(`http://localhost:3001/api/team/${memberToDelete._id}`, {
+      await axios.delete(`${API_URL}/api/team/${memberToDelete._id}`, {
         headers: { userid: user._id }
       });
       setMembers(members.filter(m => m._id !== memberToDelete._id));
@@ -264,7 +265,7 @@ const Team = () => {
     if (!user?._id) return;
     setIsUpdatingSeats(true);
     try {
-      await axios.patch('http://localhost:3001/api/team/seats', {
+      await axios.patch(`${API_URL}/api/team/seats`, {
         seats_selected: seatsSelectedInput
       }, {
         headers: { userid: user._id }

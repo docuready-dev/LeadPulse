@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 import { db } from '../index';
+import { userStore } from '../services/userStore';
 
 const router = express.Router();
 
@@ -416,19 +417,33 @@ router.get('/', async (req, res) => {
   if (!userId) return res.status(401).json({ error: 'Unauthorized' });
 
   try {
-    const userRef = db.collection('users').doc(userId);
-    const doc = await userRef.get();
-    
     let userIntegrations = DEFAULT_APPS;
     let apiKey = `lp_live_${userId.substring(0, 8)}_${Buffer.from(userId).toString('hex').substring(0, 12)}`;
     let logs = DEFAULT_LOGS;
 
-    if (doc.exists) {
-      const data = doc.data();
-      if (data?.integrations) {
-        userIntegrations = getMergedIntegrations(data.integrations);
+    // 1. Try local UserStore first
+    const localUser = userStore.getUserById(userId) || (userId.includes('@') ? userStore.getUserByEmail(userId) : null);
+    if ((localUser as any)?.integrations) {
+      userIntegrations = getMergedIntegrations((localUser as any).integrations);
+    }
+    if ((localUser as any)?.integrationLogs) {
+      logs = (localUser as any).integrationLogs;
+    }
+
+    // 2. Query Firestore if online
+    try {
+      const userRef = db.collection('users').doc(userId);
+      const doc = await userRef.get();
+      if (doc.exists) {
+        const data = doc.data();
+        if (data?.integrations) {
+          userIntegrations = getMergedIntegrations(data.integrations);
+          userStore.updateUser(userId, { integrations: userIntegrations, integrationLogs: getUserLogs(data) });
+        }
+        logs = getUserLogs(data);
       }
-      logs = getUserLogs(data);
+    } catch (fsErr: any) {
+      // Graceful fallback to local store
     }
 
     res.json({
@@ -574,7 +589,12 @@ router.post('/connect', async (req, res) => {
     };
 
     const updatedLogs = [newLog, ...logs].slice(0, 50);
-    await userRef.set({ integrations: updatedList, integrationLogs: updatedLogs }, { merge: true });
+    userStore.updateUser(userId, { integrations: updatedList, integrationLogs: updatedLogs });
+    try {
+      await userRef.set({ integrations: updatedList, integrationLogs: updatedLogs }, { merge: true });
+    } catch (fsErr) {
+      console.warn('[Integrations] Firestore sync warning:', fsErr);
+    }
     res.json({
       success: true,
       message: `Connected to ${connectedAppName} successfully!`,
@@ -764,7 +784,12 @@ router.post('/disconnect', async (req, res) => {
     };
 
     const updatedLogs = [newLog, ...logs].slice(0, 50);
-    await userRef.set({ integrations: updatedList, integrationLogs: updatedLogs }, { merge: true });
+    userStore.updateUser(userId, { integrations: updatedList, integrationLogs: updatedLogs });
+    try {
+      await userRef.set({ integrations: updatedList, integrationLogs: updatedLogs }, { merge: true });
+    } catch (fsErr) {
+      console.warn('[Integrations] Firestore sync warning on disconnect:', fsErr);
+    }
     res.json({
       success: true,
       message: `Disconnected ${disconnectedName}.`,

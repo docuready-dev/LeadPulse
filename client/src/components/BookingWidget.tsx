@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import AppointmentMobileWhatsAppModal from './AppointmentMobileWhatsAppModal';
+import API_URL from '../config/api';
 
 interface BookingWidgetProps {
   initialMode?: 'client' | 'admin';
@@ -62,7 +63,7 @@ export const BookingWidget: React.FC<BookingWidgetProps> = ({
   onBookingComplete
 }) => {
   const { user } = useStore();
-  const apiBase = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3001';
+  const apiBase = API_URL;
 
   // Strovr Calendar Connection Status
   const [calendarStatus, setCalendarStatus] = useState<any>(null);

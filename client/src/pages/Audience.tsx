@@ -5,12 +5,13 @@ import {
   Search, Filter, Plus, Users, LayoutTemplate, Tag, Mail, 
   Phone, CheckCircle2, Trash2, Send, Download, ExternalLink, 
   Code, Eye, Check, X, Sparkles, Building2, Globe, Copy, AlertCircle, Edit3,
-  Webhook, Zap
+  Webhook, Zap, ArrowUpDown, ArrowUp, ArrowDown, Calendar, MapPin, Star
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { confirmDialog, alertDialog } from '../components/AppConfirmModal';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import API_URL from '../config/api';
 
 interface FormTemplate {
   id: string;
@@ -65,12 +66,36 @@ const Audience = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'contacts' | 'segments' | 'forms'>('contacts');
 
-  // Contacts state
-  const [leads, setLeads] = useState<any[]>([]);
+  // Contacts state with resilient cache loading across device reloads
+  const [leads, setLeads] = useState<any[]>(() => {
+    try {
+      const activeId = user?._id || 'default';
+      const cached = localStorage.getItem(`strovr_leads_cache_${activeId}`);
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
   const [, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [stageFilter, setStageFilter] = useState('All');
   const [selectedLeadIds, setSelectedLeadIds] = useState<string[]>([]);
+
+  // Sorting state (date, city, name, category, rating, status)
+  type SortOption = 
+    | 'date_desc' 
+    | 'date_asc' 
+    | 'city_asc' 
+    | 'city_desc' 
+    | 'name_asc' 
+    | 'name_desc' 
+    | 'rating_desc' 
+    | 'rating_asc' 
+    | 'category_asc' 
+    | 'category_desc' 
+    | 'status_asc';
+
+  const [sortOption, setSortOption] = useState<SortOption>('date_desc');
   
   // Integration Sync & Enrich state
   const [isSyncDropdownOpen, setIsSyncDropdownOpen] = useState(false);
@@ -113,6 +138,7 @@ const Audience = () => {
     phone: '',
     category: 'B2B Sales',
     location: '',
+    city: '',
     status: 'New',
     tags: 'VIP'
   });
@@ -140,18 +166,42 @@ const Audience = () => {
   const [newSegmentTitle, setNewSegmentTitle] = useState('');
   const [newSegmentDesc, setNewSegmentDesc] = useState('');
 
+  // Persist leads helper
+  const updateLocalLeads = (newLeadsList: any[]) => {
+    setLeads(newLeadsList);
+    if (user?._id) {
+      try {
+        localStorage.setItem(`strovr_leads_cache_${user._id}`, JSON.stringify(newLeadsList));
+      } catch {}
+    }
+  };
+
   useEffect(() => {
-    fetchLeads();
-  }, [user]);
+    if (user?._id) {
+      // Re-hydrate cache for this user immediately
+      try {
+        const cached = localStorage.getItem(`strovr_leads_cache_${user._id}`);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setLeads(parsed);
+          }
+        }
+      } catch {}
+      fetchLeads();
+    }
+  }, [user?._id]);
 
   const fetchLeads = async () => {
     if (!user?._id) return;
     setLoading(true);
     try {
-      const res = await axios.get('http://localhost:3001/api/leads', {
+      const res = await axios.get(`${API_URL}/api/leads`, {
         headers: { userid: user._id }
       });
-      setLeads(res.data);
+      if (Array.isArray(res.data)) {
+        updateLocalLeads(res.data);
+      }
     } catch (err) {
       console.error('Failed to fetch contacts:', err);
     } finally {
@@ -159,13 +209,62 @@ const Audience = () => {
     }
   };
 
+  // Helper extraction functions
+  const getLeadCity = (lead: any): string => {
+    return (lead.city || lead.location || lead.address || '').trim();
+  };
+
+  const getLeadDateNumber = (lead: any): number => {
+    const d = lead.createdAt || lead.harvestedAt || lead.created_at || lead.timestamp || lead.date;
+    if (!d) return 0;
+    const time = new Date(d).getTime();
+    return isNaN(time) ? 0 : time;
+  };
+
+  const formatHarvestDate = (dateVal?: string): string => {
+    if (!dateVal) return 'Recently';
+    try {
+      const d = new Date(dateVal);
+      if (isNaN(d.getTime())) return 'Recently';
+      return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+    } catch {
+      return 'Recently';
+    }
+  };
+
+  const toggleSortField = (field: 'date' | 'city' | 'name' | 'category' | 'rating' | 'status') => {
+    if (sortOption === `${field}_asc`) {
+      setSortOption(`${field}_desc` as SortOption);
+    } else if (sortOption === `${field}_desc`) {
+      setSortOption(`${field}_asc` as SortOption);
+    } else {
+      if (field === 'date' || field === 'rating') {
+        setSortOption(`${field}_desc` as SortOption);
+      } else {
+        setSortOption(`${field}_asc` as SortOption);
+      }
+    }
+  };
+
+  const renderSortIcon = (field: 'date' | 'city' | 'name' | 'category' | 'rating' | 'status') => {
+    if (sortOption === `${field}_asc`) {
+      return <ArrowUp className="w-3 h-3 text-blue-600 shrink-0" />;
+    }
+    if (sortOption === `${field}_desc`) {
+      return <ArrowDown className="w-3 h-3 text-blue-600 shrink-0" />;
+    }
+    return <ArrowUpDown className="w-2.5 h-2.5 text-slate-300 group-hover:text-slate-400 shrink-0" />;
+  };
+
   // Filter contacts
   const filteredContacts = leads.filter(lead => {
+    const city = getLeadCity(lead);
     const matchesSearch = 
       (lead.businessName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       (lead.email || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       (lead.phone || '').includes(searchQuery) ||
-      (lead.category || '').toLowerCase().includes(searchQuery.toLowerCase());
+      (lead.category || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      city.toLowerCase().includes(searchQuery.toLowerCase());
 
     if (!matchesSearch) return false;
 
@@ -175,6 +274,36 @@ const Audience = () => {
     if (stageFilter === 'hot_leads') return lead.status === 'Proposal Sent' || lead.status === 'Closed Won';
     if (stageFilter === 'new_leads') return lead.status === 'New';
     return lead.status === stageFilter;
+  });
+
+  // Comprehensive multi-way sorting
+  const sortedAndFilteredContacts = [...filteredContacts].sort((a, b) => {
+    switch (sortOption) {
+      case 'date_desc':
+        return getLeadDateNumber(b) - getLeadDateNumber(a);
+      case 'date_asc':
+        return getLeadDateNumber(a) - getLeadDateNumber(b);
+      case 'city_asc':
+        return getLeadCity(a).localeCompare(getLeadCity(b));
+      case 'city_desc':
+        return getLeadCity(b).localeCompare(getLeadCity(a));
+      case 'name_asc':
+        return (a.businessName || '').localeCompare(b.businessName || '');
+      case 'name_desc':
+        return (b.businessName || '').localeCompare(a.businessName || '');
+      case 'rating_desc':
+        return (Number(b.rating) || 0) - (Number(a.rating) || 0);
+      case 'rating_asc':
+        return (Number(a.rating) || 0) - (Number(b.rating) || 0);
+      case 'category_asc':
+        return (a.category || '').localeCompare(b.category || '');
+      case 'category_desc':
+        return (b.category || '').localeCompare(a.category || '');
+      case 'status_asc':
+        return (a.status || '').localeCompare(b.status || '');
+      default:
+        return getLeadDateNumber(b) - getLeadDateNumber(a);
+    }
   });
 
   // Push selected or filtered leads to a connected CRM / Spreadsheet
@@ -232,14 +361,17 @@ const Audience = () => {
     if (!user?._id) return;
     setIsSubmittingContact(true);
     try {
-      const res = await axios.post('http://localhost:3001/api/leads', {
+      const res = await axios.post(`${API_URL}/api/leads`, {
         ...newContact,
+        location: newContact.location || newContact.city || '',
+        city: newContact.city || newContact.location || '',
         tags: newContact.tags ? [newContact.tags] : []
       }, {
         headers: { userid: user._id }
       });
 
-      setLeads([res.data, ...leads]);
+      const updated = [res.data, ...leads];
+      updateLocalLeads(updated);
       setIsAddContactOpen(false);
       setNewContact({
         businessName: '',
@@ -247,9 +379,11 @@ const Audience = () => {
         phone: '',
         category: 'B2B Sales',
         location: '',
+        city: '',
         status: 'New',
         tags: 'VIP'
       });
+      showToast('New lead added to your Audience database.');
     } catch (err) {
       console.error('Failed to add contact', err);
       await alertDialog({
@@ -277,12 +411,14 @@ const Audience = () => {
         location: editingContact.location || '',
         status: editingContact.status || 'New'
       };
-      const res = await axios.patch(`http://localhost:3001/api/leads/${editingContact._id}`, payload, {
+      const res = await axios.patch(`${API_URL}/api/leads/${editingContact._id}`, payload, {
         headers: { userid: user._id }
       });
       const updated = res.data?.lead || { ...editingContact, ...payload };
-      setLeads(leads.map(l => l._id === editingContact._id ? updated : l));
+      const nextLeads = leads.map(l => l._id === editingContact._id ? updated : l);
+      updateLocalLeads(nextLeads);
       setEditingContact(null);
+      showToast('Contact details updated.');
     } catch (err) {
       console.error('Failed to update contact:', err);
       await alertDialog({
@@ -307,10 +443,11 @@ const Audience = () => {
     });
     if (!confirmed) return;
     try {
-      await axios.delete(`http://localhost:3001/api/leads/${id}`, {
+      await axios.delete(`${API_URL}/api/leads/${id}`, {
         headers: { userid: user?._id }
       });
-      setLeads(leads.filter(l => l._id !== id));
+      const nextLeads = leads.filter(l => l._id !== id);
+      updateLocalLeads(nextLeads);
       setSelectedLeadIds(selectedLeadIds.filter(i => i !== id));
       showToast('Contact removed from database.');
     } catch (err) {
@@ -329,12 +466,13 @@ const Audience = () => {
     });
     if (!confirmed) return;
     try {
-      await axios.post('http://localhost:3001/api/leads/batch-delete', {
+      await axios.post(`${API_URL}/api/leads/batch-delete`, {
         ids: selectedLeadIds
       }, {
         headers: { userid: user?._id }
       });
-      setLeads(leads.filter(l => !selectedLeadIds.includes(l._id)));
+      const nextLeads = leads.filter(l => !selectedLeadIds.includes(l._id));
+      updateLocalLeads(nextLeads);
       setSelectedLeadIds([]);
       showToast(`Deleted ${selectedLeadIds.length} contacts.`);
     } catch (err) {
@@ -346,7 +484,7 @@ const Audience = () => {
   const handleExportCSV = async () => {
     const listToExport = selectedLeadIds.length > 0 
       ? leads.filter(l => selectedLeadIds.includes(l._id))
-      : filteredContacts;
+      : sortedAndFilteredContacts;
 
     if (listToExport.length === 0) {
       await alertDialog({
@@ -357,13 +495,15 @@ const Audience = () => {
       return;
     }
 
-    const headers = ['Business Name', 'Email', 'Phone', 'Category', 'Location', 'Status', 'Tags'];
+    const headers = ['Business Name', 'Harvest Date', 'City / Location', 'Email', 'Phone', 'Category', 'Rating', 'Status', 'Tags'];
     const rows = listToExport.map(l => [
       `"${l.businessName || ''}"`,
+      `"${formatHarvestDate(l.createdAt || l.harvestedAt || l.created_at || l.timestamp)}"`,
+      `"${getLeadCity(l) || ''}"`,
       `"${l.email || ''}"`,
       `"${l.phone || ''}"`,
       `"${l.category || ''}"`,
-      `"${l.location || ''}"`,
+      `"${l.rating || ''}"`,
       `"${l.status || ''}"`,
       `"${(l.tags || []).join('; ')}"`
     ]);
@@ -379,7 +519,7 @@ const Audience = () => {
   };
 
   // Dynamic API Base URL (works seamlessly in localhost and on Render)
-  const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:3001' : window.location.origin;
+  const apiBase = API_URL;
 
   // Test Inbound Form Submission
   const handleTestFormSubmit = async (e: React.FormEvent) => {
@@ -668,7 +808,7 @@ const Audience = () => {
                     />
                   </div>
 
-                  <div className="flex items-center gap-2.5">
+                  <div className="flex flex-wrap items-center gap-2.5">
                     {selectedLeadIds.length > 0 && (
                       <button 
                         onClick={handleBatchDelete}
@@ -679,6 +819,30 @@ const Audience = () => {
                       </button>
                     )}
 
+                    {/* Multi-Way Sort Dropdown */}
+                    <div className="flex items-center gap-1.5">
+                      <ArrowUpDown className="w-3.5 h-3.5 text-slate-400" />
+                      <select 
+                        value={sortOption}
+                        onChange={(e) => setSortOption(e.target.value as SortOption)}
+                        className="h-8 px-2.5 bg-white border border-slate-200 rounded-md text-xs font-delight font-medium text-slate-700 outline-none cursor-pointer"
+                        title="Sort audience list"
+                      >
+                        <option value="date_desc">Sort: Harvest Date (Newest)</option>
+                        <option value="date_asc">Sort: Harvest Date (Oldest)</option>
+                        <option value="city_asc">Sort: City / Location (A-Z)</option>
+                        <option value="city_desc">Sort: City / Location (Z-A)</option>
+                        <option value="name_asc">Sort: Business Name (A-Z)</option>
+                        <option value="name_desc">Sort: Business Name (Z-A)</option>
+                        <option value="rating_desc">Sort: Rating (Highest First)</option>
+                        <option value="rating_asc">Sort: Rating (Lowest First)</option>
+                        <option value="category_asc">Sort: Category (A-Z)</option>
+                        <option value="category_desc">Sort: Category (Z-A)</option>
+                        <option value="status_asc">Sort: Pipeline Stage (A-Z)</option>
+                      </select>
+                    </div>
+
+                    {/* Stage Filter Dropdown */}
                     <div className="flex items-center gap-1.5">
                       <Filter className="w-3.5 h-3.5 text-slate-400" />
                       <select 
@@ -700,7 +864,7 @@ const Audience = () => {
                 </div>
 
                 {/* Contacts Table */}
-                {filteredContacts.length === 0 ? (
+                {sortedAndFilteredContacts.length === 0 ? (
                   <div className="p-12 text-center space-y-3 font-delight font-medium">
                     <div className="space-y-1">
                       <h3 className="text-sm font-bold text-slate-900 tracking-tight">No contacts found</h3>
@@ -723,24 +887,84 @@ const Audience = () => {
                           <th className="py-2.5 px-3.5 w-10">
                             <input 
                               type="checkbox" 
-                              checked={selectedLeadIds.length === filteredContacts.length && filteredContacts.length > 0}
+                              checked={selectedLeadIds.length === sortedAndFilteredContacts.length && sortedAndFilteredContacts.length > 0}
                               onChange={(e) => {
-                                if (e.target.checked) setSelectedLeadIds(filteredContacts.map(l => l._id));
+                                if (e.target.checked) setSelectedLeadIds(sortedAndFilteredContacts.map(l => l._id));
                                 else setSelectedLeadIds([]);
                               }}
                               className="w-3.5 h-3.5 rounded-sm border-slate-300 text-accent cursor-pointer"
                             />
                           </th>
-                          <th className="py-2.5 px-3.5">Contact / Business</th>
+                          <th className="py-2.5 px-3.5">
+                            <button
+                              type="button"
+                              onClick={() => toggleSortField('name')}
+                              className="flex items-center gap-1.5 hover:text-slate-900 transition-colors uppercase cursor-pointer group"
+                            >
+                              <span>Contact / Business</span>
+                              {renderSortIcon('name')}
+                            </button>
+                          </th>
+                          <th className="py-2.5 px-3.5">
+                            <button
+                              type="button"
+                              onClick={() => toggleSortField('date')}
+                              className="flex items-center gap-1.5 hover:text-slate-900 transition-colors uppercase cursor-pointer group"
+                            >
+                              <Calendar className="w-3 h-3 text-slate-400" />
+                              <span>Harvest Date</span>
+                              {renderSortIcon('date')}
+                            </button>
+                          </th>
+                          <th className="py-2.5 px-3.5">
+                            <button
+                              type="button"
+                              onClick={() => toggleSortField('city')}
+                              className="flex items-center gap-1.5 hover:text-slate-900 transition-colors uppercase cursor-pointer group"
+                            >
+                              <MapPin className="w-3 h-3 text-slate-400" />
+                              <span>City / Location</span>
+                              {renderSortIcon('city')}
+                            </button>
+                          </th>
                           <th className="py-2.5 px-3.5">Email</th>
                           <th className="py-2.5 px-3.5">Phone</th>
-                          <th className="py-2.5 px-3.5">Category</th>
-                          <th className="py-2.5 px-3.5">Stage &amp; Sync</th>
+                          <th className="py-2.5 px-3.5">
+                            <button
+                              type="button"
+                              onClick={() => toggleSortField('category')}
+                              className="flex items-center gap-1.5 hover:text-slate-900 transition-colors uppercase cursor-pointer group"
+                            >
+                              <span>Category</span>
+                              {renderSortIcon('category')}
+                            </button>
+                          </th>
+                          <th className="py-2.5 px-3.5">
+                            <button
+                              type="button"
+                              onClick={() => toggleSortField('rating')}
+                              className="flex items-center gap-1.5 hover:text-slate-900 transition-colors uppercase cursor-pointer group"
+                            >
+                              <Star className="w-3 h-3 text-amber-500 fill-amber-500/20" />
+                              <span>Rating</span>
+                              {renderSortIcon('rating')}
+                            </button>
+                          </th>
+                          <th className="py-2.5 px-3.5">
+                            <button
+                              type="button"
+                              onClick={() => toggleSortField('status')}
+                              className="flex items-center gap-1.5 hover:text-slate-900 transition-colors uppercase cursor-pointer group"
+                            >
+                              <span>Stage &amp; Sync</span>
+                              {renderSortIcon('status')}
+                            </button>
+                          </th>
                           <th className="py-2.5 px-3.5 text-right">Actions</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
-                        {filteredContacts.map(lead => (
+                        {sortedAndFilteredContacts.map(lead => (
                           <tr key={lead._id} className="hover:bg-slate-50/80 transition-colors group">
                             <td className="py-3 px-3.5">
                               <input 
@@ -754,27 +978,48 @@ const Audience = () => {
                               />
                             </td>
 
+                            {/* Contact / Business */}
                             <td className="py-3 px-3.5">
                               <div className="flex items-center gap-2.5">
                                 <div className="w-7 h-7 rounded-sm bg-slate-100 text-slate-700 flex items-center justify-center font-delight font-bold text-xs uppercase flex-shrink-0 border border-slate-200">
                                   {(lead.businessName || 'C').charAt(0)}
                                 </div>
-                                <div className="min-w-0 max-w-[320px] sm:max-w-[420px]">
+                                <div className="min-w-0 max-w-[240px] sm:max-w-[300px]">
                                   <div className="font-bold text-slate-900 break-words whitespace-normal leading-snug tracking-tight">{lead.businessName || 'Unnamed Contact'}</div>
-                                  <div className="text-[10px] text-slate-400 font-delight font-normal flex flex-wrap items-center gap-1.5 mt-0.5">
-                                    <span>{lead.location || 'Local'}</span>
-                                    {lead.source && <span className="bg-slate-100 text-slate-600 px-1 rounded-sm border border-slate-200">{lead.source}</span>}
-                                  </div>
+                                  {lead.source && (
+                                    <div className="text-[10px] text-slate-400 font-delight font-normal flex items-center gap-1 mt-0.5">
+                                      <span className="bg-slate-100 text-slate-600 px-1 rounded-sm border border-slate-200">{lead.source}</span>
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                             </td>
 
+                            {/* Harvest Date */}
+                            <td className="py-3 px-3.5 font-delight text-slate-700 whitespace-nowrap">
+                              <div className="flex items-center gap-1.5 text-xs">
+                                <Calendar className="w-3 h-3 text-slate-400 shrink-0" />
+                                <span className="font-medium text-slate-800">{formatHarvestDate(lead.createdAt || lead.harvestedAt || lead.created_at || lead.timestamp)}</span>
+                              </div>
+                            </td>
+
+                            {/* City / Location */}
+                            <td className="py-3 px-3.5 font-delight text-slate-700">
+                              <div className="flex items-center gap-1.5 text-xs max-w-[170px]">
+                                <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
+                                <span className="font-medium text-slate-800 truncate" title={getLeadCity(lead)}>
+                                  {getLeadCity(lead) || 'Local'}
+                                </span>
+                              </div>
+                            </td>
+
+                            {/* Email */}
                             <td className="py-3 px-3.5 font-delight font-medium">
                               {lead.email ? (
                                 <div className="flex items-center gap-1.5 group/email">
                                   <a href={`mailto:${lead.email}`} className="text-slate-800 hover:text-accent hover:underline flex items-center gap-1 font-medium">
-                                    <Mail className="w-3 h-3 text-slate-400" />
-                                    <span>{lead.email}</span>
+                                    <Mail className="w-3 h-3 text-slate-400 shrink-0" />
+                                    <span className="truncate max-w-[180px]">{lead.email}</span>
                                   </a>
                                   <button 
                                     onClick={() => setEditingContact({ ...lead })}
@@ -806,13 +1051,14 @@ const Audience = () => {
                               )}
                             </td>
 
-                            <td className="py-3 px-3.5 font-delight font-medium">
+                            {/* Phone */}
+                            <td className="py-3 px-3.5 font-delight font-medium whitespace-nowrap">
                               {lead.phone ? (
                                 <a 
                                   href={`https://wa.me/${lead.phone.replace(/[^0-9]/g, '')}`} 
                                   target="_blank" 
                                   rel="noreferrer"
-                                  className="text-emerald-600 hover:underline flex items-center gap-1"
+                                  className="text-emerald-600 hover:underline flex items-center gap-1 font-semibold"
                                 >
                                   <Phone className="w-3 h-3" />
                                   <span>{lead.phone}</span>
@@ -822,12 +1068,22 @@ const Audience = () => {
                               )}
                             </td>
 
-                            <td className="py-3 px-3.5 font-medium text-slate-600">
+                            {/* Category */}
+                            <td className="py-3 px-3.5 font-medium text-slate-600 whitespace-nowrap">
                               <span className="px-1.5 py-0.5 rounded-sm bg-slate-100 border border-slate-200 text-[10px] font-delight font-medium text-slate-600">
                                 {lead.category || 'General'}
                               </span>
                             </td>
 
+                            {/* Rating */}
+                            <td className="py-3 px-3.5 font-delight whitespace-nowrap">
+                              <div className="flex items-center gap-1">
+                                <Star className="w-3 h-3 text-amber-500 fill-amber-400" />
+                                <span className="font-bold text-slate-800 text-xs">{lead.rating ? Number(lead.rating).toFixed(1) : 'N/A'}</span>
+                              </div>
+                            </td>
+
+                            {/* Stage & Sync */}
                             <td className="py-3 px-3.5 font-delight font-medium">
                               <div className="flex flex-wrap items-center gap-1">
                                 <span className={`inline-block px-2 py-0.5 rounded-sm text-[10px] font-delight font-medium border ${
@@ -852,6 +1108,7 @@ const Audience = () => {
                               </div>
                             </td>
 
+                            {/* Actions */}
                             <td className="py-3 px-3.5 text-right">
                               <div className="flex items-center justify-end gap-1.5 opacity-80 group-hover:opacity-100">
                                 <button 
@@ -1139,11 +1396,11 @@ const Audience = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-delight font-semibold text-slate-600 mb-1">Location</label>
+                  <label className="block text-[11px] font-delight font-semibold text-slate-600 mb-1">City / Location</label>
                   <input 
                     type="text"
                     value={newContact.location}
-                    onChange={(e) => setNewContact({ ...newContact, location: e.target.value })}
+                    onChange={(e) => setNewContact({ ...newContact, location: e.target.value, city: e.target.value })}
                     placeholder="e.g. Austin, TX"
                     className="w-full h-8 px-2.5 border border-slate-200 rounded-md text-xs font-delight font-medium focus:border-slate-400 outline-none"
                   />
@@ -1576,11 +1833,11 @@ const Audience = () => {
 
               <div className="grid grid-cols-2 gap-2.5">
                 <div>
-                  <label className="block text-[11px] font-delight font-semibold text-slate-600 mb-1">Location</label>
+                  <label className="block text-[11px] font-delight font-semibold text-slate-600 mb-1">City / Location</label>
                   <input 
                     type="text"
-                    value={editingContact.location || ''}
-                    onChange={(e) => setEditingContact({ ...editingContact, location: e.target.value })}
+                    value={editingContact.location || editingContact.city || ''}
+                    onChange={(e) => setEditingContact({ ...editingContact, location: e.target.value, city: e.target.value })}
                     className="w-full h-8 px-2.5 border border-slate-200 rounded-md text-xs font-delight font-medium outline-none focus:border-slate-400"
                   />
                 </div>

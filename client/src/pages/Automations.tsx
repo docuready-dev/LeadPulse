@@ -10,6 +10,7 @@ import {
 import { useStore } from '../store/useStore';
 import { confirmDialog, alertDialog } from '../components/AppConfirmModal';
 import axios from 'axios';
+import API_URL from '../config/api';
 
 interface JourneyStep {
   id: string;
@@ -183,7 +184,7 @@ const Automations = () => {
   };
 
   // Dynamic API Base URL
-  const apiBase = window.location.hostname === 'localhost' ? 'http://localhost:3001' : window.location.origin;
+  const apiBase = API_URL;
 
   // View mode: 'journeys' or 'queue'
   const [viewTab, setViewTab] = useState<'journeys' | 'queue'>('journeys');

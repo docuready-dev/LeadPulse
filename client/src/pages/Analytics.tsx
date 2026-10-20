@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useStore } from '../store/useStore';
 import axios from 'axios';
+import API_URL from '../config/api';
 import { 
   TrendingUp, Users, Mail, MessageCircle, 
   Target, ShieldCheck, ArrowUpRight,
@@ -31,8 +32,8 @@ const Analytics = () => {
       if (!user?._id) return;
       try {
         const [leadsRes, campRes] = await Promise.all([
-          axios.get('http://localhost:3001/api/leads', { headers: { userid: user._id } }),
-          axios.get('http://localhost:3001/api/outreach/campaigns', { headers: { userid: user._id } }).catch(() => ({ data: [] }))
+          axios.get(`${API_URL}/api/leads`, { headers: { userid: user._id } }),
+          axios.get(`${API_URL}/api/outreach/campaigns`, { headers: { userid: user._id } }).catch(() => ({ data: [] }))
         ]);
         setLeads(leadsRes.data || []);
         setCampaigns(campRes.data || []);

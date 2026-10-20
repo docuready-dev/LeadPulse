@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import API_URL from '../config/api';
 import { alertDialog } from './AppConfirmModal';
 import { 
   X, Check, 
@@ -42,7 +43,7 @@ const EmailProviderModal = ({ isOpen, onClose, user, onSaved }: EmailProviderMod
     const fetchStatus = async () => {
       setIsLoadingStatus(true);
       try {
-        const res = await axios.get('http://localhost:3001/api/outreach/mailbox', {
+        const res = await axios.get(`${API_URL}/api/outreach/mailbox`, {
           headers: { userid: user._id }
         });
         if (res.data?.isConnected && res.data.mailbox) {
@@ -93,7 +94,7 @@ const EmailProviderModal = ({ isOpen, onClose, user, onSaved }: EmailProviderMod
         testRecipient: testRecipient.trim() || cleanFromEmail
       };
 
-      const res = await axios.post('http://localhost:3001/api/outreach/verify-mailbox', payload, {
+      const res = await axios.post(`${API_URL}/api/outreach/verify-mailbox`, payload, {
         headers: { userid: user?._id }
       });
 
@@ -126,7 +127,7 @@ const EmailProviderModal = ({ isOpen, onClose, user, onSaved }: EmailProviderMod
 
     setIsDisconnecting(true);
     try {
-      await axios.delete('http://localhost:3001/api/outreach/disconnect-mailbox', {
+      await axios.delete(`${API_URL}/api/outreach/disconnect-mailbox`, {
         headers: { userid: user?._id }
       });
       setConnectedMailbox(null);

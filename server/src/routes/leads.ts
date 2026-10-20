@@ -11,18 +11,32 @@ const router = express.Router();
 router.get('/', async (req, res) => {
   const userId = req.headers.userid as string;
   if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+  const localUser = userStore.getUserById(userId) || (userId.includes('@') ? userStore.getUserByEmail(userId) : null);
+  const userEmail = localUser?.email || (userId.includes('@') ? userId : null);
   
   let firestoreLeads: any[] = [];
   try {
     const leadsRef = db.collection('leads');
-    const snapshot = await leadsRef.where('userId', '==', userId).limit(300).get();
+    const snapshot = await leadsRef.where('userId', '==', userId).limit(500).get();
     firestoreLeads = snapshot.docs.map(doc => ({ _id: doc.id, ...doc.data() }));
+
+    // If user has alternate ID/email, also fetch those leads from Firestore
+    if (userEmail && userEmail !== userId) {
+      const emailSnapshot = await leadsRef.where('userId', '==', userEmail).limit(500).get();
+      const existingIds = new Set(firestoreLeads.map(l => l._id));
+      emailSnapshot.docs.forEach(doc => {
+        if (!existingIds.has(doc.id)) {
+          firestoreLeads.push({ _id: doc.id, ...doc.data() });
+        }
+      });
+    }
   } catch (err: any) {
     console.warn('[Leads] Firestore unauthenticated or offline, serving from local store:', err.message);
   }
 
   // Merge with local persistent store
-  const localLeads = leadStore.getLeads(userId);
+  const localLeads = leadStore.getLeads(userId, userEmail || undefined);
   const seenIds = new Set(firestoreLeads.map(l => l._id));
   const merged = [...firestoreLeads];
 
@@ -30,6 +44,13 @@ router.get('/', async (req, res) => {
     if (!seenIds.has(lead._id)) {
       seenIds.add(lead._id);
       merged.push(lead);
+    }
+  }
+
+  // Back-propagate any firestore leads to local leadStore
+  for (const fLead of firestoreLeads) {
+    if (!leadStore.getLeadById(fLead._id)) {
+      leadStore.addLead(fLead);
     }
   }
 
@@ -42,18 +63,20 @@ router.post('/', async (req, res) => {
   const userId = req.headers.userid as string;
   if (!userId) return res.status(401).json({ error: 'Unauthorized' });
 
-  const { businessName, email, phone, category, location, website, status = 'New', tags = [], source = 'Manual Entry' } = req.body;
+  const { businessName, email, phone, category, location, city, website, status = 'New', tags = [], source = 'Manual Entry' } = req.body;
   if (!businessName && !email) {
     return res.status(400).json({ error: 'Business Name or Email is required' });
   }
 
+  const resolvedLocation = (location || city || '').trim();
   const newLead = {
     userId,
     businessName: businessName || (email ? email.split('@')[0] : 'New Contact'),
     email: email || '',
     phone: phone || '',
     category: category || 'General B2B',
-    location: location || '',
+    location: resolvedLocation,
+    city: city || resolvedLocation,
     website: website || '',
     status: status || 'New',
     tags: Array.isArray(tags) ? tags : [tags].filter(Boolean),
@@ -218,6 +241,24 @@ router.get('/serpapi/status', async (req, res) => {
     let apiKey = serpInfo?.apiKey;
 
     if (!apiKey) {
+      // 1. Check local persistent UserStore first
+      const localUser = userStore.getUserById(userId) || (userId.includes('@') ? userStore.getUserByEmail(userId) : null);
+      if (localUser && localUser.serpapi_key) {
+        apiKey = localUser.serpapi_key;
+        serpInfo = {
+          apiKey,
+          plan_id: localUser.serpapi_plan || 'free',
+          plan_name: localUser.serpapi_plan_name || 'Free',
+          searches_per_month: localUser.serpapi_searches_per_month || 100,
+          plan_searches_left: localUser.serpapi_searches_left ?? 100,
+          this_month_usage: localUser.serpapi_this_month_usage || 0
+        };
+        memorySerpApiStore.set(userId, serpInfo);
+      }
+    }
+
+    if (!apiKey) {
+      // 2. Query Firestore and back-propagate to UserStore
       try {
         const userDoc = await db.collection('users').doc(userId).get();
         if (userDoc.exists) {
@@ -233,23 +274,16 @@ router.get('/serpapi/status', async (req, res) => {
               this_month_usage: udata.serpapi_this_month_usage || 0
             };
             memorySerpApiStore.set(userId, serpInfo);
+            userStore.updateUser(userId, {
+              serpapi_key: apiKey,
+              serpapi_connected: true,
+              serpapi_plan: serpInfo.plan_id,
+              serpapi_plan_name: serpInfo.plan_name,
+              serpapi_searches_left: serpInfo.plan_searches_left
+            });
           }
         }
-      } catch (dbErr) {
-        const localUser = userStore.getUserById(userId);
-        if (localUser && localUser.serpapi_key) {
-          apiKey = localUser.serpapi_key;
-          serpInfo = {
-            apiKey,
-            plan_id: localUser.serpapi_plan || 'free',
-            plan_name: localUser.serpapi_plan_name || 'Free',
-            searches_per_month: localUser.serpapi_searches_per_month || 100,
-            plan_searches_left: localUser.serpapi_searches_left ?? 100,
-            this_month_usage: localUser.serpapi_this_month_usage || 0
-          };
-          memorySerpApiStore.set(userId, serpInfo);
-        }
-      }
+      } catch (dbErr) {}
     }
 
     if (!apiKey) {
@@ -337,7 +371,7 @@ router.post('/serpapi/connect', async (req, res) => {
       serpapi_updated_at: new Date().toISOString()
     });
 
-    await db.collection('users').doc(userId).update({
+    await db.collection('users').doc(userId).set({
       serpapi_key: cleanKey,
       serpapi_connected: true,
       serpapi_plan: accountRecord.plan_id,
@@ -346,7 +380,7 @@ router.post('/serpapi/connect', async (req, res) => {
       serpapi_searches_per_month: accountRecord.searches_per_month,
       serpapi_this_month_usage: accountRecord.this_month_usage,
       serpapi_updated_at: new Date().toISOString()
-    }).catch(err => {
+    }, { merge: true }).catch(err => {
       console.warn('[Leads] Could not persist SerpApi info to Firestore:', err);
     });
 

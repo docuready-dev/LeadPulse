@@ -114,7 +114,7 @@ const Settings = () => {
         }
       };
 
-      const res = await axios.patch('http://localhost:3001/api/auth/profile', payload, {
+      const res = await axios.patch(`${API_URL}/api/auth/profile`, payload, {
         headers: { userid: user._id }
       });
 
@@ -195,7 +195,7 @@ const Settings = () => {
     setErrorMsg('');
 
     try {
-      const res = await axios.post('http://localhost:3001/api/outreach/verify-mailbox', {
+      const res = await axios.post(`${API_URL}/api/outreach/verify-mailbox`, {
         apiKey: keyToTest,
         fromEmail,
         fromName,
@@ -229,7 +229,7 @@ const Settings = () => {
     }
 
     try {
-      const res = await axios.get('http://localhost:3001/api/leads', {
+      const res = await axios.get(`${API_URL}/api/leads`, {
         headers: { userid: user?._id }
       });
       const leads = res.data || [];
