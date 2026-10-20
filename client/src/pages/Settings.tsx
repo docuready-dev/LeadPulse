@@ -124,6 +124,9 @@ const Settings = () => {
       });
 
       setSaveSuccess(true);
+      try {
+        await useStore.getState().fetchWorkspaceIntegrations(user._id);
+      } catch {}
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (err: any) {
       console.error('Failed to save settings:', err);
@@ -831,19 +834,42 @@ const Settings = () => {
                   type="button"
                   onClick={handleTestSmtp}
                   disabled={testEmailSending}
-                  className="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 h-8 px-3.5 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  className={`border h-8 px-3.5 rounded-md text-xs font-medium transition-all duration-300 flex items-center gap-1.5 cursor-pointer disabled:opacity-50 ${
+                    testEmailSuccess
+                      ? 'bg-emerald-50 border-emerald-300 text-emerald-800 shadow-2xs'
+                      : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200'
+                  }`}
                 >
-                  <Send className="w-3.5 h-3.5 text-blue-600" />
-                  <span>{testEmailSending ? 'Sending Test Message...' : testEmailSuccess ? 'Test Delivered to Inbox!' : 'Send Test SendGrid Ping'}</span>
+                  {testEmailSending ? (
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin text-slate-500" />
+                  ) : testEmailSuccess ? (
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 animate-in zoom-in-75" />
+                  ) : (
+                    <Send className="w-3.5 h-3.5 text-blue-600" />
+                  )}
+                  <span>{testEmailSending ? 'Sending Test Message...' : testEmailSuccess ? 'Connected & Verified!' : 'Send Test SendGrid Ping'}</span>
                 </button>
 
                 <button
                   onClick={handleSaveSettings}
                   disabled={saving}
-                  className="bg-slate-900 hover:bg-slate-800 text-white h-8 px-4 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer border border-slate-900 disabled:opacity-50"
+                  className={`h-8 px-4 rounded-md text-xs font-medium transition-all duration-300 flex items-center gap-1.5 cursor-pointer border disabled:opacity-50 ${
+                    saveSuccess
+                      ? 'bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-600 shadow-sm'
+                      : 'bg-slate-900 hover:bg-slate-800 text-white border-slate-900'
+                  }`}
                 >
-                  <Save className="w-3.5 h-3.5" />
-                  <span>{saving ? 'Saving...' : 'Save SendGrid Settings'}</span>
+                  {saveSuccess ? (
+                    <>
+                      <CheckCircle2 className="w-3.5 h-3.5 text-white animate-in zoom-in-75" />
+                      <span>Saved &amp; Connected</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-3.5 h-3.5" />
+                      <span>{saving ? 'Saving...' : 'Save SendGrid Settings'}</span>
+                    </>
+                  )}
                 </button>
               </div>
             </div>

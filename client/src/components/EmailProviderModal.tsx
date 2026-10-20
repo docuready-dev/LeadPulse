@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import API_URL from '../config/api';
 import { alertDialog } from './AppConfirmModal';
+import { useStore } from '../store/useStore';
 import { 
   X, Check, 
   Loader2, CheckCircle2, AlertCircle, Eye, EyeOff,
@@ -102,6 +103,11 @@ const EmailProviderModal = ({ isOpen, onClose, user, onSaved }: EmailProviderMod
         setVerificationSuccess(res.data.message || 'SendGrid Web API verified and connected successfully!');
         setConnectedMailbox(res.data.mailbox);
         setApiKey('');
+        try {
+          await useStore.getState().fetchWorkspaceIntegrations(user?._id);
+        } catch {
+          // Non-blocking
+        }
         if (onSaved) onSaved();
       } else {
         setVerificationError(res.data.error || 'Failed to verify SendGrid connection.');
@@ -133,6 +139,11 @@ const EmailProviderModal = ({ isOpen, onClose, user, onSaved }: EmailProviderMod
       setConnectedMailbox(null);
       setVerificationSuccess(null);
       setVerificationError(null);
+      try {
+        await useStore.getState().fetchWorkspaceIntegrations(user?._id);
+      } catch {
+        // Non-blocking
+      }
       if (onSaved) onSaved();
     } catch (err: any) {
       console.error('Failed to disconnect mailbox:', err);
@@ -470,12 +481,21 @@ const EmailProviderModal = ({ isOpen, onClose, user, onSaved }: EmailProviderMod
               type="button"
               onClick={handleVerifyAndConnect}
               disabled={isVerifying}
-              className="px-5 py-2 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/25 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              className={`px-5 py-2 rounded-xl text-xs font-bold transition-all duration-300 flex items-center gap-1.5 cursor-pointer disabled:opacity-50 ${
+                (connectedMailbox || verificationSuccess) && !apiKey.trim()
+                  ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/25 border border-emerald-500'
+                  : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/25'
+              }`}
             >
               {isVerifying ? (
                 <>
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
                   <span>Verifying via HTTPS (Port 443)...</span>
+                </>
+              ) : (connectedMailbox || verificationSuccess) && !apiKey.trim() ? (
+                <>
+                  <CheckCircle2 className="w-3.5 h-3.5 text-white animate-in zoom-in-75" />
+                  <span>Connected</span>
                 </>
               ) : (
                 <>

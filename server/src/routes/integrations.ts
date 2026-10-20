@@ -4,6 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import { db } from '../index';
 import { userStore } from '../services/userStore';
+import { memorySmtpStore } from './outreach';
 
 const router = express.Router();
 
@@ -431,19 +432,45 @@ router.get('/', async (req, res) => {
     }
 
     // 2. Query Firestore if online
+    let firestoreData: any = null;
     try {
       const userRef = db.collection('users').doc(userId);
       const doc = await userRef.get();
       if (doc.exists) {
-        const data = doc.data();
-        if (data?.integrations) {
-          userIntegrations = getMergedIntegrations(data.integrations);
-          userStore.updateUser(userId, { integrations: userIntegrations, integrationLogs: getUserLogs(data) });
+        firestoreData = doc.data();
+        if (firestoreData?.integrations) {
+          userIntegrations = getMergedIntegrations(firestoreData.integrations);
+          userStore.updateUser(userId, { integrations: userIntegrations, integrationLogs: getUserLogs(firestoreData) });
         }
-        logs = getUserLogs(data);
+        logs = getUserLogs(firestoreData);
       }
     } catch (fsErr: any) {
       // Graceful fallback to local store
+    }
+
+    // 3. Ensure SendGrid status is synchronized with active SMTP / Outreach settings
+    const activeSmtp = memorySmtpStore.get(userId) || 
+      firestoreData?.smtpSettings || firestoreData?.smtp_settings ||
+      (localUser as any)?.smtpSettings || (localUser as any)?.smtp_settings;
+
+    if (activeSmtp && (activeSmtp.provider === 'sendgrid' || String(activeSmtp.host || '').includes('sendgrid') || activeSmtp.pass?.startsWith('SG.'))) {
+      userIntegrations = userIntegrations.map(app => {
+        if (app.id === 'sendgrid') {
+          return {
+            ...app,
+            connected: true,
+            config: {
+              ...app.config,
+              apiKey: activeSmtp.pass || app.config.apiKey,
+              fromEmail: activeSmtp.fromEmail || app.config.fromEmail,
+              fromName: activeSmtp.fromName || app.config.fromName,
+              replyTo: activeSmtp.replyTo || app.config.replyTo
+            },
+            lastSync: app.lastSync || 'Active'
+          };
+        }
+        return app;
+      });
     }
 
     res.json({
@@ -589,9 +616,35 @@ router.post('/connect', async (req, res) => {
     };
 
     const updatedLogs = [newLog, ...logs].slice(0, 50);
-    userStore.updateUser(userId, { integrations: updatedList, integrationLogs: updatedLogs });
+    const updatedUserFields: any = { integrations: updatedList, integrationLogs: updatedLogs };
+
+    if (appId === 'sendgrid') {
+      const apiKey = (normalizedConfig.apiKey || '').trim();
+      const fromEmail = (normalizedConfig.fromEmail || '').trim();
+      const fromName = (normalizedConfig.fromName || '').trim();
+      const replyTo = (normalizedConfig.replyTo || fromEmail).trim();
+      if (apiKey) {
+        const sendgridSmtpRecord = {
+          provider: 'sendgrid',
+          host: 'api.sendgrid.com (Port 443 HTTPS)',
+          port: 443,
+          secure: true,
+          user: fromEmail || 'apikey',
+          pass: apiKey,
+          fromName: fromName || 'Strovr Outreach',
+          fromEmail: fromEmail,
+          replyTo: replyTo || fromEmail,
+          verifiedAt: new Date().toISOString()
+        };
+        memorySmtpStore.set(userId, sendgridSmtpRecord);
+        updatedUserFields.smtpSettings = sendgridSmtpRecord;
+        updatedUserFields.smtp_settings = sendgridSmtpRecord;
+      }
+    }
+
+    userStore.updateUser(userId, updatedUserFields);
     try {
-      await userRef.set({ integrations: updatedList, integrationLogs: updatedLogs }, { merge: true });
+      await userRef.set(updatedUserFields, { merge: true });
     } catch (fsErr) {
       console.warn('[Integrations] Firestore sync warning:', fsErr);
     }
@@ -784,9 +837,17 @@ router.post('/disconnect', async (req, res) => {
     };
 
     const updatedLogs = [newLog, ...logs].slice(0, 50);
-    userStore.updateUser(userId, { integrations: updatedList, integrationLogs: updatedLogs });
+    const updatedUserFields: any = { integrations: updatedList, integrationLogs: updatedLogs };
+
+    if (appId === 'sendgrid') {
+      memorySmtpStore.delete(userId);
+      updatedUserFields.smtpSettings = null;
+      updatedUserFields.smtp_settings = null;
+    }
+
+    userStore.updateUser(userId, updatedUserFields);
     try {
-      await userRef.set({ integrations: updatedList, integrationLogs: updatedLogs }, { merge: true });
+      await userRef.set(updatedUserFields, { merge: true });
     } catch (fsErr) {
       console.warn('[Integrations] Firestore sync warning on disconnect:', fsErr);
     }
@@ -974,7 +1035,38 @@ router.post('/test', async (req, res) => {
       });
     }
 
-    // 6. Verify non-empty credentials for other integrations
+    // 6. SendGrid API verification (HTTPS Port 443)
+    if (appId === 'sendgrid' && config.apiKey) {
+      try {
+        const sgRes = await fetch('https://api.sendgrid.com/v3/scopes', {
+          headers: { Authorization: `Bearer ${config.apiKey.trim()}` }
+        });
+        const latency = `${Date.now() - startMs}ms`;
+        if (!sgRes.ok) {
+          return res.status(400).json({
+            success: false,
+            ping: `${sgRes.status} Unauthorized`,
+            latency,
+            message: `SendGrid API returned HTTP ${sgRes.status}. Please check your SendGrid API key permissions.`
+          });
+        }
+        return res.json({
+          success: true,
+          ping: '200 OK',
+          latency,
+          message: 'Verified live connection to SendGrid v3 API (HTTPS Port 443)!'
+        });
+      } catch (sgErr: any) {
+        return res.status(500).json({
+          success: false,
+          ping: '500 Error',
+          latency: `${Date.now() - startMs}ms`,
+          message: `SendGrid verification error: ${sgErr.message || 'Network error'}`
+        });
+      }
+    }
+
+    // 7. Verify non-empty credentials for other integrations
     const hasAnyValue = Object.values(config || {}).some(v => typeof v === 'string' && v.trim().length > 0);
     if (!hasAnyValue) {
       return res.status(400).json({

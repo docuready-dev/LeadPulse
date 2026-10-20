@@ -24,6 +24,7 @@ export interface UserRecord {
   goals?: string;
   profile_picture?: string;
   smtp_settings?: any;
+  smtpSettings?: any;
   outreach_defaults?: any;
   serpapi_key?: string;
   serpapi_connected?: boolean;
@@ -196,6 +197,7 @@ class UserStore {
       goals: user.goals !== undefined ? user.goals : existing?.goals,
       profile_picture: user.profile_picture !== undefined ? user.profile_picture : existing?.profile_picture,
       smtp_settings: user.smtp_settings !== undefined ? user.smtp_settings : existing?.smtp_settings,
+      smtpSettings: user.smtpSettings !== undefined ? user.smtpSettings : existing?.smtpSettings,
       outreach_defaults: user.outreach_defaults !== undefined ? user.outreach_defaults : existing?.outreach_defaults,
       serpapi_key: user.serpapi_key !== undefined ? user.serpapi_key : existing?.serpapi_key,
       serpapi_connected: user.serpapi_connected !== undefined ? user.serpapi_connected : existing?.serpapi_connected,

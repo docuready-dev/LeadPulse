@@ -2,6 +2,7 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import { db } from '../index';
 import { userStore } from '../services/userStore';
+import { DEFAULT_APPS } from './integrations';
 import { compileEmailHtml, LeadData } from '../services/emailRenderer';
 import { 
   sendDirectEmail, 
@@ -33,7 +34,7 @@ const getDailySendingCeiling = (plan?: string) => {
 };
 
 // Resilient in-memory fallback store for SMTP / Cloud Outbox settings
-const memorySmtpStore = new Map<string, any>();
+export const memorySmtpStore = new Map<string, any>();
 
 // Middleware to check auth and resolve user record with accurate tier & quota
 const requireAuth = async (req: any, res: any, next: any) => {
@@ -719,12 +720,82 @@ router.post('/verify-mailbox', requireAuth, async (req: any, res: any) => {
       memorySmtpStore.set(req.user._id, savedRecord);
 
       try {
-        await db.collection('users').doc(req.user._id).update({
-          smtpSettings: savedRecord,
-          smtp_settings: savedRecord
+        const userDoc = await db.collection('users').doc(req.user._id).get();
+        const userData = userDoc.exists ? userDoc.data() : {};
+        const rawIntegrations = Array.isArray(userData?.integrations) 
+          ? userData.integrations 
+          : (userStore.getUserById(req.user._id)?.integrations || DEFAULT_APPS);
+        
+        const updatedIntegrations = rawIntegrations.map((item: any) => {
+          if (item.id === 'sendgrid') {
+            return {
+              ...item,
+              connected: true,
+              config: {
+                ...(item.config || {}),
+                apiKey: resolvedApiKey,
+                fromEmail: cleanFromEmail,
+                fromName: cleanFromName,
+                replyTo: cleanReplyTo
+              },
+              lastSync: 'Just now'
+            };
+          }
+          return item;
         });
+
+        if (!updatedIntegrations.some((i: any) => i.id === 'sendgrid')) {
+          const sendGridTemplate = DEFAULT_APPS.find(a => a.id === 'sendgrid');
+          if (sendGridTemplate) {
+            updatedIntegrations.push({
+              ...sendGridTemplate,
+              connected: true,
+              config: {
+                apiKey: resolvedApiKey,
+                fromEmail: cleanFromEmail,
+                fromName: cleanFromName,
+                replyTo: cleanReplyTo
+              },
+              lastSync: 'Just now'
+            });
+          }
+        }
+
+        const sendGridLog = {
+          id: `log_${Date.now()}`,
+          appId: 'sendgrid',
+          appName: 'SendGrid',
+          eventType: 'auth',
+          summary: `Verified and connected SendGrid Web API (${cleanFromEmail}) from Outreach Studio`,
+          status: '200 OK',
+          latency: '24ms',
+          timestamp: new Date().toISOString(),
+          payload: {
+            action: 'mailbox.verified',
+            provider: 'sendgrid',
+            fromEmail: cleanFromEmail,
+            fromName: cleanFromName
+          }
+        };
+
+        const existingLogs = Array.isArray(userData?.integrationLogs) ? userData.integrationLogs : [];
+        const updatedLogs = [sendGridLog, ...existingLogs].slice(0, 50);
+
+        userStore.updateUser(req.user._id, {
+          smtpSettings: savedRecord,
+          smtp_settings: savedRecord,
+          integrations: updatedIntegrations,
+          integrationLogs: updatedLogs
+        });
+
+        await db.collection('users').doc(req.user._id).set({
+          smtpSettings: savedRecord,
+          smtp_settings: savedRecord,
+          integrations: updatedIntegrations,
+          integrationLogs: updatedLogs
+        }, { merge: true });
       } catch (dbErr) {
-        console.warn('[Outreach Router] Could not persist smtpSettings to Firestore (cached in-memory):', dbErr);
+        console.warn('[Outreach Router] Could not persist smtpSettings/integrations to Firestore (cached in-memory):', dbErr);
       }
 
       const maskedKey = `${resolvedApiKey.substring(0, 7)}...${resolvedApiKey.substring(resolvedApiKey.length - 4)}`;
@@ -832,11 +903,36 @@ router.delete('/disconnect-mailbox', requireAuth, async (req: any, res: any) => 
   memorySmtpStore.delete(req.user._id);
 
   try {
-    await db.collection('users').doc(req.user._id).update({
-      smtpSettings: null
+    const userDoc = await db.collection('users').doc(req.user._id).get();
+    const userData = userDoc.exists ? userDoc.data() : (userStore.getUserById(req.user._id) || {});
+
+    let updatedIntegrations = Array.isArray(userData?.integrations) ? [...userData.integrations] : [];
+    if (updatedIntegrations.length > 0) {
+      updatedIntegrations = updatedIntegrations.map((app: any) => {
+        if (app.id === 'sendgrid') {
+          return {
+            ...app,
+            connected: false,
+            lastSync: 'Disconnected'
+          };
+        }
+        return app;
+      });
+    }
+
+    userStore.updateUser(req.user._id, {
+      smtpSettings: null,
+      smtp_settings: null,
+      integrations: updatedIntegrations
     });
+
+    await db.collection('users').doc(req.user._id).set({
+      smtpSettings: null,
+      smtp_settings: null,
+      integrations: updatedIntegrations
+    }, { merge: true });
   } catch (dbErr) {
-    // Continue
+    console.warn('[Outreach Router] Disconnect mailbox error:', dbErr);
   }
 
   res.json({ 

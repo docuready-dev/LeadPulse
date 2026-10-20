@@ -377,8 +377,12 @@ const SerpApiConnectModal: React.FC<SerpApiConnectModalProps> = ({
             type="button"
             onClick={handleConnect}
             disabled={isConnecting || !apiKey.trim()}
-            className={`px-5 py-2 text-xs font-bold rounded-xl flex items-center gap-2 transition-all cursor-pointer shadow-xs ${
-              isConnecting || !apiKey.trim()
+            className={`px-5 py-2 text-xs font-bold rounded-xl flex items-center gap-2 transition-all duration-300 cursor-pointer shadow-xs ${
+              isConnecting
+                ? 'bg-blue-600 text-white opacity-80 cursor-wait'
+                : serpAccount && apiKey.trim() === (serpAccount.apiKey || '').trim()
+                ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-200/50'
+                : !apiKey.trim()
                 ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
                 : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-blue-200'
             }`}
@@ -387,6 +391,11 @@ const SerpApiConnectModal: React.FC<SerpApiConnectModalProps> = ({
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
                 <span>Verifying Key with SerpApi...</span>
+              </>
+            ) : serpAccount && apiKey.trim() === (serpAccount.apiKey || '').trim() ? (
+              <>
+                <CheckCircle2 className="w-4 h-4 text-white animate-in zoom-in-75" />
+                <span>Connected</span>
               </>
             ) : (
               <>
