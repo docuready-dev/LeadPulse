@@ -135,7 +135,7 @@ Strovr replaces generic boilerplate strings with an intent-driven, high-converti
 ## System Architecture & Data Flow
 
 
-```
+``
 
 +-----------------------------------------------------------------------------------+
 |                                    CLIENT LAYER                                   |
