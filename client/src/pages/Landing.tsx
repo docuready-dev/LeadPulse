@@ -336,7 +336,7 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
               variants={itemVars}
               className="mb-6 inline-flex items-center gap-2 px-3 py-1 rounded-[5px] border border-[#E5E0D5] bg-[#F5F2EB] text-[11px] font-delight font-bold text-[#57524B] tracking-wide"
             >
-              <span>STROVR 3.0 // ARCHITECTURE RELEASE</span>
+              <span>STROVR 1.0 ~ ARCHITECTURE RELEASE</span>
               <span className="w-1 h-1 rounded-full bg-[#D6CFC2] mx-0.5"></span>
               <a href="#product" className="text-[#C85A32] hover:underline flex items-center gap-1">
                 Specs &rarr;
