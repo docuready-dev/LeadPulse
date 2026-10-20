@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="https://raw.githubusercontent.com/docuready-dev/Strovr/main/assets/Strovr%20Logo.png" alt="Strovr Logo" width="400" height="380">
+<img src="https://raw.githubusercontent.com/docuready-dev/Strovr/main/assets/Strovr%20Logo.png" alt="Strovr Logo" width="350" height="350">
 
 # Strovr | Autonomous B2B Lead Harvester & Outreach Infrastructure
 
@@ -36,7 +36,7 @@
 
 ---
 
-##  Core Features
+## ⚡ Core Features
 
 ### 1. High-Velocity Lead Discovery & SerpApi Harvesting
 - **Geo-Targeted Extraction**: Harvest hyper-localized commercial leads using Google Maps, Google Local, and custom SerpApi queries without IP blocks or captcha halts.
@@ -56,7 +56,7 @@
 
 ---
 
-##  Interactive Email Frameworks (All 10 Blueprints)
+## 🎨 Interactive Email Frameworks (All 10 Blueprints)
 
 Strovr includes 10 production-tested, responsive email blueprints designed for cross-client inbox rendering:
 
@@ -73,7 +73,7 @@ Strovr includes 10 production-tested, responsive email blueprints designed for c
 
 ---
 
-##  Universal Email Attachments Engine
+## 📎 Universal Email Attachments Engine
 
 Available universally across **all 10 email layouts**:
 - **Collateral Presets**: 1-click addition of verified assets including `Executive Pitch Deck (PDF)`, `Strategic Growth Audit (PDF)`, `Client Case Study (PDF)`, and `Commercial Pricing Sheet (XLS/PDF)`.
@@ -85,7 +85,7 @@ Available universally across **all 10 email layouts**:
 
 ---
 
-##  Executive AI Co-Pilot
+## 🤖 Executive AI Co-Pilot
 
 Strovr replaces generic boilerplate strings with an intent-driven, high-converting B2B copywriting matrix:
 - **Zero Prompt Echoing**: Never repeats user instructions verbatim inside the letter body.
@@ -98,4 +98,227 @@ Strovr replaces generic boilerplate strings with an intent-driven, high-converti
 
 ---
 
-##  Multi-Channel Outbox Architecture
+## 🚀 Multi-Channel Outbox Architecture
+
+
+```
+
+```
+                +-----------------------------+
+                |        Strovr Web App       |
+                |   (Outreach Center Studio)  |
+                +--------------+--------------+
+                               |
+           +-------------------+-------------------+
+           |                                       |
+           v                                       v
++----------------------+                +----------------------+
+|  SendGrid REST API   |                |  Direct SMTP Socket  |
+|  (HTTPS Port 443)    |                |  (TLS 587 / SSL 465) |
++----------+-----------+                +----------+-----------+
+           |                                       |
+           +-------------------+-------------------+
+                               |
+                               v
+                    +---------------------------+
+                    |    Recipient Mailbox      |
+                    |  (Google, Outlook, etc.)  |
+                    +---------------------------+
+
+```
+
+```
+
+- **Render-Proof Cloud Deliverability**: Standard outbound ports (25, 465, 587) are frequently blocked on cloud container platforms. Strovr uses Twilio SendGrid's v3 Web API over standard HTTPS (Port 443) for 100% reliable cloud dispatch.
+- **Direct SMTP Fallback**: Supports custom host, port, user, and password configurations for local development and private mail servers.
+- **Encrypted Credential Storage**: Mailbox credentials and SendGrid API keys persist securely per workspace in Google Cloud Firestore.
+
+---
+
+## 🏗️ System Architecture & Data Flow
+
+
+```
+
++-----------------------------------------------------------------------------------+
+|                                    CLIENT LAYER                                   |
+|  React 19 | TypeScript | Vite | Tailwind CSS | Zustand State | Lucide Icons       |
++----------------------------------------+------------------------------------------+
+| REST / JSON (Axios)
+v
++-----------------------------------------------------------------------------------+
+|                                    SERVER LAYER                                   |
+|  Node.js | Express 5 | TypeScript | Scraper Queue Worker | Template Compiler      |
++-------------------+--------------------+--------------------+---------------------+
+|                    |                    |
+v                    v                    v
++------------------+ +------------------+ +------------------+
+| Google Firestore | |   SerpApi & GMap | |   Google Gemini  |
+|  Cloud Database  | |   Search Engine  | |   AI Copy Engine |
++------------------+ +------------------+ +------------------+
+
+```
+
+---
+
+## 📦 Comprehensive Tech Stack
+
+### Frontend Application
+- **Core Library**: React 19 with TypeScript
+- **Build Tooling**: Vite 5 for fast Hot Module Replacement (HMR) and optimized rollup production bundles
+- **Styling**: Tailwind CSS with custom delightful design system palettes
+- **State Management**: Zustand with persistent client hydration
+- **Routing**: React Router DOM v6
+- **Icons**: Lucide React
+- **HTTP Client**: Axios with authenticated request interceptors
+
+### Backend Services
+- **Runtime Environment**: Node.js 18+ LTS
+- **Framework**: Express 5 (TypeScript)
+- **Cloud Database**: Google Cloud Firestore via `firebase-admin`
+- **Security & Auth**: JSON Web Tokens (JWT), bcrypt password hashing, 2FA support
+- **Mail Transports**: SendGrid Web API (`@sendgrid/mail` / HTTPS fetch) and Nodemailer
+- **Web Scraping & Extraction**: Puppeteer Headless Chromium and SerpApi client
+
+---
+
+## 📁 Project Directory Structure
+
+
+```
+
+Strovr/
+├── client/                     # React TypeScript Frontend
+│   ├── src/
+│   │   ├── components/         # Modals, Navbars, Template Galleries
+│   │   │   ├── DispatchTrackerModal.tsx
+│   │   │   ├── EmailProviderModal.tsx
+│   │   │   ├── LeadFinderWizard.tsx
+│   │   │   └── SerpApiConnectModal.tsx
+│   │   ├── data/               # Layout presets & WhatsApp blueprints
+│   │   │   ├── emailTemplates.ts
+│   │   │   └── whatsappTemplates.ts
+│   │   ├── pages/              # Application Views
+│   │   │   ├── Audience.tsx      # CRM Lead Management
+│   │   │   ├── Dashboard.tsx     # Acquisition Metrics
+│   │   │   ├── LeadFinder.tsx    # Discovery Engine
+│   │   │   ├── OutreachCenter.tsx # Email & WhatsApp Studio
+│   │   │   └── Settings.tsx      # Mailbox & Integration Config
+│   │   ├── store/              # Zustand Global State
+│   │   └── config/             # API Endpoint Configuration
+│   └── package.json
+│
+├── server/                     # Express TypeScript Backend
+│   ├── src/
+│   │   ├── routes/             # Modular API Controllers
+│   │   │   ├── auth.ts         # Authentication & Tokens
+│   │   │   ├── leads.ts        # Harvesting, CRM & SerpApi
+│   │   │   ├── outreach.ts     # AI Co-Pilot & Dispatch Engine
+│   │   │   └── integrations.ts # Third-Party Connectors
+│   │   ├── services/           # Core Infrastructure Services
+│   │   │   ├── emailRenderer.ts # HTML Template Compilation
+│   │   │   ├── mailer.ts       # SendGrid & SMTP Sockets
+│   │   │   ├── leadStore.ts    # Lead Cache & Fallback Store
+│   │   │   └── userStore.ts    # User Session Management
+│   │   └── index.ts            # App Entry & Firestore Boot
+│   └── package.json
+│
+└── README.md
+
+```
+
+---
+
+## 🔐 Environment Variables
+
+### Server Configuration (`server/.env`)
+
+```env
+PORT=3001
+NODE_ENV=production
+JWT_SECRET=your_secure_jwt_secret_key
+
+# Google Cloud Firestore Service Account (JSON string or Path)
+FIREBASE_SERVICE_ACCOUNT_KEY={"type":"service_account","project_id":"..."}
+FIREBASE_PROJECT_ID=your-project-id
+
+# SendGrid Direct Cloud Dispatch (HTTPS 443)
+SENDGRID_API_KEY=SG.your_sendgrid_api_key
+SENDGRID_FROM_EMAIL=verified-sender@yourdomain.com
+
+# Optional Headless AI Acceleration
+GEMINI_API_KEY=your_gemini_api_key
+
+# CORS Whitelist (Comma-separated)
+CORS_ORIGINS=[https://your-frontend-domain.com](https://your-frontend-domain.com),http://localhost:5173
+
+```
+
+### Client Configuration (`client/.env`)
+
+```env
+VITE_API_URL=[https://your-api-domain.com](https://your-api-domain.com)
+
+```
+
+---
+
+## ⚙️ Getting Started
+
+### Prerequisites
+
+* Node.js 18.0.0 or higher
+* npm 9.0.0 or higher
+* A Google Cloud Firebase project with Firestore enabled
+
+### 1. Clone the Repository
+
+```bash
+git clone [https://github.com/docuready-dev/Strovr.git](https://github.com/docuready-dev/Strovr.git)
+cd Strovr
+
+```
+
+### 2. Backend Setup
+
+```bash
+cd server
+npm install
+npm run build
+npm start
+
+```
+
+The server will boot on `http://localhost:3001`.
+
+### 3. Frontend Setup
+
+```bash
+cd ../client
+npm install
+npm run dev
+
+```
+
+The client application will launch on `http://localhost:5173`.
+
+---
+
+## 🛡️ CAN-SPAM & Deliverability Compliance
+
+Every communication generated by Strovr enforces global email deliverability standards:
+
+* **Mandatory Physical Address**: Automatically injects physical commercial headquarters into the footer.
+* **One-Click Unsubscribe Registry**: Embeds tamper-proof `unsubscribe` endpoints that record recipient opt-outs inside the Firestore `unsubscribes` collection.
+* **Automated Suppression**: Blocked and unsubscribed addresses are automatically filtered before dispatch batches execute.
+* **Domain Reputation Protection**: Includes strict daily sending limits and pause triggers on bounce-rate spikes to safeguard sender IP reputation.
+
+---
+
+## 📝 License
+
+Copyright (c) 2026 Strovr. All rights reserved. Commercial distribution and licensing managed by DocuReady.
+
+```
+
+```
