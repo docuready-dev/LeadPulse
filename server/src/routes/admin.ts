@@ -5,6 +5,7 @@ import { userStore } from '../services/userStore';
 import { leadStore } from '../services/leadStore';
 import { transactionStore } from '../services/transactionStore';
 import { adminSecurity } from '../middleware/adminSecurity';
+import { applyDailyTokenReset, getTodayDateString, PLAN_DAILY_TOKENS } from '../services/tokenManager';
 
 const router = express.Router();
 
@@ -75,11 +76,27 @@ router.get('/users', async (req, res) => {
     const userMap = new Map<string, any>();
     for (const u of localUsers) {
       const key = (u.email || u._id).toLowerCase().trim();
-      userMap.set(key, u);
+      // Apply daily token reset on view
+      const { userData } = applyDailyTokenReset(u);
+      userMap.set(key, userData);
     }
+
     for (const u of firestoreUsers) {
       const key = (u.email || u._id).toLowerCase().trim();
-      userMap.set(key, { ...(userMap.get(key) || {}), ...u });
+      const existingLocal = userMap.get(key);
+      if (existingLocal) {
+        // Never allow stale Firestore doc to wipe out newer userStore lead_credits or topup_credits
+        const localUpdated = existingLocal.updatedAt ? new Date(existingLocal.updatedAt).getTime() : 0;
+        const firestoreUpdated = u.updatedAt ? new Date(u.updatedAt).getTime() : 0;
+        if (localUpdated >= firestoreUpdated) {
+          userMap.set(key, { ...u, ...existingLocal });
+        } else {
+          userMap.set(key, { ...existingLocal, ...u });
+        }
+      } else {
+        const { userData } = applyDailyTokenReset(u);
+        userMap.set(key, userData);
+      }
     }
 
     // Ensure Ashley Super Admin is strictly present
@@ -104,46 +121,87 @@ router.get('/users', async (req, res) => {
   }
 });
 
-// Adjust or Set Credits
+// Adjust or Set Credits (supports topup tokens or daily base tokens)
 router.post('/users/:id/credits', async (req, res) => {
   const { id } = req.params;
-  const { amount, mode } = req.body; // mode: 'add' or 'set'
+  const { amount, mode, target = 'topup' } = req.body; // mode: 'add' or 'set', target: 'topup' | 'base'
   
   try {
-    const existing = userStore.getUserById(id);
+    let existing = userStore.getUserById(id) || (id.includes('@') ? userStore.getUserByEmail(id) : null);
+    let firestoreDocId = id;
+
+    if (!existing) {
+      try {
+        const docSnap = await db.collection('users').doc(id).get();
+        if (docSnap.exists) {
+          existing = userStore.saveUser({ _id: docSnap.id, ...(docSnap.data() as any) });
+          firestoreDocId = docSnap.id;
+        } else if (id.includes('@')) {
+          const qSnap = await db.collection('users').where('email', '==', id.toLowerCase().trim()).get();
+          if (!qSnap.empty) {
+            const d = qSnap.docs[0];
+            existing = userStore.saveUser({ _id: d.id, ...(d.data() as any) });
+            firestoreDocId = d.id;
+          }
+        }
+      } catch {}
+    }
+
     if (!existing) {
       return res.status(404).json({ error: 'User not found' });
     }
 
     const targetId = existing._id;
-    let currentCredits = existing?.lead_credits ?? 0;
+    const userPlan = (existing.plan || 'free').toLowerCase();
+    const defaultBase = userPlan === 'basic' ? 600 : userPlan === 'pro' ? 1500 : 15;
+    let currentBase = existing.lead_credits !== undefined ? Number(existing.lead_credits) : defaultBase;
+    let currentTopup = existing.topup_credits !== undefined ? Number(existing.topup_credits) : 0;
+    const numAmount = Number(amount) || 0;
 
-    let newCredits = currentCredits;
-    if (mode === 'set') {
-      newCredits = Number(amount);
+    let newBase = currentBase;
+    let newTopup = currentTopup;
+
+    if (target === 'base') {
+      newBase = mode === 'set' ? numAmount : currentBase + numAmount;
+      if (newBase < 0) newBase = 0;
     } else {
-      newCredits += Number(amount);
+      // Default: adjust topup tokens (used first, never resets daily)
+      newTopup = mode === 'set' ? numAmount : currentTopup + numAmount;
+      if (newTopup < 0) newTopup = 0;
     }
-    if (newCredits < 0) newCredits = 0;
 
-    const updatedUser = userStore.updateUser(targetId, { 
-      lead_credits: newCredits,
+    const updates: any = { 
+      lead_credits: newBase,
+      topup_credits: newTopup,
+      base_daily_credits: target === 'base' && mode === 'set' ? Math.max(1, newBase) : (existing.base_daily_credits || defaultBase),
       has_topup: true,
-      pool_refreshed_at: new Date().toISOString()
-    });
+      admin_credits_granted: true,
+      pool_refreshed_at: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    const updatedUser = userStore.updateUser(targetId, updates);
+    if (existing.email) {
+      userStore.updateUser(existing.email, updates);
+    }
 
     try {
-      await db.collection('users').doc(targetId).set({ 
-        lead_credits: newCredits,
-        has_topup: true,
-        pool_refreshed_at: new Date().toISOString()
-      }, { merge: true });
+      await db.collection('users').doc(firestoreDocId).set(updates, { merge: true });
+      if (targetId !== firestoreDocId) {
+        await db.collection('users').doc(targetId).set(updates, { merge: true });
+      }
     } catch {}
 
     const cleanUser = updatedUser ? { ...updatedUser } : null;
     if (cleanUser) delete (cleanUser as any).password;
 
-    res.json({ success: true, lead_credits: newCredits, user: cleanUser });
+    res.json({ 
+      success: true, 
+      lead_credits: newBase, 
+      topup_credits: newTopup,
+      total_credits: newBase + newTopup,
+      user: cleanUser 
+    });
   } catch (err) {
     res.status(500).json({ error: 'Failed to update credits' });
   }
@@ -157,7 +215,18 @@ router.post('/users/:id/tier', async (req, res) => {
     return res.status(400).json({ error: 'Invalid tier/plan. Must be free, basic, or pro.' });
   }
 
-  const existing = userStore.getUserById(id);
+  let existing = userStore.getUserById(id) || (id.includes('@') ? userStore.getUserByEmail(id) : null);
+  let firestoreDocId = id;
+  if (!existing) {
+    try {
+      const docSnap = await db.collection('users').doc(id).get();
+      if (docSnap.exists) {
+        existing = userStore.saveUser({ _id: docSnap.id, ...(docSnap.data() as any) });
+        firestoreDocId = docSnap.id;
+      }
+    } catch {}
+  }
+
   if (!existing) {
     return res.status(404).json({ error: 'User not found' });
   }
@@ -171,18 +240,31 @@ router.post('/users/:id/tier', async (req, res) => {
 
   try {
     const normalizedPlan = plan.toLowerCase();
+    const dailyTokens = normalizedPlan === 'basic' ? 600 : normalizedPlan === 'pro' ? 1500 : 15;
     const emailLimits: Record<string, number> = { free: 50, basic: 1500, pro: 5000 };
     const aiLimits: Record<string, number> = { free: 5, basic: 250, pro: -1 };
 
     const updates: any = {
       plan: normalizedPlan,
+      lead_credits: dailyTokens,
+      base_daily_credits: dailyTokens,
+      last_token_reset_date: getTodayDateString(),
       emails_limit: emailLimits[normalizedPlan] || 50,
-      ai_pitches_limit: aiLimits[normalizedPlan] !== undefined ? aiLimits[normalizedPlan] : 5
+      ai_pitches_limit: aiLimits[normalizedPlan] !== undefined ? aiLimits[normalizedPlan] : 5,
+      has_topup: true,
+      updatedAt: new Date().toISOString()
     };
 
     const updatedUser = userStore.updateUser(targetId, updates);
+    if (existing.email) {
+      userStore.updateUser(existing.email, updates);
+    }
+
     try {
-      await db.collection('users').doc(targetId).set(updates, { merge: true });
+      await db.collection('users').doc(firestoreDocId).set(updates, { merge: true });
+      if (targetId !== firestoreDocId) {
+        await db.collection('users').doc(targetId).set(updates, { merge: true });
+      }
     } catch {}
 
     const cleanUser = updatedUser ? { ...updatedUser } : null;

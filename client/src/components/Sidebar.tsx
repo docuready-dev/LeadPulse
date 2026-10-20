@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { alertDialog } from './AppConfirmModal';
+import TokenDisplay from './TokenDisplay';
 import docuReadyBlackLogo from '../assets/DocuReady-black.png';
 import strovrLogo from '../assets/strovr-logo.png';
 
@@ -230,7 +231,12 @@ const Sidebar = () => {
 
           <div className="flex items-center justify-between text-[9.5px] font-delight text-[#6E675F] pt-0.5">
             <span>Bonus Leads:</span>
-            <span className="font-semibold text-[#191716]">{displayCredits} / {maxPoolLabel} tokens</span>
+            <TokenDisplay 
+              user={user} 
+              className="text-[10px] text-[#191716]" 
+              topupColorClass="text-slate-600 font-bold"
+              showTokensWord 
+            />
           </div>
 
           <button

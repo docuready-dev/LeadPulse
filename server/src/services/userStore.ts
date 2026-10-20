@@ -15,6 +15,10 @@ export interface UserRecord {
   emails_sent: number;
   emails_sent_today?: number;
   daily_reset_date?: string;
+  topup_credits?: number;
+  base_daily_credits?: number;
+  last_token_reset_date?: string;
+  admin_credits_granted?: boolean;
   ai_pitches_limit: number;
   ai_pitches_used: number;
   onboarding_complete: boolean;
@@ -182,7 +186,11 @@ class UserStore {
       name: isSuperAdmin ? 'Ashley' : (user.name || (isBiconEmail ? 'Bicon Ghose' : existing?.name || 'Strovr User')),
       role: isSuperAdmin ? 'SUPER_ADMIN' : (user.role || existing?.role || 'USER'),
       plan: isSuperAdmin ? 'pro' : ((existing?.plan && existing.plan !== 'free' && (!user.plan || user.plan === 'free')) ? existing.plan : (user.plan || existing?.plan || 'free')),
-      lead_credits: user.lead_credits !== undefined ? user.lead_credits : (existing?.lead_credits !== undefined ? existing.lead_credits : (isSuperAdmin ? 1000 : 15)),
+      lead_credits: user.lead_credits !== undefined ? user.lead_credits : (existing?.lead_credits !== undefined ? existing.lead_credits : (isSuperAdmin ? 1500 : ((user.plan || existing?.plan) === 'basic' ? 600 : (user.plan || existing?.plan) === 'pro' ? 1500 : 15))),
+      topup_credits: user.topup_credits !== undefined ? user.topup_credits : (existing?.topup_credits !== undefined ? existing.topup_credits : 0),
+      base_daily_credits: user.base_daily_credits !== undefined ? user.base_daily_credits : (existing?.base_daily_credits !== undefined ? existing.base_daily_credits : (isSuperAdmin ? 1500 : ((user.plan || existing?.plan) === 'basic' ? 600 : (user.plan || existing?.plan) === 'pro' ? 1500 : 15))),
+      last_token_reset_date: user.last_token_reset_date || existing?.last_token_reset_date || nowIso.split('T')[0],
+      admin_credits_granted: user.admin_credits_granted !== undefined ? user.admin_credits_granted : (existing?.admin_credits_granted ?? false),
       pool_refreshed_at: user.pool_refreshed_at || existing?.pool_refreshed_at || nowIso,
       emails_limit: isSuperAdmin ? 5000 : ((user.plan === 'pro' || existing?.plan === 'pro') ? 5000 : ((user.plan === 'basic' || existing?.plan === 'basic') ? Math.max(1500, user.emails_limit ?? 0, existing?.emails_limit ?? 0) : (user.emails_limit ?? existing?.emails_limit ?? 50))),
       emails_sent: user.emails_sent !== undefined ? user.emails_sent : (existing?.emails_sent ?? 0),

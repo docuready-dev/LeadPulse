@@ -12,6 +12,7 @@ import {
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
 import EmailProviderModal from '../components/EmailProviderModal';
+import TokenDisplay from '../components/TokenDisplay';
 import API_URL from '../config/api';
 
 type SettingsTab = 'profile' | 'security' | 'smtp' | 'outreach' | 'billing' | 'data';
@@ -993,7 +994,9 @@ const Settings = () => {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs font-delight font-medium">
                 <div className="p-3.5 bg-slate-50 rounded-md border border-slate-200 space-y-1">
                   <span className="text-slate-400 font-semibold uppercase text-[10px]">Lead Balance</span>
-                  <div className="text-xl font-bold text-slate-900">{credits} Credits</div>
+                  <div className="text-xl font-bold text-slate-900">
+                    <TokenDisplay user={user} showTokensWord />
+                  </div>
                   <span className="text-[11px] text-slate-500 font-sans">Available to harvest</span>
                 </div>
 

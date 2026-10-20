@@ -7,6 +7,7 @@ import { userStore } from '../services/userStore';
 import { leadStore } from '../services/leadStore';
 import { sendPasswordResetEmail } from '../services/mailer';
 import { otpService } from '../services/otpService';
+import { applyDailyTokenReset, getTodayDateString, PLAN_DAILY_TOKENS } from '../services/tokenManager';
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'secret';
@@ -38,7 +39,9 @@ async function provisionSystemAccounts() {
       phone: '+919004804043',
       role: 'SUPER_ADMIN',
       plan: 'pro',
-      lead_credits: existingSuper?.lead_credits !== undefined ? existingSuper.lead_credits : 1000,
+      lead_credits: existingSuper?.lead_credits !== undefined ? existingSuper.lead_credits : 1500,
+      base_daily_credits: existingSuper?.base_daily_credits || 1500,
+      topup_credits: existingSuper?.topup_credits !== undefined ? existingSuper.topup_credits : 0,
       emails_limit: 5000,
       emails_sent: existingSuper?.emails_sent !== undefined ? existingSuper.emails_sent : 0,
       ai_pitches_limit: -1,
@@ -91,7 +94,9 @@ async function provisionSystemAccounts() {
       phone: '+919004804043',
       role: 'USER',
       plan: biconPlan,
-      lead_credits: existingBicon?.lead_credits !== undefined ? existingBicon.lead_credits : 15,
+      lead_credits: existingBicon?.lead_credits !== undefined ? existingBicon.lead_credits : (biconPlan === 'basic' ? 600 : 15),
+      base_daily_credits: existingBicon?.base_daily_credits || (biconPlan === 'basic' ? 600 : 15),
+      topup_credits: existingBicon?.topup_credits !== undefined ? existingBicon.topup_credits : 0,
       emails_limit: existingBicon?.emails_limit !== undefined && existingBicon.emails_limit >= 1500 ? existingBicon.emails_limit : (emailLimits[biconPlan] || 1500),
       emails_sent: existingBicon?.emails_sent !== undefined ? existingBicon.emails_sent : 0,
       ai_pitches_limit: existingBicon?.ai_pitches_limit !== undefined ? existingBicon.ai_pitches_limit : (aiLimits[biconPlan] !== undefined ? aiLimits[biconPlan] : 250),
@@ -306,42 +311,32 @@ export async function syncUserPoolCredits(userId: string, data: any): Promise<an
     data.plan = 'pro';
     data.name = 'Ashley';
     data.two_factor_enabled = false;
-    data.lead_credits = data.lead_credits !== undefined ? data.lead_credits : 1000;
+    data.base_daily_credits = data.base_daily_credits !== undefined ? data.base_daily_credits : 1500;
+    data.lead_credits = data.lead_credits !== undefined ? data.lead_credits : 1500;
+    data.topup_credits = data.topup_credits !== undefined ? data.topup_credits : 0;
     data.emails_limit = 5000;
     data.ai_pitches_limit = -1;
+    data.last_token_reset_date = data.last_token_reset_date || getTodayDateString();
     userStore.updateUser(userId, data);
     return data;
   }
 
-  const plan = (data.plan || 'free').toLowerCase();
-  const fourDaysMs = 4 * 24 * 60 * 60 * 1000;
-  const lastRefresh = data.pool_refreshed_at ? new Date(data.pool_refreshed_at).getTime() : 0;
+  // Apply daily token reset (Basic resets to 600 everyday, Pro resets to 1500 everyday, Topup stays intact)
+  const { userData: updatedWithDaily, didReset } = applyDailyTokenReset(data);
+  data = updatedWithDaily;
 
-  if (plan === 'free') {
-    // If user has top-up tokens, admin-granted tokens, or balance above standard 15, preserve without capping
-    if (data.has_topup || data.admin_credits_granted || (data.lead_credits !== undefined && data.lead_credits > 15)) {
-      data.has_topup = true;
-      data.lead_credits = Math.max(0, data.lead_credits ?? 15);
-    } else if (lastRefresh > 0 && Date.now() - lastRefresh >= fourDaysMs) {
-      // 4-day full refresh window reached
-      const nowIso = new Date().toISOString();
-      data.lead_credits = 15;
-      data.pool_refreshed_at = nowIso;
-      try {
-        await db.collection('users').doc(userId).update({
-          lead_credits: 15,
-          pool_refreshed_at: nowIso
-        });
-      } catch {}
-    } else {
-      if (!data.pool_refreshed_at) {
-        data.pool_refreshed_at = new Date().toISOString();
-      }
-      if (data.lead_credits === undefined) {
-        data.lead_credits = 15;
-      }
-      data.lead_credits = Math.max(0, data.lead_credits);
-    }
+  const plan = (data.plan || 'free').toLowerCase();
+
+  // If daily reset occurred, persist to Firestore
+  if (didReset) {
+    try {
+      await db.collection('users').doc(userId).set({
+        lead_credits: data.lead_credits,
+        base_daily_credits: data.base_daily_credits,
+        topup_credits: data.topup_credits,
+        last_token_reset_date: data.last_token_reset_date
+      }, { merge: true });
+    } catch {}
   }
 
   // Email & AI Pitch Tier Quotas
@@ -429,7 +424,9 @@ router.get('/me', async (req, res) => {
         name: isSuperAshley ? 'Ashley' : isBicon ? 'Bicon Ghose' : 'Strovr User',
         role: isSuperAshley ? 'SUPER_ADMIN' : 'USER',
         plan: isSuperAshley ? 'pro' : 'free',
-        lead_credits: isSuperAshley ? 1000 : 15,
+        lead_credits: isSuperAshley ? 1500 : 15,
+        base_daily_credits: isSuperAshley ? 1500 : 15,
+        topup_credits: 0,
         pool_refreshed_at: new Date().toISOString(),
         emails_limit: isSuperAshley ? 5000 : 50,
         emails_sent: 0,
@@ -482,7 +479,7 @@ router.post('/google', async (req, res) => {
         const isSuper = email.toLowerCase().trim() === 'ashleyghose64@gmail.com';
         const role = isSuper ? 'SUPER_ADMIN' : 'USER';
         const plan = isSuper ? 'pro' : 'free';
-        const lead_credits = isSuper ? 1000 : 15;
+        const lead_credits = isSuper ? 1500 : 15;
         const emails_limit = isSuper ? 5000 : 50;
         const ai_pitches_limit = isSuper ? -1 : 5;
         userId = isSuper ? 'user_ashleyghose64' : `user_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
@@ -493,6 +490,8 @@ router.post('/google', async (req, res) => {
           name: isSuper ? 'Ashley' : (name || 'Strovr User'),
           role,
           lead_credits,
+          base_daily_credits: lead_credits,
+          topup_credits: 0,
           plan,
           pool_refreshed_at: new Date().toISOString(),
           emails_limit,
@@ -659,7 +658,9 @@ router.post('/register', async (req, res) => {
       phone_verified: true,
       two_factor_enabled: true,
       role,
-      lead_credits: isSuperAdmin ? 1000 : 15,
+      lead_credits: isSuperAdmin ? 1500 : 15,
+      base_daily_credits: isSuperAdmin ? 1500 : 15,
+      topup_credits: 0,
       plan: isSuperAdmin ? 'pro' : 'free',
       pool_refreshed_at: new Date().toISOString(),
       emails_limit: isSuperAdmin ? 5000 : 50,

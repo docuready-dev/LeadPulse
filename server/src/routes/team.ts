@@ -59,18 +59,19 @@ router.get('/limits', async (req, res) => {
     const seatsSelected = Number(userData.seats_selected) || 10; // default registration seats selection
 
     let maxSeats = 2; // Free tier has 2 seats
-    let universalTokens = userData.lead_credits ?? 15;
+    const defaultBase = plan === 'basic' ? 600 : plan === 'pro' ? 1500 : 15;
+    const baseCredits = userData.lead_credits !== undefined ? Number(userData.lead_credits) : defaultBase;
+    const topupCredits = userData.topup_credits !== undefined ? Number(userData.topup_credits) : 0;
+    const universalTokens = baseCredits + topupCredits;
     let seatPercent = null;
 
     if (plan === 'basic') {
       // Basic tier: 5 seats total (or 50% of seatsSelected if custom baseline is higher)
       maxSeats = Math.max(5, Math.floor(seatsSelected * 0.5));
-      universalTokens = userData.lead_credits ?? 500;
       seatPercent = 50;
     } else if (plan === 'pro') {
       // Pro tier: 10 seats total (or 100% of seatsSelected if custom baseline is higher)
       maxSeats = Math.max(10, seatsSelected);
-      universalTokens = userData.lead_credits ?? 2500;
       seatPercent = 100;
     }
 
@@ -83,6 +84,8 @@ router.get('/limits', async (req, res) => {
       maxSeats,
       activeSeats: snapshot.size,
       universalTokens,
+      lead_credits: baseCredits,
+      topup_credits: topupCredits,
       seatPercent
     });
   } catch (err: any) {

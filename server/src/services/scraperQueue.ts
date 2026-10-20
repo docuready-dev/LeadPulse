@@ -630,28 +630,27 @@ class InMemScraperQueue {
 
       const localUser = userStore.getUserById(job.userId);
       if (localUser) {
-        let currentCreds = localUser.lead_credits ?? 0;
-        if (tokensToRefund > 0) {
-          currentCreds += tokensToRefund;
-        }
-        latestCredits = currentCreds;
-        userStore.updateUser(job.userId, { lead_credits: currentCreds });
-      }
+        let currentBase = localUser.lead_credits ?? 0;
+        let currentTopup = localUser.topup_credits ?? 0;
+        const maxDaily = localUser.base_daily_credits || (localUser.plan === 'basic' ? 600 : localUser.plan === 'pro' ? 1500 : 15);
 
-      try {
-        const userRef = db.collection('users').doc(job.userId);
-        const userSnap = await userRef.get();
-        if (userSnap.exists) {
-          const uData = userSnap.data() || {};
-          let currentCreds = uData.lead_credits ?? 0;
-          if (tokensToRefund > 0) {
-            currentCreds += tokensToRefund;
-            await userRef.update({ lead_credits: currentCreds });
-          }
-          latestCredits = currentCreds;
+        if (tokensToRefund > 0) {
+          const deficit = Math.max(0, maxDaily - currentBase);
+          const refundToBase = Math.min(tokensToRefund, deficit);
+          currentBase += refundToBase;
+          const refundToTopup = tokensToRefund - refundToBase;
+          currentTopup += refundToTopup;
         }
-      } catch (creditErr) {
-        console.warn('[Scraper] Could not verify post-scrape credits in Firestore:', creditErr);
+
+        latestCredits = currentBase + currentTopup;
+        userStore.updateUser(job.userId, { lead_credits: currentBase, topup_credits: currentTopup });
+
+        try {
+          const userRef = db.collection('users').doc(job.userId);
+          await userRef.set({ lead_credits: currentBase, topup_credits: currentTopup }, { merge: true });
+        } catch (creditErr) {
+          console.warn('[Scraper] Could not verify post-scrape credits in Firestore:', creditErr);
+        }
       }
 
       this.updateStatus(job.id, {
@@ -678,18 +677,22 @@ class InMemScraperQueue {
       // Refund reserved tokens on total job failure
       const localUser = userStore.getUserById(job.userId);
       if (localUser) {
-        const currentCreds = (localUser.lead_credits ?? 0) + tokensReserved;
-        userStore.updateUser(job.userId, { lead_credits: currentCreds });
-      }
+        let currentBase = localUser.lead_credits ?? 0;
+        let currentTopup = localUser.topup_credits ?? 0;
+        const maxDaily = localUser.base_daily_credits || (localUser.plan === 'basic' ? 600 : localUser.plan === 'pro' ? 1500 : 15);
 
-      try {
-        const userRef = db.collection('users').doc(job.userId);
-        const userSnap = await userRef.get();
-        if (userSnap.exists) {
-          const currentCreds = (userSnap.data()?.lead_credits ?? 0) + tokensReserved;
-          await userRef.update({ lead_credits: currentCreds });
-        }
-      } catch {}
+        const deficit = Math.max(0, maxDaily - currentBase);
+        const refundToBase = Math.min(tokensReserved, deficit);
+        currentBase += refundToBase;
+        const refundToTopup = tokensReserved - refundToBase;
+        currentTopup += refundToTopup;
+
+        userStore.updateUser(job.userId, { lead_credits: currentBase, topup_credits: currentTopup });
+        try {
+          const userRef = db.collection('users').doc(job.userId);
+          await userRef.set({ lead_credits: currentBase, topup_credits: currentTopup }, { merge: true });
+        } catch {}
+      }
 
       this.updateStatus(job.id, {
         status: 'failed',

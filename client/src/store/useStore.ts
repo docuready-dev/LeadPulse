@@ -9,6 +9,10 @@ export interface User {
   email: string;
   role: string;
   lead_credits: number;
+  topup_credits?: number;
+  base_daily_credits?: number;
+  last_token_reset_date?: string;
+  has_topup?: boolean;
   onboarding_complete: boolean;
   company_name?: string;
   field_of_work?: string;
@@ -57,8 +61,11 @@ const normalizeUserCredits = (user: User | null): User | null => {
   if (!user) return null;
   const plan = (user.plan || 'free').toLowerCase() as 'free' | 'basic' | 'pro';
   
-  // Lead Credits: respect actual user lead_credits balance
-  const leadCredits = user.lead_credits !== undefined ? user.lead_credits : 15;
+  // Lead Credits: Base daily allowance (Basic: 600, Pro: 1500, Free: 15)
+  const defaultBase = plan === 'basic' ? 600 : plan === 'pro' ? 1500 : 15;
+  const leadCredits = user.lead_credits !== undefined ? user.lead_credits : defaultBase;
+  const topupCredits = user.topup_credits !== undefined ? user.topup_credits : 0;
+  const baseDailyCredits = user.base_daily_credits !== undefined ? user.base_daily_credits : defaultBase;
 
   // Tier minimums
   const minEmailsLimit = plan === 'pro' ? 5000 : plan === 'basic' ? 1500 : 50;
@@ -78,6 +85,10 @@ const normalizeUserCredits = (user: User | null): User | null => {
     ...user,
     plan,
     lead_credits: leadCredits,
+    topup_credits: topupCredits,
+    base_daily_credits: baseDailyCredits,
+    last_token_reset_date: user.last_token_reset_date,
+    has_topup: user.has_topup || topupCredits > 0,
     emails_limit: emailsLimit,
     emails_sent: user.emails_sent || 0,
     ai_pitches_limit: aiPitchesLimit,
@@ -97,7 +108,7 @@ interface AppState {
   setUser: (user: User | null) => void;
   setToken: (token: string | null) => void;
   setActiveFilter: (filter: string) => void;
-  updateCredits: (credits: number) => void;
+  updateCredits: (credits: number, topup?: number) => void;
   recordEmailDispatch: (count: number) => void;
   recordAiGeneration: () => void;
   refreshUserProfile: (userId?: string) => Promise<void>;
@@ -141,8 +152,13 @@ export const useStore = create<AppState>()(
       setUser: (user) => set({ user: normalizeUserCredits(user) }),
       setToken: (token) => set({ token }),
       setActiveFilter: (filter) => set({ activeFilter: filter }),
-      updateCredits: (credits) => set((state) => ({ 
-        user: state.user ? normalizeUserCredits({ ...state.user, lead_credits: credits, has_topup: true }) : null 
+      updateCredits: (credits, topup) => set((state) => ({ 
+        user: state.user ? normalizeUserCredits({ 
+          ...state.user, 
+          lead_credits: credits, 
+          topup_credits: topup !== undefined ? topup : state.user.topup_credits,
+          has_topup: true 
+        }) : null 
       })),
       recordEmailDispatch: (count: number) => set((state) => ({
         user: state.user ? { ...state.user, emails_sent: (state.user.emails_sent || 0) + count } : null

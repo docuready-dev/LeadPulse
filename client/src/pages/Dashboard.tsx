@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useStore } from '../store/useStore';
+import TokenDisplay from '../components/TokenDisplay';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import Sidebar from '../components/Sidebar';
@@ -540,7 +541,7 @@ const Dashboard = () => {
 
   const currentPlan = (user?.plan || 'free').toLowerCase();
   const isProTier = currentPlan === 'pro';
-  const maxPlanTokens = currentPlan === 'pro' ? 1000 : currentPlan === 'basic' ? 400 : 15;
+  const maxPlanTokens = currentPlan === 'pro' ? 1500 : currentPlan === 'basic' ? 600 : 15;
   const availableTokens =
     currentPlan === 'free' && !(user as any)?.has_topup
       ? Math.min(user?.lead_credits ?? 15, 15)
@@ -636,9 +637,8 @@ const Dashboard = () => {
                 <span className="text-[11px] font-delight uppercase tracking-wider font-semibold text-[#6E675F]">Available Tokens</span>
                 <Compass className="w-4 h-4 text-[#9C9488]" />
               </div>
-              <div className="text-3xl font-bold font-delight tracking-tight text-[#191716] tabular-nums mt-3">
-                {availableTokens}
-                <span className="text-sm font-normal text-[#6E675F]"> / {maxPlanTokens}</span>
+              <div className="mt-3">
+                <TokenDisplay user={user} className="text-3xl font-bold text-[#191716]" />
               </div>
               <div className="text-[11px] mt-2 flex items-center gap-1.5 font-delight font-medium text-[#6E675F]">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#C85A32]"></span>
@@ -919,9 +919,8 @@ const Dashboard = () => {
                 <div className="text-[10px] font-delight uppercase font-bold tracking-wider text-[#6E675F]">
                   Strict Contact Deduction
                 </div>
-                <div className="text-2xl font-bold font-delight text-[#191716] tabular-nums mt-0.5">
-                  {availableTokens}{' '}
-                  <span className="text-xs font-normal text-[#6E675F]">/ {maxPlanTokens} tokens</span>
+                <div className="mt-0.5">
+                  <TokenDisplay user={user} className="text-2xl font-bold text-[#191716]" showTokensWord />
                 </div>
               </div>
               <span className="px-2.5 py-1 rounded text-[10px] font-delight font-bold uppercase tracking-wider bg-[#FAF8F5] border border-[#E5E0D5] text-[#C85A32]">

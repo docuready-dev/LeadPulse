@@ -130,21 +130,25 @@ router.post('/webhook', async (req, res) => {
     const updates: any = {};
 
     if (item.type === 'bundle') {
-      updatedCredits = baseCredits + (item.credits || 0);
-      updates.lead_credits = updatedCredits;
+      const currentTopup = Number(targetUser?.topup_credits) || 0;
+      const addedTopup = Number(item.credits) || 0;
+      updates.topup_credits = currentTopup + addedTopup;
       updates.has_topup = true;
+      updates.updatedAt = new Date().toISOString();
     } else if (item.type === 'subscription') {
       newPlan = item.plan!;
-      updatedCredits = baseCredits + (item.credits || 0);
+      const dailyTokens = item.plan === 'basic' ? 600 : 1500;
       updates.plan = newPlan;
-      updates.daily_leads_limit = item.dailyLimit;
-      updates.lead_credits = updatedCredits;
+      updates.lead_credits = dailyTokens;
+      updates.base_daily_credits = dailyTokens;
+      updates.last_token_reset_date = new Date().toISOString().split('T')[0];
       updates.emails_limit = item.plan === 'pro' ? 5000 : 1500;
       updates.emails_sent = 0;
       updates.ai_pitches_limit = item.plan === 'pro' ? -1 : 250;
       updates.ai_pitches_used = 0;
       updates.has_topup = true;
       updates.subscribed_at = new Date().toISOString();
+      updates.updatedAt = new Date().toISOString();
     }
 
     // 1. Persist directly in userStore (the SaaS's central brain)

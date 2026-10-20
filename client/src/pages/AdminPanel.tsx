@@ -4,6 +4,7 @@ import axios from 'axios';
 import API_URL from '../config/api';
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
+import TokenDisplay from '../components/TokenDisplay';
 import { 
   Users, Activity, DollarSign, RefreshCw, Cpu, 
   Trash2, CheckCircle2, AlertTriangle, Download, Search, 
@@ -97,6 +98,7 @@ const AdminPanel = () => {
   const [creditModalUser, setCreditModalUser] = useState<any | null>(null);
   const [creditAdjustmentAmount, setCreditAdjustmentAmount] = useState('100');
   const [creditAdjustmentMode, setCreditAdjustmentMode] = useState<'add' | 'set'>('add');
+  const [creditAdjustmentTarget, setCreditAdjustmentTarget] = useState<'topup' | 'base'>('topup');
 
   const [tierModalUser, setTierModalUser] = useState<any | null>(null);
   const [selectedTier, setSelectedTier] = useState<'free' | 'basic' | 'pro'>('free');
@@ -170,23 +172,30 @@ const AdminPanel = () => {
   }, [user?._id, user?.email, token]);
 
   // Adjust User Credits
-  const handleUpdateCredits = async (userId: string, amount: number, mode: 'add' | 'set' = 'add') => {
+  const handleUpdateCredits = async (
+    userId: string, 
+    amount: number, 
+    mode: 'add' | 'set' = 'add',
+    target: 'topup' | 'base' = creditAdjustmentTarget
+  ) => {
     try {
       const res = await axios.post(
         `${API_URL}/api/admin/users/${userId}/credits`,
-        { amount, mode },
+        { amount, mode, target },
         { headers: getHeaders() }
       );
       
-      const newCredits = res.data?.lead_credits !== undefined ? res.data.lead_credits : amount;
-      showNotification(`Successfully updated credits balance to ${newCredits}.`);
+      const newLeadCredits = res.data?.lead_credits;
+      const newTopupCredits = res.data?.topup_credits;
+      const totalCredits = res.data?.total_credits;
+      showNotification(`Successfully updated tokens: ${newLeadCredits}+${newTopupCredits} (${totalCredits} total).`);
       setCreditModalUser(null);
 
       // 1. Optimistically update local users table
       setUsers((prevUsers) =>
         prevUsers.map((u) =>
           u._id === userId || u.email === userId || (creditModalUser && (u._id === creditModalUser._id || u.email === creditModalUser.email))
-            ? { ...u, lead_credits: newCredits, has_topup: true }
+            ? { ...u, lead_credits: newLeadCredits, topup_credits: newTopupCredits, has_topup: true }
             : u
         )
       );
@@ -202,7 +211,7 @@ const AdminPanel = () => {
         (currentUserEmail === 'ashleyghose64@gmail.com' && (userId === 'user_ashleyghose64' || userId.includes('ashleyghose64')));
 
       if (isSelf) {
-        useStore.getState().updateCredits(newCredits);
+        useStore.getState().updateCredits(newLeadCredits, newTopupCredits);
         useStore.getState().refreshUserProfile(currentUserId);
       }
 
@@ -796,8 +805,7 @@ const AdminPanel = () => {
                               </span>
                             </td>
                             <td className="p-4 font-bold text-[#191716]">
-                              <span className="text-sm font-delight">{u.lead_credits ?? 0}</span>
-                              <span className="text-[10px] text-[#6E675F] ml-1 font-normal">tokens</span>
+                              <TokenDisplay user={u} showTokensWord />
                             </td>
                             <td className="p-4 text-[#191716]">
                               <span className="font-semibold">{u.emails_sent || 0}</span>
@@ -1344,14 +1352,50 @@ const AdminPanel = () => {
             </div>
 
             <div className="p-3 bg-[#FAF8F5] rounded-xl border border-[#E5E0D5] flex items-center justify-between text-xs">
-              <span className="text-[#6E675F]">Current Token Balance:</span>
-              <span className="font-bold text-base text-[#191716]">{creditModalUser.lead_credits ?? 0}</span>
+              <div>
+                <span className="text-[#6E675F] block text-[10px] uppercase font-bold tracking-wider">Current Balance:</span>
+                <TokenDisplay user={creditModalUser} className="text-base font-bold text-[#191716]" showTokensWord />
+              </div>
+              <div className="text-right text-[11px] text-[#6E675F] space-y-0.5">
+                <div>Daily Base: <span className="font-bold text-[#191716]">{creditModalUser.lead_credits ?? 0}</span></div>
+                <div>Top-Up: <span className="font-bold text-slate-700">+{creditModalUser.topup_credits ?? 0}</span></div>
+              </div>
             </div>
 
             <div className="space-y-3">
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-[#191716]">Adjustment Target</label>
+                <div className="grid grid-cols-2 gap-2 bg-[#F5F2EB] p-1 rounded-xl">
+                  <button
+                    type="button"
+                    onClick={() => setCreditAdjustmentTarget('topup')}
+                    className={`py-1.5 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer flex flex-col items-center ${
+                      creditAdjustmentTarget === 'topup'
+                        ? 'bg-white text-slate-900 shadow-2xs font-bold'
+                        : 'text-[#6E675F] hover:text-[#191716]'
+                    }`}
+                  >
+                    <span>Top-Up Tokens</span>
+                    <span className="text-[10px] opacity-70 font-normal">Used first • Never resets</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCreditAdjustmentTarget('base')}
+                    className={`py-1.5 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer flex flex-col items-center ${
+                      creditAdjustmentTarget === 'base'
+                        ? 'bg-white text-slate-900 shadow-2xs font-bold'
+                        : 'text-[#6E675F] hover:text-[#191716]'
+                    }`}
+                  >
+                    <span>Daily Base Tokens</span>
+                    <span className="text-[10px] opacity-70 font-normal">Resets daily (600 / 1500)</span>
+                  </button>
+                </div>
+              </div>
+
               <label className="block text-xs font-bold text-[#191716]">Quick Adjust Pack</label>
-              <div className="grid grid-cols-4 gap-2">
-                {['+50', '+100', '+500', '+1000'].map((val) => (
+              <div className="grid grid-cols-5 gap-1.5">
+                {['+20', '+50', '+100', '+500', '+1000'].map((val) => (
                   <button
                     key={val}
                     type="button"
@@ -1370,7 +1414,7 @@ const AdminPanel = () => {
                 ))}
               </div>
 
-              <div className="pt-2">
+              <div className="pt-1">
                 <label className="block text-xs font-bold text-[#191716] mb-1">Exact Token Amount</label>
                 <div className="flex gap-2">
                   <input
@@ -1401,7 +1445,7 @@ const AdminPanel = () => {
               </button>
               <button
                 type="button"
-                onClick={() => handleUpdateCredits(creditModalUser._id, Number(creditAdjustmentAmount), creditAdjustmentMode)}
+                onClick={() => handleUpdateCredits(creditModalUser._id, Number(creditAdjustmentAmount), creditAdjustmentMode, creditAdjustmentTarget)}
                 className="px-5 py-2 rounded-xl text-xs font-semibold bg-[#C85A32] hover:bg-[#B04B25] text-white shadow-2xs cursor-pointer"
               >
                 Save Balance

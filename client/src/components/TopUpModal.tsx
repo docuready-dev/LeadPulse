@@ -298,7 +298,7 @@ const TopUpModal = () => {
                     </li>
                     <li className="flex items-center gap-2 text-slate-800">
                       <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                      <span><strong>600 Bonus Lead Tokens</strong> & continuous harvest</span>
+                      <span><strong>600 Daily Lead Tokens</strong> (Auto-resets to 600 everyday)</span>
                     </li>
                     <li className="flex items-center gap-2 text-slate-800">
                       <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
@@ -362,7 +362,7 @@ const TopUpModal = () => {
                     </li>
                     <li className="flex items-center gap-2 text-slate-800">
                       <Check className="w-3.5 h-3.5 text-purple-600 shrink-0" />
-                      <span><strong>1,500 Bonus Lead Tokens</strong> / Month</span>
+                      <span><strong>1,500 Daily Lead Tokens</strong> (Auto-resets to 1,500 everyday)</span>
                     </li>
                     <li className="flex items-center gap-2 text-slate-800">
                       <Check className="w-3.5 h-3.5 text-purple-600 shrink-0" />
@@ -444,10 +444,10 @@ const TopUpModal = () => {
                       <td className="p-3 text-center font-delight font-bold text-purple-700">10 Seats Total</td>
                     </tr>
                     <tr>
-                      <td className="p-3 pl-4 font-semibold text-slate-800">Bonus Lead Token Pool</td>
+                      <td className="p-3 pl-4 font-semibold text-slate-800">Daily Lead Token Pool</td>
                       <td className="p-3 text-center font-delight font-medium text-slate-600">15 Tokens (4-day pool)</td>
-                      <td className="p-3 text-center font-delight font-bold text-blue-600">600 Tokens (bonus)</td>
-                      <td className="p-3 text-center font-delight font-bold text-purple-700">1,500 Tokens (bonus)</td>
+                      <td className="p-3 text-center font-delight font-bold text-blue-600">600 Tokens (resets daily)</td>
+                      <td className="p-3 text-center font-delight font-bold text-purple-700">1,500 Tokens (resets daily)</td>
                     </tr>
                     <tr>
                       <td className="p-3 pl-4 font-semibold text-slate-800">Data Exports & CRM Sync</td>
@@ -505,7 +505,7 @@ const TopUpModal = () => {
                   </div>
 
                   <ul className="space-y-2 text-xs text-slate-600 mb-5">
-                    <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-600" /> Never expires</li>
+                    <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-600" /> Never expires • Consumed first</li>
                     <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-600" /> Usable on Quick or Deep harvest</li>
                     <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-600" /> Instant PhonePe activation</li>
                   </ul>
@@ -541,7 +541,7 @@ const TopUpModal = () => {
                   </div>
 
                   <ul className="space-y-2 text-xs text-slate-600 mb-5">
-                    <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-600" /> 1,000 Verified Lead Credits</li>
+                    <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-600" /> 1,000 Verified Lead Credits (Consumed first)</li>
                     <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-600" /> Continuous extraction without cap</li>
                     <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-600" /> Priority headless browser queue</li>
                     <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-600" /> Instant PhonePe webhook settlement</li>

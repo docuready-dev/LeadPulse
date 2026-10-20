@@ -5,6 +5,7 @@ import { syncUserPoolCredits } from './auth';
 import { leadStore } from '../services/leadStore';
 import { userStore } from '../services/userStore';
 import { triggerMatchingAutomations } from './automations';
+import { applyDailyTokenReset, deductTokens } from '../services/tokenManager';
 
 const router = express.Router();
 
@@ -545,26 +546,28 @@ router.post('/scrape', async (req, res) => {
       }
     }
 
-    // Normalize Free tier pool (15 tokens max, 1 token = 1 contact) before transaction
-    if (userData) {
-      await syncUserPoolCredits(userId, userData).catch(() => {});
-    }
+    // 1. Apply daily token reset (Basic resets to 600 everyday, Pro resets to 1500 everyday, Topup stays intact)
+    const { userData: freshUser } = applyDailyTokenReset(userData);
+    userData = freshUser;
 
-    let currentCredits = userData?.lead_credits ?? 15;
-    let userPlan = (userData?.plan || 'free').toLowerCase();
-    let poolRefreshedAt = userData?.pool_refreshed_at || new Date().toISOString();
+    const currentBase = Math.max(0, Number(userData?.lead_credits) || 0);
+    const currentTopup = Math.max(0, Number(userData?.topup_credits) || 0);
+    const totalAvailable = currentBase + currentTopup;
+    const userPlan = (userData?.plan || 'free').toLowerCase();
 
     const isDeep = scope === 'deep';
     const costPerContact = isDeep ? 2 : 1;
 
     // STRICT CHECK: Reject immediately if user has insufficient tokens for the chosen scope
-    if (currentCredits < costPerContact) {
+    if (totalAvailable < costPerContact) {
       return res.status(403).json({
         error: isDeep
-          ? `Insufficient tokens. Deep Harvest requires 2 tokens per contact (2 tokens = 1 contact). You have ${currentCredits} token(s) remaining. Switch to Quick Scan (1 token = 1 contact) or top up your pool.`
-          : 'Insufficient tokens. You have exhausted all tokens in your Free Tier pool (0 / 15 remaining). Tokens auto-refresh every 4 days, or you can top up / upgrade to Basic or Pro.',
+          ? `Insufficient tokens. Deep Harvest requires 2 tokens per contact (2 tokens = 1 contact). You have ${totalAvailable} token(s) available (${currentBase} base + ${currentTopup} top-up). Switch to Quick Scan (1 token = 1 contact) or top up your pool.`
+          : 'Insufficient tokens. You have exhausted all tokens in your pool (0 remaining). Tokens auto-reset everyday (600 for Basic, 1500 for Pro), or you can top up / upgrade your plan.',
         needsTopUp: true,
-        creditsRemaining: currentCredits
+        creditsRemaining: totalAvailable,
+        lead_credits: currentBase,
+        topup_credits: currentTopup
       });
     }
 
@@ -581,71 +584,42 @@ router.post('/scrape', async (req, res) => {
 
     const maxPerQuery = userPlan === 'free' ? 10 : 20;
     // Cap query limit strictly by affordable contacts
-    const maxContactsAffordable = Math.floor(currentCredits / costPerContact);
+    const maxContactsAffordable = Math.floor(totalAvailable / costPerContact);
     let limit = Math.min(maxPerQuery, maxContactsAffordable);
     let tokensUsed = limit * costPerContact;
-    let creditsRemaining = Math.max(0, currentCredits - tokensUsed);
 
-    // Deduct tokens upfront (Quick: 1 Token/Contact, Deep: 2 Tokens/Contact)
-    try {
-      await db.runTransaction(async (t) => {
-        const doc = await t.get(userRef);
-        if (!doc.exists) return;
-        const data = doc.data()!;
-        userPlan = (data.plan || 'free').toLowerCase();
-        poolRefreshedAt = data.pool_refreshed_at || new Date().toISOString();
-
-        let liveCredits = data.lead_credits ?? 15;
-
-        // Check 4-day auto-refresh & free-tier 15-token cap
-        if (userPlan === 'free') {
-          const fourDaysMs = 4 * 24 * 60 * 60 * 1000;
-          const lastRefresh = data.pool_refreshed_at ? new Date(data.pool_refreshed_at).getTime() : 0;
-          if (lastRefresh > 0 && Date.now() - lastRefresh >= fourDaysMs) {
-            liveCredits = 15;
-            poolRefreshedAt = new Date().toISOString();
-          } else if (!data.has_topup && liveCredits > 15) {
-            liveCredits = 15;
-          }
-        }
-
-        if (liveCredits < costPerContact) {
-          throw new Error("Insufficient credits");
-        }
-
-        const maxAffordable = Math.floor(liveCredits / costPerContact);
-        limit = Math.min(maxPerQuery, maxAffordable);
-        tokensUsed = limit * costPerContact;
-        creditsRemaining = Math.max(0, liveCredits - tokensUsed);
-
-        t.update(userRef, { 
-          lead_credits: creditsRemaining,
-          pool_refreshed_at: poolRefreshedAt
-        });
+    // Deduct tokens (Top-Up tokens are deducted FIRST, then Base Daily Tokens)
+    const deduction = deductTokens(userData, tokensUsed);
+    if (!deduction.success) {
+      return res.status(403).json({
+        error: 'Insufficient tokens to launch this harvest query.',
+        needsTopUp: true,
+        creditsRemaining: totalAvailable
       });
-    } catch (txErr: any) {
-      if (txErr.message === "Insufficient credits") {
-        return res.status(403).json({ 
-          error: isDeep
-            ? `Insufficient tokens. Deep Harvest requires 2 tokens per contact (2 tokens = 1 contact). You have ${currentCredits} token(s) remaining.`
-            : 'Insufficient tokens. You have exhausted all tokens in your Free Tier pool (0 / 15 remaining).', 
-          needsTopUp: true, 
-          creditsRemaining: currentCredits 
-        });
-      }
-      // If Firestore transaction fails due to offline/permission, proceed with local deduction
-      userStore.updateUser(userId, { lead_credits: creditsRemaining });
-      if (userEmail && userEmail !== userId) {
-        userStore.updateUser(userEmail, { lead_credits: creditsRemaining });
-      }
     }
-    
-    // Always persist deduction in local store
-    userStore.updateUser(userId, { lead_credits: creditsRemaining });
+
+    const tokenUpdates = {
+      lead_credits: deduction.newBase,
+      topup_credits: deduction.newTopup,
+      last_token_reset_date: userData.last_token_reset_date,
+      base_daily_credits: userData.base_daily_credits,
+      has_topup: userData.has_topup || deduction.newTopup > 0,
+      updatedAt: new Date().toISOString()
+    };
+
+    // Persist in local store
+    userStore.updateUser(userId, tokenUpdates);
     if (userEmail && userEmail !== userId) {
-      userStore.updateUser(userEmail, { lead_credits: creditsRemaining });
+      userStore.updateUser(userEmail, tokenUpdates);
     }
-    
+
+    // Persist in Firestore
+    try {
+      await db.collection('users').doc(userId).set(tokenUpdates, { merge: true });
+    } catch (fsErr: any) {
+      console.warn('[Leads] Firestore token update note:', fsErr.message);
+    }
+
     const jobId = `job_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
 
     scraperQueue.add({ 
@@ -664,13 +638,15 @@ router.post('/scrape', async (req, res) => {
     res.json({ 
       message: 'Scraping started via Lead Finder Wizard', 
       jobId,
-      creditsRemaining,
+      creditsRemaining: deduction.totalRemaining,
+      lead_credits: deduction.newBase,
+      topup_credits: deduction.newTopup,
       tokensUsed,
       contactsTarget: limit,
       costPerContact,
       scope,
       plan: userPlan,
-      poolRefreshedAt,
+      poolRefreshedAt: userData.pool_refreshed_at || new Date().toISOString(),
       limit
     });
   } catch (err: any) {

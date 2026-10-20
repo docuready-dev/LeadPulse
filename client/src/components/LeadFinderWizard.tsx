@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useStore } from '../store/useStore';
+import TokenDisplay from './TokenDisplay';
 import { alertDialog } from './AppConfirmModal';
 import axios from 'axios';
 import API_URL from '../config/api';
@@ -171,9 +172,11 @@ const LeadFinderWizard = ({ onHarvestStarted }: WizardProps) => {
 
   const currentPlan = (user?.plan || 'free').toLowerCase();
   const isFree = currentPlan === 'free';
-  const rawCredits = user?.lead_credits ?? 15;
-  const credits = isFree && !(user as any)?.has_topup ? Math.max(0, Math.min(rawCredits, 15)) : Math.max(0, rawCredits);
-  const maxPool = isFree ? '15' : (currentPlan === 'basic' ? '600' : 'Unlimited');
+  const defaultDaily = currentPlan === 'basic' ? 600 : currentPlan === 'pro' ? 1500 : 15;
+  const baseCredits = Math.max(0, user?.lead_credits !== undefined ? user.lead_credits : defaultDaily);
+  const topupCredits = Math.max(0, user?.topup_credits || 0);
+  const credits = baseCredits + topupCredits;
+  const maxPool = isFree ? '15' : (currentPlan === 'basic' ? '600' : '1500');
   const perQueryLimit = isFree ? 10 : 20;
   const isExhausted = credits < 1;
 
@@ -318,8 +321,13 @@ const LeadFinderWizard = ({ onHarvestStarted }: WizardProps) => {
 
           <div className="text-xs font-delight font-medium flex items-center gap-1.5">
             <span className="text-slate-500">Available Tokens: </span>
-            <span className={`font-bold ${isExhausted ? 'text-rose-600' : 'text-slate-900'}`}>{credits}</span>
-            <span className="text-slate-400"> / {maxPool}</span>
+            <TokenDisplay 
+              user={user} 
+              leadCredits={baseCredits} 
+              topupCredits={topupCredits} 
+              className="text-sm"
+              showTokensWord
+            />
             {isExhausted && (
               <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200 uppercase">
                 Pool Exhausted

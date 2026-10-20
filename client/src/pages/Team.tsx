@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
+import TokenDisplay from '../components/TokenDisplay';
 import { 
   Users, UserPlus, Shield, Mail, CheckCircle2, Clock, 
   Trash2, X, Sparkles, AlertCircle, Check, Send, 
@@ -475,7 +476,7 @@ const Team = () => {
                   <div>
                     <p className="text-xs font-delight font-medium text-slate-400 uppercase tracking-wider">Universal Tokens Pool</p>
                     <h3 className="text-2xl font-bold font-display text-slate-900 mt-1 tracking-tight">
-                      {limits ? limits.universalTokens.toLocaleString() : '0'} Tokens
+                      <TokenDisplay user={user} showTokensWord />
                     </h3>
                   </div>
                 </div>
