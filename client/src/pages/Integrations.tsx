@@ -625,7 +625,21 @@ const GOOGLE_APPS_SCRIPT_SNIPPET = `function doPost(e) {
 
 const Integrations = () => {
   const navigate = useNavigate();
-  const { user, integrations: storeIntegrations = [], integrationLogs = [], setIntegrations, setIntegrationLogs, syncLeadsToIntegration } = useStore();
+  const { user, integrations: storeIntegrations = [], integrationLogs = [], setIntegrations, setIntegrationLogs, syncLeadsToIntegration, setUpgradeModalOpen, setUpgradeTab } = useStore();
+
+  const currentPlan = (user?.plan || 'free').toLowerCase();
+  const isSuperAdmin = (user?.role || '').toUpperCase() === 'SUPER_ADMIN' || user?.email?.toLowerCase().trim() === 'ashleyghose64@gmail.com';
+  const isApiLocked = currentPlan !== 'pro' && !isSuperAdmin;
+
+  const handleApiLockedClick = async () => {
+    await alertDialog({
+      title: 'Developer API & Webhooks Locked',
+      message: 'Direct REST API access, developer tokens, and live inbound webhooks are exclusively available on Strovr Pro (₹1,999/mo). Upgrade to unlock programmatic lead ingestion and CRM webhooks.',
+      variant: 'info'
+    });
+    setUpgradeTab('plans');
+    setUpgradeModalOpen(true);
+  };
   const [apps, setApps] = useState<IntegrationApp[]>((storeIntegrations || []) as IntegrationApp[]);
   const [apiKey, setApiKey] = useState('lp_live_workspace_key');
   const [, setLoading] = useState(false);
@@ -1170,11 +1184,31 @@ const Integrations = () => {
                 </button>
 
                 <button 
-                  onClick={() => setIsApiDocsOpen(true)}
-                  className="h-8.5 px-3 bg-white border border-slate-200 text-[#191716] font-delight font-medium text-xs rounded-md hover:bg-slate-50 hover:border-slate-300 transition-colors flex items-center gap-1.5 cursor-pointer"
+                  onClick={() => {
+                    if (isApiLocked) {
+                      handleApiLockedClick();
+                      return;
+                    }
+                    setIsApiDocsOpen(true);
+                  }}
+                  className={`h-8.5 px-3 rounded-md font-delight font-medium text-xs flex items-center gap-1.5 transition-all cursor-pointer border ${
+                    isApiLocked
+                      ? 'bg-slate-100 border-slate-200 text-slate-400 opacity-60 hover:opacity-85'
+                      : 'bg-white border-slate-200 text-[#191716] hover:bg-slate-50 hover:border-slate-300'
+                  }`}
+                  title={isApiLocked ? 'API & Webhooks (Requires Pro tier)' : 'API & Webhooks'}
                 >
-                  <Code className="w-3.5 h-3.5 text-slate-500" />
+                  {isApiLocked ? (
+                    <Lock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                  ) : (
+                    <Code className="w-3.5 h-3.5 text-slate-500" />
+                  )}
                   <span>API &amp; Webhooks</span>
+                  {isApiLocked && (
+                    <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-sm bg-purple-100 text-purple-700 border border-purple-200 uppercase tracking-wider">
+                      PRO
+                    </span>
+                  )}
                 </button>
               </div>
             </div>
@@ -1229,19 +1263,35 @@ const Integrations = () => {
 
               {/* Column 3: Inbound Lead Webhook */}
               <div 
-                onClick={() => setIsApiDocsOpen(true)}
-                className="p-4 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors group"
+                onClick={() => {
+                  if (isApiLocked) {
+                    handleApiLockedClick();
+                    return;
+                  }
+                  setIsApiDocsOpen(true);
+                }}
+                className={`p-4 flex items-center justify-between cursor-pointer transition-colors group ${
+                  isApiLocked ? 'hover:bg-amber-50/40 bg-slate-50/40' : 'hover:bg-slate-50'
+                }`}
+                title={isApiLocked ? 'Inbound Lead Webhook (Requires Pro tier)' : 'Click to inspect webhook documentation'}
               >
-                <div>
-                  <span className="text-[10px] font-delight font-semibold uppercase tracking-wider text-slate-500">Inbound Lead Webhook</span>
+                <div className={isApiLocked ? 'opacity-65' : ''}>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-delight font-semibold uppercase tracking-wider text-slate-500">Inbound Lead Webhook</span>
+                    {isApiLocked && (
+                      <span className="text-[9px] font-delight font-bold px-1.5 py-0.2 rounded bg-purple-100 text-purple-700 border border-purple-200 uppercase tracking-wider flex items-center gap-1">
+                        <Lock className="w-2.5 h-2.5" /> PRO
+                      </span>
+                    )}
+                  </div>
                   <div className="text-lg font-bold font-delight mt-1 text-[#191716] group-hover:text-[#C85A32] transition-colors flex items-center gap-2">
-                    <span>Listening</span>
+                    <span>{isApiLocked ? 'Pro Access Only' : 'Listening'}</span>
                     <span className="text-[9px] font-delight font-medium px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
                       AES-256
                     </span>
                   </div>
                   <p className="text-[11px] text-slate-500 mt-0.5 font-delight font-normal truncate max-w-[210px]">
-                    Key: {apiKey.substring(0, 14)}...
+                    {isApiLocked ? 'Unlock webhook endpoints with Pro' : `Key: ${apiKey.substring(0, 14)}...`}
                   </p>
                 </div>
               </div>

@@ -5,7 +5,7 @@ import {
   Waypoints, Plus, Play, Pause, MoreHorizontal, ArrowRight, 
   Mail, MessageSquare, Clock, GitBranch, CheckCircle2, Trash2, 
   Sparkles, X, Edit3, Send, Layers, Zap, AlertCircle, RefreshCw, Eye,
-  Check, ExternalLink, Calendar, ChevronRight, Search
+  Check, ExternalLink, Calendar, ChevronRight, Search, Lock
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { confirmDialog, alertDialog } from '../components/AppConfirmModal';
@@ -156,9 +156,23 @@ const TEMPLATE_PRESETS = [
 ];
 
 const Automations = () => {
-  const { user, integrations, notifyIntegration, setUpgradeModalOpen } = useStore();
+  const { user, integrations, notifyIntegration, setUpgradeModalOpen, setUpgradeTab } = useStore();
   const [journeys, setJourneys] = useState<Journey[]>([]);
   const [loading, setLoading] = useState(false);
+
+  const currentPlan = (user?.plan || 'free').toLowerCase();
+  const isSuperAdmin = (user?.role || '').toUpperCase() === 'SUPER_ADMIN' || user?.email?.toLowerCase().trim() === 'ashleyghose64@gmail.com';
+  const isLockedOnCurrentTier = !isSuperAdmin && currentPlan !== 'pro';
+
+  const handleLockedAction = async () => {
+    await alertDialog({
+      title: `Automations is Locked on ${currentPlan.toUpperCase()} Tier`,
+      message: 'Automations and autonomous sequence workflows are unavailable on Free and Basic tiers. Upgrade your workspace to Strovr Pro to unlock multi-step behavioral journeys, delays, and WhatsApp touchpoints.',
+      variant: 'info'
+    });
+    setUpgradeTab('plans');
+    setUpgradeModalOpen(true);
+  };
 
   const connectedWorkflowApps = integrations.filter(i => i.connected);
 
@@ -385,30 +399,14 @@ const Automations = () => {
     e.preventDefault();
     if (!user?._id || !newJourneyName) return;
 
+    if (isLockedOnCurrentTier) {
+      await handleLockedAction();
+      return;
+    }
+
     let stepsToUse = [];
     if (selectedTemplateIndex !== null && TEMPLATE_PRESETS[selectedTemplateIndex]) {
       const selectedPreset = TEMPLATE_PRESETS[selectedTemplateIndex];
-      const plan = (user?.plan || 'free').toLowerCase();
-      const presetActions = selectedPreset.steps.filter(s => s.type !== 'trigger');
-
-      if (plan === 'free' && presetActions.length > 1) {
-        await alertDialog({
-          title: 'Automated Sequence Locked',
-          message: 'The Free Explorer tier is limited to single one-off dispatches. Upgrade to Basic (₹699/mo) to unlock 2-step automated follow-up sequences, or Pro (₹1,999/mo) for unlimited multi-step journeys!',
-          variant: 'info'
-        });
-        setUpgradeModalOpen(true);
-        return;
-      }
-      if (plan === 'basic' && presetActions.length > 2) {
-        await alertDialog({
-          title: 'Multi-Step Sequence (Pro)',
-          message: `This blueprint contains ${presetActions.length} sequence steps. Basic tier supports 2-step sequences (Initial + Follow-up). Upgrade to Pro for unlimited multi-step journeys.`,
-          variant: 'info'
-        });
-        setUpgradeModalOpen(true);
-        return;
-      }
       stepsToUse = selectedPreset.steps;
     }
 
@@ -441,25 +439,8 @@ const Automations = () => {
   // Instantiate from template picker
   const handleUsePreset = async (preset: typeof TEMPLATE_PRESETS[0]) => {
     if (!user?._id) return;
-    const plan = (user?.plan || 'free').toLowerCase();
-    const presetActions = preset.steps.filter(s => s.type !== 'trigger');
-
-    if (plan === 'free' && presetActions.length > 1) {
-      await alertDialog({
-        title: 'Automated Sequence Locked',
-        message: `Template "${preset.name}" contains ${presetActions.length} sequence steps. Free Explorer is limited to single one-off dispatches. Upgrade to Basic (₹699/mo) to unlock 2-step sequences or Pro for unlimited multi-step journeys!`,
-        variant: 'info'
-      });
-      setUpgradeModalOpen(true);
-      return;
-    }
-    if (plan === 'basic' && presetActions.length > 2) {
-      await alertDialog({
-        title: 'Multi-Step Sequence (Pro)',
-        message: `Template "${preset.name}" requires Pro Tier for deep multi-touchpoint workflows (${presetActions.length} steps). Basic tier includes 2-step sequences (Initial + Follow-up).`,
-        variant: 'info'
-      });
-      setUpgradeModalOpen(true);
+    if (isLockedOnCurrentTier) {
+      await handleLockedAction();
       return;
     }
 
@@ -485,27 +466,8 @@ const Automations = () => {
   // Add Step to active journey
   const handleAddStep = async (type: JourneyStep['type'], integrationApp?: { id: string; name: string }) => {
     if (!activeJourney || !user?._id) return;
-
-    const plan = (user?.plan || 'free').toLowerCase();
-    const currentActions = activeJourney.steps.filter(s => s.type !== 'trigger');
-
-    if (plan === 'free' && currentActions.length >= 1) {
-      await alertDialog({
-        title: 'Sequence Limit Reached',
-        message: 'The Free Explorer tier is limited to single one-off dispatches. Upgrade to Basic (₹699/mo) to unlock 2-step automated follow-up sequences, or Pro (₹1,999/mo) for unlimited multi-step journeys!',
-        variant: 'info'
-      });
-      setUpgradeModalOpen(true);
-      return;
-    }
-
-    if (plan === 'basic' && currentActions.length >= 2) {
-      await alertDialog({
-        title: 'Sequence Depth Limit Reached',
-        message: 'Basic tier supports 2-Step Follow-Up Sequences (Initial + Follow-up). Upgrade to Pro (₹1,999/mo) to unlock unlimited multi-step behavioral journeys and WhatsApp bridges!',
-        variant: 'info'
-      });
-      setUpgradeModalOpen(true);
+    if (isLockedOnCurrentTier) {
+      await handleLockedAction();
       return;
     }
 
@@ -570,22 +532,117 @@ const Automations = () => {
 
               <div className="flex items-center gap-2.5">
                 <button 
-                  onClick={() => setIsTemplateModalOpen(true)}
-                  className="h-8 px-3 bg-white border border-slate-200 rounded-md font-delight font-medium text-xs text-slate-700 hover:bg-slate-50 hover:border-slate-300 flex items-center gap-1.5 transition-colors cursor-pointer"
+                  onClick={() => {
+                    if (isLockedOnCurrentTier) {
+                      handleLockedAction();
+                      return;
+                    }
+                    setIsTemplateModalOpen(true);
+                  }}
+                  className={`h-8 px-3 rounded-md font-delight font-medium text-xs flex items-center gap-1.5 transition-all cursor-pointer ${
+                    isLockedOnCurrentTier
+                      ? 'bg-slate-100 border border-slate-200 text-slate-400 opacity-60 hover:opacity-85'
+                      : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300'
+                  }`}
+                  title={isLockedOnCurrentTier ? 'Templates Library (Requires Pro tier)' : 'Templates Library'}
                 >
-                  <Layers className="w-3.5 h-3.5 text-accent" />
+                  {isLockedOnCurrentTier ? (
+                    <Lock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                  ) : (
+                    <Layers className="w-3.5 h-3.5 text-accent" />
+                  )}
                   <span>Templates Library</span>
+                  {isLockedOnCurrentTier && (
+                    <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-sm bg-purple-100 text-purple-700 border border-purple-200 uppercase tracking-wider">
+                      PRO
+                    </span>
+                  )}
                 </button>
 
                 <button 
-                  onClick={() => setIsCreateModalOpen(true)}
-                  className="h-8 px-3.5 bg-slate-900 text-white rounded-md font-delight font-medium text-xs hover:bg-slate-800 transition-colors flex items-center gap-1.5 border border-slate-900 cursor-pointer"
+                  onClick={() => {
+                    if (isLockedOnCurrentTier) {
+                      handleLockedAction();
+                      return;
+                    }
+                    setIsCreateModalOpen(true);
+                  }}
+                  className={`h-8 px-3.5 rounded-md font-delight font-medium text-xs transition-all flex items-center gap-1.5 cursor-pointer border ${
+                    isLockedOnCurrentTier
+                      ? 'bg-slate-800 text-slate-400 border-slate-700 opacity-60 hover:opacity-85'
+                      : 'bg-slate-900 text-white hover:bg-slate-800 border-slate-900'
+                  }`}
+                  title={isLockedOnCurrentTier ? 'Create Journey (Requires Pro tier)' : 'Create Journey'}
                 >
-                  <Waypoints className="w-3.5 h-3.5" />
+                  {isLockedOnCurrentTier ? (
+                    <Lock className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                  ) : (
+                    <Waypoints className="w-3.5 h-3.5" />
+                  )}
                   <span>Create Journey</span>
+                  {isLockedOnCurrentTier && (
+                    <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-sm bg-purple-100 text-purple-700 border border-purple-200 uppercase tracking-wider">
+                      PRO
+                    </span>
+                  )}
                 </button>
               </div>
             </div>
+
+            {/* Pro Tier Lock Hero Banner when locked */}
+            {isLockedOnCurrentTier && (
+              <div className="relative border border-amber-300/80 bg-gradient-to-br from-amber-50/90 via-white to-purple-50/60 rounded-2xl p-6 sm:p-7 shadow-xs overflow-hidden">
+                <div className="relative z-10 max-w-2xl">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-100/90 border border-amber-300 text-amber-900 text-xs font-delight font-bold uppercase tracking-wider mb-2.5">
+                    <Lock className="w-3.5 h-3.5 text-amber-600" />
+                    <span>Pro Tier Exclusive Module</span>
+                  </div>
+                  <h2 className="text-xl sm:text-2xl font-bold font-delight text-slate-900 tracking-tight">
+                    Automations &amp; Behavioral Journeys are Locked on {currentPlan.toUpperCase()} Tier
+                  </h2>
+                  <p className="text-xs sm:text-sm font-delight text-slate-600 mt-2 leading-relaxed">
+                    Automations is an advanced autonomous engine unavailable on your current <strong>{currentPlan.toUpperCase()}</strong> tier. Upgrade your workspace to Strovr Pro to build multi-step email drip sequences, delay timers, WhatsApp touchpoints, and auto-CRM sync.
+                  </p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4 text-xs font-delight text-slate-700">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>Multi-step follow-up drip loops</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>Smart delay timers (days &amp; business hours)</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>Direct WhatsApp follow-up bridge</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>Automatic lead harvest &amp; CRM stage updates</span>
+                    </div>
+                  </div>
+
+                  <div className="mt-5 flex flex-wrap items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setUpgradeTab('plans');
+                        setUpgradeModalOpen(true);
+                      }}
+                      className="px-4 py-2 rounded-xl bg-purple-700 hover:bg-purple-800 text-white font-delight font-bold text-xs shadow-xs transition-all flex items-center gap-2 cursor-pointer"
+                    >
+                      <Sparkles className="w-4 h-4 text-amber-300" />
+                      <span>Upgrade to Strovr Pro (₹1,999/mo)</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                    <span className="text-xs font-delight text-slate-500">Instant PhonePe activation</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className={isLockedOnCurrentTier ? "opacity-45 pointer-events-none select-none grayscale-[25%] space-y-6" : "space-y-6"}>
 
             {/* Summary Metrics */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -969,6 +1026,7 @@ const Automations = () => {
                 Browse All Templates &rarr;
               </button>
             </div>
+            </div>
 
           </div>
         </div>
@@ -1233,20 +1291,42 @@ const Automations = () => {
               {TEMPLATE_PRESETS.map(tpl => (
                 <div 
                   key={tpl.name}
-                  className="p-4 border border-slate-200 rounded-md hover:border-slate-400 transition-colors flex items-center justify-between gap-3 group"
+                  className={`p-4 border rounded-md transition-colors flex items-center justify-between gap-3 group ${
+                    isLockedOnCurrentTier
+                      ? 'border-slate-200 bg-slate-50/60 opacity-80'
+                      : 'border-slate-200 hover:border-slate-400'
+                  }`}
                 >
                   <div className="space-y-1">
-                    <span className="text-[10px] font-delight font-semibold uppercase tracking-wider text-slate-700 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded-sm">
-                      {tpl.steps.length} Steps Sequence
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-delight font-semibold uppercase tracking-wider text-slate-700 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded-sm">
+                        {tpl.steps.length} Steps Sequence
+                      </span>
+                      {isLockedOnCurrentTier && (
+                        <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-sm bg-purple-100 text-purple-700 border border-purple-200 uppercase tracking-wider flex items-center gap-1">
+                          <Lock className="w-2.5 h-2.5" /> PRO
+                        </span>
+                      )}
+                    </div>
                     <h4 className="font-bold text-xs text-slate-900 tracking-tight">{tpl.name}</h4>
                     <p className="text-xs text-slate-500 leading-relaxed">{tpl.desc}</p>
                   </div>
                   <button 
-                    onClick={() => handleUsePreset(tpl)}
-                    className="px-3 py-1.5 bg-slate-900 text-white rounded-md font-delight font-medium text-xs hover:bg-slate-800 transition-colors whitespace-nowrap border border-slate-900 cursor-pointer"
+                    onClick={() => {
+                      if (isLockedOnCurrentTier) {
+                        handleLockedAction();
+                        return;
+                      }
+                      handleUsePreset(tpl);
+                    }}
+                    className={`px-3 py-1.5 rounded-md font-delight font-medium text-xs transition-colors whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
+                      isLockedOnCurrentTier
+                        ? 'bg-purple-100 text-purple-700 border border-purple-200 hover:bg-purple-200'
+                        : 'bg-slate-900 text-white hover:bg-slate-800 border border-slate-900'
+                    }`}
                   >
-                    Deploy Flow
+                    {isLockedOnCurrentTier && <Lock className="w-3 h-3" />}
+                    <span>{isLockedOnCurrentTier ? 'Upgrade to Deploy' : 'Deploy Flow'}</span>
                   </button>
                 </div>
               ))}

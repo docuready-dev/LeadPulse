@@ -8,7 +8,7 @@ import {
   Smartphone, Sparkles, Sliders, Edit3, ArrowRight,
   ShieldCheck, Tag, Search, Check, Loader2, ExternalLink, Key,
   Plus, Trash2, Upload, Wand2, Calendar,
-  Image, FileText, Paperclip, Download, X, File, Eye, Copy
+  Image, FileText, Paperclip, Download, X, File, Eye, Copy, Lock
 } from 'lucide-react';
 import TemplateGalleryModal from '../components/TemplateGalleryModal';
 import DispatchTrackerModal from '../components/DispatchTrackerModal';
@@ -23,7 +23,7 @@ import axios from 'axios';
 import API_URL from '../config/api';
 
 const OutreachCenter = () => {
-  const { user, token, integrations, setUpgradeModalOpen, recordEmailDispatch, recordAiGeneration } = useStore();
+  const { user, token, integrations, setUpgradeModalOpen, setUpgradeTab, recordEmailDispatch, recordAiGeneration } = useStore();
   const [activeChannel, setActiveChannel] = useState<'email' | 'whatsapp' | 'sms'>('email');
 
   const defaultBookingHost = localStorage.getItem('strovr_booking_host') || localStorage.getItem('leadpulse_booking_host') || (typeof window !== 'undefined' ? `${window.location.origin}/appointments` : '/appointments');
@@ -1124,37 +1124,56 @@ const OutreachCenter = () => {
               </div>
               
               <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={async () => {
-                    const plan = (user?.plan || 'free').toLowerCase();
-                    if (plan === 'free') {
-                      await alertDialog({
-                        title: 'A/B Split Testing Locked',
-                        message: '50/50 A/B Split Testing is available on Basic (₹699/mo) and Pro (₹1,999/mo) tiers. Upgrade to test subject lines and email variants side-by-side.',
-                        variant: 'info'
-                      });
-                      setUpgradeModalOpen(true);
-                      return;
-                    }
-                    const next = !isAbTesting;
-                    setIsAbTesting(next);
-                    if (next) {
-                      setActiveVariant('A');
-                    }
-                  }}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border transition-all cursor-pointer font-delight text-xs ${
-                    isAbTesting 
-                      ? 'bg-indigo-50 border-indigo-300 text-indigo-700 font-semibold shadow-2xs' 
-                      : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:text-slate-900'
-                  }`}
-                  title="Enable A/B split testing to compare Variant A and Variant B"
-                >
-                  <div className={`w-7 h-4 rounded-full relative transition-colors ${isAbTesting ? 'bg-indigo-600' : 'bg-slate-200'}`}>
-                    <div className={`w-3 h-3 rounded-full bg-white absolute top-0.5 transition-all ${isAbTesting ? 'left-3.5' : 'left-0.5'}`} />
-                  </div>
-                  <span className="text-[11px] font-semibold">A/B Split</span>
-                </button>
+                {(() => {
+                  const plan = (user?.plan || 'free').toLowerCase();
+                  const isSuperAdmin = (user?.role || '').toUpperCase() === 'SUPER_ADMIN' || user?.email?.toLowerCase().trim() === 'ashleyghose64@gmail.com';
+                  const isAbTestingLocked = plan === 'free' && !isSuperAdmin;
+
+                  return (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (isAbTestingLocked) {
+                          await alertDialog({
+                            title: 'A/B Split Testing Locked on Free Tier',
+                            message: '50/50 A/B Split Testing is available on Basic (₹699/mo) and Pro (₹1,999/mo) tiers. Upgrade to test subject lines, layouts, and copy variants side-by-side.',
+                            variant: 'info'
+                          });
+                          setUpgradeTab('plans');
+                          setUpgradeModalOpen(true);
+                          return;
+                        }
+                        const next = !isAbTesting;
+                        setIsAbTesting(next);
+                        if (next) {
+                          setActiveVariant('A');
+                        }
+                      }}
+                      className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border transition-all cursor-pointer font-delight text-xs ${
+                        isAbTestingLocked
+                          ? 'bg-slate-100 border-slate-200 text-slate-400 opacity-60 hover:opacity-85'
+                          : isAbTesting 
+                            ? 'bg-indigo-50 border-indigo-300 text-indigo-700 font-semibold shadow-2xs' 
+                            : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:text-slate-900'
+                      }`}
+                      title={isAbTestingLocked ? 'A/B Split Testing (Requires Basic or Pro tier)' : 'Enable A/B split testing to compare Variant A and Variant B'}
+                    >
+                      {isAbTestingLocked ? (
+                        <Lock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                      ) : (
+                        <div className={`w-7 h-4 rounded-full relative transition-colors ${isAbTesting ? 'bg-indigo-600' : 'bg-slate-200'}`}>
+                          <div className={`w-3 h-3 rounded-full bg-white absolute top-0.5 transition-all ${isAbTesting ? 'left-3.5' : 'left-0.5'}`} />
+                        </div>
+                      )}
+                      <span className="text-[11px] font-semibold">A/B Split</span>
+                      {isAbTestingLocked && (
+                        <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-sm bg-blue-100 text-blue-700 border border-blue-200 uppercase tracking-wider">
+                          BASIC
+                        </span>
+                      )}
+                    </button>
+                  );
+                })()}
               </div>
             </div>
 

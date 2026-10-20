@@ -3,25 +3,40 @@ import {
   LayoutDashboard, Users, BarChart3, Settings, 
   FolderKanban, HelpCircle, Search, Send, Users2, 
   Webhook, Waypoints, LogOut, Sparkles, Zap, ArrowUpRight,
-  Calendar, ShieldCheck
+  Calendar, ShieldCheck, Lock
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
+import { alertDialog } from './AppConfirmModal';
 import docuReadyBlackLogo from '../assets/DocuReady-black.png';
 import strovrLogo from '../assets/strovr-logo.png';
 
-const mainNav = [
+interface NavItem {
+  name: string;
+  icon: any;
+  path: string;
+  requiredPlan?: 'basic' | 'pro';
+  lockMessage?: string;
+}
+
+const mainNav: NavItem[] = [
   { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
   { name: 'Outreach', icon: Send, path: '/outreach' },
-  { name: 'Automation', icon: Waypoints, path: '/automations' },
+  { 
+    name: 'Automation', 
+    icon: Waypoints, 
+    path: '/automations', 
+    requiredPlan: 'pro',
+    lockMessage: 'Automations and autonomous sequence workflows are unavailable on Free and Basic tiers. Upgrade your workspace to Strovr Pro to unlock multi-step behavioral journeys, delays, and WhatsApp touchpoints.'
+  },
   { name: 'Audience', icon: Users2, path: '/audience' },
 ];
 
-const pipelineNav = [
+const pipelineNav: NavItem[] = [
   { name: 'Lead Gen', icon: Search, path: '/finder' },
   { name: 'CRM Pipeline', icon: FolderKanban, path: '/crm' },
 ];
 
-const toolsNav = [
+const toolsNav: NavItem[] = [
   { name: 'Analytics', icon: BarChart3, path: '/analytics' },
   { name: 'Integrations', icon: Webhook, path: '/integrations' },
   { name: 'Team', icon: Users, path: '/team' },
@@ -40,6 +55,33 @@ const Sidebar = () => {
   const displayCredits = rawCredits;
   const maxPoolLabel = currentPlan === 'free' ? '15' : currentPlan === 'basic' ? '600' : '∞';
 
+  const isItemLocked = (item: NavItem) => {
+    if (isSuperAdmin) return false;
+    if (!item.requiredPlan) return false;
+    if (item.requiredPlan === 'pro') {
+      return currentPlan !== 'pro';
+    }
+    if (item.requiredPlan === 'basic') {
+      return currentPlan === 'free';
+    }
+    return false;
+  };
+
+  const handleNavClick = async (e: React.MouseEvent, item: NavItem) => {
+    if (isItemLocked(item)) {
+      e.preventDefault();
+      e.stopPropagation();
+      await alertDialog({
+        title: `${item.name} is Locked on ${currentPlan.toUpperCase()} Tier`,
+        message: item.lockMessage || `${item.name} requires an upgraded subscription plan. Upgrade your workspace to unlock this capability.`,
+        variant: 'info'
+      });
+      setUpgradeTab('plans');
+      setUpgradeModalOpen(true);
+      return;
+    }
+  };
+
   const handleSignOut = () => {
     setToken(null);
     setUser(null);
@@ -56,26 +98,47 @@ const Sidebar = () => {
     }
   };
 
-  const renderNavSection = (title: string, items: any[]) => (
+  const renderNavSection = (title: string, items: NavItem[]) => (
     <div className="mb-6">
       <p className="px-3 text-[10.5px] font-semibold text-[#6E675F] font-delight uppercase tracking-wider mb-2">{title}</p>
       <nav className="space-y-1">
         {items.map((item) => {
           const Icon = item.icon;
           const isActive = location.pathname.startsWith(item.path);
+          const locked = isItemLocked(item);
+
           return (
             <Link 
               key={item.name} 
-              to={item.path} 
-              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-delight transition-all group ${
-                isActive 
-                  ? 'bg-[#191716] text-white font-semibold shadow-2xs' 
-                  : 'text-[#57514B] hover:text-[#191716] hover:bg-[#EBE5D8]/70 font-medium'
+              to={locked ? '#' : item.path}
+              onClick={(e) => handleNavClick(e, item)}
+              title={locked ? `${item.name} (Requires ${item.requiredPlan?.toUpperCase()} tier)` : item.name}
+              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-delight transition-all group ${
+                locked
+                  ? 'opacity-55 hover:opacity-85 text-[#8A8277] hover:bg-[#EBE5D8]/50 cursor-pointer'
+                  : isActive 
+                    ? 'bg-[#191716] text-white font-semibold shadow-2xs' 
+                    : 'text-[#57514B] hover:text-[#191716] hover:bg-[#EBE5D8]/70 font-medium'
               }`}
             >
-              <Icon className={`w-3.5 h-3.5 shrink-0 transition-colors ${isActive ? 'text-[#E07A5F]' : 'text-[#6E675F] group-hover:text-[#191716]'}`} /> 
+              <Icon className={`w-3.5 h-3.5 shrink-0 transition-colors ${
+                locked 
+                  ? 'text-[#8A8277]' 
+                  : isActive 
+                    ? 'text-[#E07A5F]' 
+                    : 'text-[#6E675F] group-hover:text-[#191716]'
+              }`} /> 
               <span className="flex-1 truncate">{item.name}</span>
-              {isActive && <span className="w-1.5 h-1.5 rounded-full bg-[#E07A5F] shrink-0" />}
+              {locked ? (
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-sm bg-purple-100 text-purple-700 border border-purple-200 uppercase tracking-wider">
+                    {item.requiredPlan}
+                  </span>
+                  <Lock className="w-3.5 h-3.5 text-amber-600/90 shrink-0" />
+                </div>
+              ) : (
+                isActive && <span className="w-1.5 h-1.5 rounded-full bg-[#E07A5F] shrink-0" />
+              )}
             </Link>
           );
         })}

@@ -5,7 +5,8 @@ import {
   Search, Filter, Plus, Users, LayoutTemplate, Tag, Mail, 
   Phone, CheckCircle2, Trash2, Send, Download, ExternalLink, 
   Code, Eye, Check, X, Sparkles, Building2, Globe, Copy, AlertCircle, Edit3,
-  Webhook, Zap, ArrowUpDown, ArrowUp, ArrowDown, Calendar, MapPin, Star
+  Webhook, Zap, ArrowUpDown, ArrowUp, ArrowDown, Calendar, MapPin, Star,
+  Lock
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { confirmDialog, alertDialog } from '../components/AppConfirmModal';
@@ -62,9 +63,13 @@ const DEFAULT_FORMS: FormTemplate[] = [
 ];
 
 const Audience = () => {
-  const { user, integrations, syncLeadsToIntegration, enrichLeadViaIntegration } = useStore();
+  const { user, integrations, syncLeadsToIntegration, enrichLeadViaIntegration, setUpgradeModalOpen, setUpgradeTab } = useStore();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'contacts' | 'segments' | 'forms'>('contacts');
+
+  const currentPlan = (user?.plan || 'free').toLowerCase();
+  const isSuperAdmin = (user?.role || '').toUpperCase() === 'SUPER_ADMIN' || user?.email?.toLowerCase().trim() === 'ashleyghose64@gmail.com';
+  const isExportLocked = currentPlan === 'free' && !isSuperAdmin;
 
   // Contacts state with resilient cache loading across device reloads
   const [leads, setLeads] = useState<any[]>(() => {
@@ -583,6 +588,17 @@ const Audience = () => {
 
   // Export CSV
   const handleExportCSV = async () => {
+    if (isExportLocked) {
+      await alertDialog({
+        title: 'CSV Data Export Locked on Free Tier',
+        message: 'Unlimited CSV & Excel data exports are available on Basic (₹699/mo) and Pro (₹1,999/mo) tiers. Upgrade to download your full verified prospect leads.',
+        variant: 'info'
+      });
+      setUpgradeTab('plans');
+      setUpgradeModalOpen(true);
+      return;
+    }
+
     const listToExport = selectedLeadIds.length > 0 
       ? leads.filter(l => selectedLeadIds.includes(l._id))
       : sortedAndFilteredContacts;
@@ -810,10 +826,24 @@ const Audience = () => {
 
                     <button 
                       onClick={handleExportCSV}
-                      className="h-8 px-3 bg-white border border-slate-200 rounded-md font-delight font-medium text-xs text-slate-700 hover:bg-slate-50 hover:border-slate-300 flex items-center gap-1.5 transition-colors cursor-pointer"
+                      className={`h-8 px-3 rounded-md font-delight font-medium text-xs flex items-center gap-1.5 transition-all cursor-pointer ${
+                        isExportLocked
+                          ? 'bg-slate-100 border border-slate-200 text-slate-400 opacity-60 hover:opacity-85'
+                          : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300'
+                      }`}
+                      title={isExportLocked ? 'CSV Export (Requires Basic or Pro tier)' : 'Export to CSV'}
                     >
-                      <Download className="w-3.5 h-3.5" />
+                      {isExportLocked ? (
+                        <Lock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                      ) : (
+                        <Download className="w-3.5 h-3.5" />
+                      )}
                       <span>Export CSV</span>
+                      {isExportLocked && (
+                        <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-sm bg-blue-100 text-blue-700 border border-blue-200 uppercase tracking-wider">
+                          BASIC
+                        </span>
+                      )}
                     </button>
                   </>
                 )}

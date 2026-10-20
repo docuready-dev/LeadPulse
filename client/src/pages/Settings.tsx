@@ -222,7 +222,13 @@ const Settings = () => {
 
   // Export CSV
   const handleExportAll = async () => {
-    if ((user?.plan || 'free') === 'free') {
+    const isSuperAdmin = (user?.role || '').toUpperCase() === 'SUPER_ADMIN' || user?.email?.toLowerCase().trim() === 'ashleyghose64@gmail.com';
+    if ((user?.plan || 'free').toLowerCase() === 'free' && !isSuperAdmin) {
+      await alertDialog({
+        title: 'CRM Data Export Locked on Free Tier',
+        message: 'Full CRM CSV export is available on Basic (₹699/mo) and Pro (₹1,999/mo) tiers. Upgrade to download your complete workspace contacts and pipeline data.',
+        variant: 'info'
+      });
       setUpgradeTab('plans');
       setUpgradeModalOpen(true);
       return;
@@ -283,7 +289,9 @@ const Settings = () => {
   };
 
   const currentPlan = (user?.plan || 'free').toLowerCase();
+  const isSuperAdmin = (user?.role || '').toUpperCase() === 'SUPER_ADMIN' || user?.email?.toLowerCase().trim() === 'ashleyghose64@gmail.com';
   const isFree = currentPlan === 'free';
+  const isExportLocked = isFree && !isSuperAdmin;
   const credits = isFree && !(user as any)?.has_topup ? Math.min(user?.lead_credits ?? 15, 15) : (user?.lead_credits ?? 15);
 
   return (
@@ -1006,11 +1014,24 @@ const Settings = () => {
 
                   <button
                     onClick={handleExportAll}
-                    className="bg-slate-900 hover:bg-slate-800 text-white h-8 px-3.5 rounded-md text-xs font-delight font-medium transition-all flex items-center gap-1.5 cursor-pointer border border-slate-900"
+                    className={`h-8 px-3.5 rounded-md text-xs font-delight font-medium transition-all flex items-center gap-1.5 cursor-pointer border ${
+                      isExportLocked
+                        ? 'bg-slate-100 border-slate-200 text-slate-400 opacity-60 hover:opacity-85'
+                        : 'bg-slate-900 hover:bg-slate-800 text-white border-slate-900'
+                    }`}
+                    title={isExportLocked ? 'Download Full CRM (Requires Basic or Pro tier)' : 'Download Full CRM (.CSV)'}
                   >
-                    <Download className="w-3.5 h-3.5" />
+                    {isExportLocked ? (
+                      <Lock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                    ) : (
+                      <Download className="w-3.5 h-3.5" />
+                    )}
                     <span>Download Full CRM (.CSV)</span>
-                    {isFree && <Lock className="w-3 h-3 text-amber-400" />}
+                    {isExportLocked && (
+                      <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-sm bg-blue-100 text-blue-700 border border-blue-200 uppercase tracking-wider">
+                        BASIC
+                      </span>
+                    )}
                   </button>
                 </div>
 

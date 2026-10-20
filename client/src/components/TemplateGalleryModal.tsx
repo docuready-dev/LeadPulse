@@ -5,6 +5,7 @@ import {
 import { EMAIL_TEMPLATES } from '../data/emailTemplates';
 import type { TemplateId } from '../data/emailTemplates';
 import { useStore } from '../store/useStore';
+import { alertDialog } from './AppConfirmModal';
 
 interface GalleryModalProps {
   isOpen: boolean;
@@ -19,13 +20,14 @@ const TemplateGalleryModal = ({
   selectedTemplateId, 
   onSelectTemplate 
 }: GalleryModalProps) => {
-  const { user, setUpgradeModalOpen } = useStore();
+  const { user, setUpgradeModalOpen, setUpgradeTab } = useStore();
   const [filterCategory, setFilterCategory] = useState<'all' | 'direct' | 'promotional' | 'newsletter' | 'ecommerce'>('all');
 
   if (!isOpen) return null;
 
   const currentPlan = (user?.plan || 'free').toLowerCase();
-  const isFreePlan = currentPlan === 'free';
+  const isSuperAdmin = (user?.role || '').toUpperCase() === 'SUPER_ADMIN' || user?.email?.toLowerCase().trim() === 'ashleyghose64@gmail.com';
+  const isFreePlan = currentPlan === 'free' && !isSuperAdmin;
 
   const templateList = Object.values(EMAIL_TEMPLATES);
   const filteredTemplates = filterCategory === 'all' 
@@ -303,9 +305,15 @@ const TemplateGalleryModal = ({
               return (
                 <div 
                   key={template.id}
-                  onClick={() => {
+                  onClick={async () => {
                     if (isLocked) {
+                      await alertDialog({
+                        title: `${template.name} is Locked on Free Tier`,
+                        message: `The "${template.name}" framework is an advanced Link Mobility layout available on Basic (₹699/mo) and Pro (₹1,999/mo) tiers. Upgrade to unlock all 8 frameworks!`,
+                        variant: 'info'
+                      });
                       onClose();
+                      setUpgradeTab('plans');
                       setUpgradeModalOpen(true);
                       return;
                     }
@@ -314,7 +322,7 @@ const TemplateGalleryModal = ({
                   }}
                   className={`rounded-2xl border p-4 cursor-pointer transition-all flex flex-col justify-between group relative shadow-2xs ${
                     isLocked 
-                      ? 'border-slate-200 bg-slate-50/60 opacity-95 hover:border-amber-300'
+                      ? 'border-amber-200/80 bg-amber-50/20 opacity-60 hover:opacity-85 hover:border-amber-400'
                       : isSelected 
                         ? 'border-indigo-600 bg-indigo-50/30 ring-2 ring-indigo-500/20 shadow-xs' 
                         : 'border-slate-200/80 bg-white hover:border-indigo-300 hover:shadow-xs'
