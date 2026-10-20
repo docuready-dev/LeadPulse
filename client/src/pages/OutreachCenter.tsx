@@ -1260,12 +1260,16 @@ const OutreachCenter = () => {
                   </button>
 
                   <button
+                    type="button"
                     onClick={() => setIsHistoryModalOpen(true)}
-                    className="border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 hover:text-indigo-700 hover:border-indigo-200 px-2.5 py-1.5 rounded-lg text-xs font-delight font-semibold transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                    className="border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 hover:text-indigo-700 hover:border-indigo-200 px-3 py-1.5 rounded-lg text-xs font-delight font-semibold transition-colors flex items-center gap-2 cursor-pointer shadow-2xs"
                     title="View dispatch history and read sent emails"
                   >
                     <History className="w-3.5 h-3.5 text-indigo-600" />
                     <span>Sent History</span>
+                    <span className="text-[10.5px] font-bold text-indigo-900 bg-indigo-50 border border-indigo-200/80 px-1.5 py-0.5 rounded-md">
+                      {user?.emails_sent || 0}/{user?.emails_limit || 50}
+                    </span>
                   </button>
                 </div>
 
@@ -3055,12 +3059,18 @@ const OutreachCenter = () => {
             </div>
 
             {/* Bottom Actions */}
-            <div className="px-5 py-3.5 border-t border-slate-100 bg-white/90 backdrop-blur-xs flex flex-col sm:flex-row items-center justify-between gap-3 rounded-b-2xl">
-              <div className="flex items-center gap-2">
+            <div className="px-5 py-3.5 border-t border-slate-200/80 bg-white/95 backdrop-blur-xs flex flex-col sm:flex-row items-center justify-between gap-3 rounded-b-2xl">
+              <div className="flex items-center gap-2.5 w-full sm:w-auto shrink-0 flex-wrap">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                <span className="text-[11px] font-delight font-medium text-slate-600">
-                  {activeChannel === 'whatsapp' ? 'WhatsApp wa.me API Bridge Active' : 'Direct SMTP Socket Transport Ready'}
+                <span className="text-[11.5px] font-delight font-medium text-slate-600">
+                  {activeChannel === 'whatsapp' ? 'WhatsApp wa.me API Bridge Active' : 'SendGrid Web API Transport Ready'}
                 </span>
+                {activeChannel === 'email' && emailAttachments.some(a => a.enabled) && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 text-[10.5px] font-delight font-bold">
+                    <Paperclip className="w-3 h-3 text-indigo-600" />
+                    <span>{emailAttachments.filter(a => a.enabled).length} Deck{emailAttachments.filter(a => a.enabled).length > 1 ? 's' : ''} Attached</span>
+                  </span>
+                )}
               </div>
               
               {activeChannel === 'whatsapp' ? (
@@ -3073,6 +3083,7 @@ const OutreachCenter = () => {
                   )}
                   {(whatsAppImage.enabled || whatsAppPdf.enabled) && (
                     <button 
+                      type="button"
                       onClick={handleCopyMediaLinks}
                       className="bg-white border border-slate-200 hover:bg-slate-50 px-3 py-1.5 rounded-xl text-xs font-delight font-bold text-slate-700 shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer"
                       title="Copy asset file URLs to clipboard"
@@ -3082,6 +3093,7 @@ const OutreachCenter = () => {
                     </button>
                   )}
                   <button 
+                    type="button"
                     onClick={handleCopyWhatsApp}
                     className="bg-white border border-slate-200 hover:bg-slate-50 px-3.5 py-1.5 rounded-xl text-xs font-delight font-bold text-slate-700 shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer"
                   >
@@ -3089,52 +3101,30 @@ const OutreachCenter = () => {
                     <span>{copiedWhatsApp ? 'Copied' : 'Copy Script'}</span>
                   </button>
                   <button 
+                    type="button"
                     onClick={() => handleOpenWhatsAppWeb(previewLead)}
-                    className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white px-4 py-1.5 rounded-xl text-xs font-delight font-bold shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+                    className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white px-4.5 py-2 rounded-xl text-xs font-delight font-bold shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
                   >
                     <Send className="w-3.5 h-3.5" />
                     <span>WhatsApp Web</span>
                   </button>
                 </div>
               ) : (
-                <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-                  {emailAttachments.some(a => a.enabled) && (
-                    <span className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-800 text-[10px] font-delight font-bold">
-                      <Paperclip className="w-3 h-3 text-indigo-600" />
-                      <span>{emailAttachments.filter(a => a.enabled).length} Deck{emailAttachments.filter(a => a.enabled).length > 1 ? 's' : ''} Attached</span>
-                    </span>
-                  )}
+                <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end flex-wrap">
                   <button 
                     type="button"
-                    onClick={() => setIsHistoryModalOpen(true)}
-                    className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100/80 border border-indigo-200/80 text-[11px] font-delight text-indigo-700 transition-colors cursor-pointer"
-                    title="Click to view full history of dispatched emails"
-                  >
-                    <History className="w-3 h-3 text-indigo-600" />
-                    <span className="font-bold text-indigo-900">{user?.emails_sent || 0}</span>
-                    <span className="text-indigo-400">/</span>
-                    <span className="font-semibold">{user?.emails_limit || 50} Emails</span>
-                  </button>
-                  <button 
-                    onClick={() => setIsHistoryModalOpen(true)}
-                    className="bg-white border border-slate-200 hover:bg-slate-50 hover:border-slate-300 px-3.5 py-1.5 rounded-xl text-xs font-delight font-bold text-slate-700 shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer"
-                    title="View sent email history log and view individual dispatched messages"
-                  >
-                    <History className="w-3.5 h-3.5 text-indigo-600" />
-                    <span className="hidden md:inline">Sent History</span>
-                  </button>
-                  <button 
                     onClick={() => handleOpenWebmail(previewLead)}
-                    className="bg-white border border-slate-200 hover:bg-slate-50 hover:border-slate-300 px-3.5 py-1.5 rounded-xl text-xs font-delight font-bold text-slate-700 shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer"
+                    className="bg-white border border-slate-200 hover:bg-slate-50 hover:border-slate-300 px-3.5 py-2 rounded-xl text-xs font-delight font-bold text-slate-700 shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer"
                     title={`Open prefilled outreach email for ${previewLead.businessName} directly in Gmail / Webmail`}
                   >
                     <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
                     <span>Open Webmail</span>
                   </button>
                   <button 
+                    type="button"
                     onClick={handleSendSingleTest}
                     disabled={isSendingSingle}
-                    className="bg-white border border-slate-200 hover:bg-slate-50 hover:border-slate-300 disabled:opacity-50 px-3.5 py-1.5 rounded-xl text-xs font-delight font-bold text-slate-700 shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer"
+                    className="bg-white border border-slate-200 hover:bg-slate-50 hover:border-slate-300 disabled:opacity-50 px-3.5 py-2 rounded-xl text-xs font-delight font-bold text-slate-700 shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer"
                     title={`Dispatches an individualized test email directly to ${previewLead.businessName}`}
                   >
                     {isSendingSingle ? (
@@ -3150,10 +3140,12 @@ const OutreachCenter = () => {
                     )}
                   </button>
                   <button 
+                    type="button"
                     onClick={() => {
                       setIsDispatchModalOpen(true);
                     }}
-                    className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white px-5 py-1.5 rounded-xl text-xs font-delight font-bold shadow-sm shadow-indigo-200 transition-all flex items-center gap-1.5 cursor-pointer"
+                    className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white px-5 py-2 rounded-xl text-xs font-delight font-bold shadow-sm shadow-indigo-200 hover:shadow-md transition-all flex items-center gap-2 cursor-pointer shrink-0"
+                    title="Launch batch email dispatch sequence across selected audience leads"
                   >
                     <Send className="w-3.5 h-3.5" />
                     <span>Launch Batch</span>
