@@ -203,10 +203,10 @@ const newCredits = Math.max(0, availableCredits - tokensUsed);`
         summary:
           'DocuReady engineered Strovr pricing to deliver 80% lower TCO than legacy data brokers while providing enterprise-grade spatial scraping, multi-seat governance, and OAuth integrations.',
         keyTakeaways: [
-          'Free Tier ($0): 15 Contact Tokens / 4 days, 1 Operator Seat, Core Lead Finder & Kanban CRM.',
-          'Basic Tier ($15/mo): 400 Contact Tokens / 4 days, 3 Team Seats, Email & WhatsApp Outreach Studio, CSV Export.',
-          'Pro Tier ($29/mo): 1,000 Contact Tokens / 4 days, 10 Team Seats, Full Workflow Automations, OAuth CRM Sync & Priority Scraper Concurrency.',
-          'On-Demand Token Packs: Add +50 ($5), +100 ($9), or +500 ($25) tokens anytime.'
+          'Free Tier (₹0): 15 Contact Tokens / 4 days, 2 Operator Seats, Core Lead Finder & Kanban CRM.',
+          'Basic Tier (₹699/mo): 600 Bonus Tokens, 5 Team Seats, Email & WhatsApp Outreach Studio, CSV Export.',
+          'Pro Tier (₹1,999/mo): 1,500 Bonus Tokens, 10 Team Seats, Full Workflow Automations, Developer API & Inbound Webhooks.',
+          'On-Demand Token Packs: Add +250 (₹199) or +1,000 (₹499) tokens anytime via PhonePe.'
         ],
         steps: [
           {
@@ -572,7 +572,7 @@ const newCredits = Math.max(0, availableCredits - tokensUsed);`
         route: '/team',
         routeLabel: 'Open Team & Seats',
         summary:
-          'Manage multi-operator seats across Free (1 seat), Basic (3 seats), and Pro (10 seats) workspaces, and get answers to the most common questions about Strovr.',
+          'Manage multi-operator seats across Free (2 seats), Basic (5 seats), and Pro (10 seats) workspaces, and get answers to the most common questions about Strovr.',
         keyTakeaways: [
           'Role-based access control: Super Admin, Campaign Manager, and SDR Operator roles.',
           'Isolated tenant data in Firestore with encrypted credential storage.',

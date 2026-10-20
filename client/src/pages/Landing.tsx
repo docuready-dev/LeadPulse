@@ -132,7 +132,7 @@ const benchmarkProfiles = {
         marketFlaw: 'Penalizes agency growth with per-seat fees',
         ourPrice: 'Universal Pool',
         ourBadge: 'Zero Per-Seat Tax',
-        ourSub: '50% seats on Basic (₹699) • 100% seats on Pro (₹1,999)',
+        ourSub: '5 Seats on Basic (₹699) • 10 Seats on Pro (₹1,999)',
         ourAdvantage: 'Share workspace tokens across registered seats',
         savingsTag: 'Save ~₹10,000/mo',
         barPct: 7,
@@ -1444,8 +1444,8 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
                 <tr>
                   <td className="py-3 px-5 font-bold text-[#191716]">Registered Team Seats &amp; Token Sharing</td>
                   <td className="py-3 px-4 text-center text-[#57524B]">2 Fixed Seats</td>
-                  <td className="py-3 px-4 text-center font-bold text-[#C85A32] bg-[#C85A32]/5">50% Seats Share Pool</td>
-                  <td className="py-3 px-4 text-center font-bold text-[#191716]">100% Seats Share Pool</td>
+                  <td className="py-3 px-4 text-center font-bold text-[#C85A32] bg-[#C85A32]/5">5 Seats Included</td>
+                  <td className="py-3 px-4 text-center font-bold text-[#191716]">10 Seats Included</td>
                   <td className="py-3 px-4 text-center text-slate-400 line-through">₹2,000/seat</td>
                 </tr>
               </tbody>

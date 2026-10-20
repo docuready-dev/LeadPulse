@@ -56,20 +56,20 @@ router.get('/limits', async (req, res) => {
     const userDoc = await userRef.get();
     const userData = await syncUserPoolCredits(userId, userDoc.data() || {});
     const plan = (userData.plan || 'free').toLowerCase();
-    const seatsSelected = Number(userData.seats_selected) || 6; // default registration seats selection
+    const seatsSelected = Number(userData.seats_selected) || 10; // default registration seats selection
 
     let maxSeats = 2; // Free tier has 2 seats
     let universalTokens = userData.lead_credits ?? 15;
     let seatPercent = null;
 
     if (plan === 'basic') {
-      // Basic can add 50% of seats selected at registration with universal tokens
-      maxSeats = Math.max(2, Math.floor(seatsSelected * 0.5));
+      // Basic tier: 5 seats total (or 50% of seatsSelected if custom baseline is higher)
+      maxSeats = Math.max(5, Math.floor(seatsSelected * 0.5));
       universalTokens = userData.lead_credits ?? 500;
       seatPercent = 50;
     } else if (plan === 'pro') {
-      // Pro has 100% of the seats selected at registration with universal tokens
-      maxSeats = seatsSelected;
+      // Pro tier: 10 seats total (or 100% of seatsSelected if custom baseline is higher)
+      maxSeats = Math.max(10, seatsSelected);
       universalTokens = userData.lead_credits ?? 2500;
       seatPercent = 100;
     }
@@ -132,15 +132,13 @@ const handleAddMember = async (req: express.Request, res: express.Response) => {
     const userDoc = await userRef.get();
     const userData = userDoc.data() || {};
     const plan = (userData.plan || 'free').toLowerCase();
-    const seatsSelected = Number(userData.seats_selected) || 6;
+    const seatsSelected = Number(userData.seats_selected) || 10;
 
     let maxSeats = 2; // Free tier has 2 seats
     if (plan === 'basic') {
-      // Basic can add 50% of seats selected at registration
-      maxSeats = Math.max(2, Math.floor(seatsSelected * 0.5));
+      maxSeats = Math.max(5, Math.floor(seatsSelected * 0.5));
     } else if (plan === 'pro') {
-      // Pro has 100% of seats selected at registration
-      maxSeats = seatsSelected;
+      maxSeats = Math.max(10, seatsSelected);
     }
 
     const teamRef = db.collection('team_members');
@@ -148,7 +146,7 @@ const handleAddMember = async (req: express.Request, res: express.Response) => {
 
     if (existing.size >= maxSeats) {
       return res.status(403).json({ 
-        error: `Seat limit reached for your ${plan.toUpperCase()} tier (${existing.size}/${maxSeats} seats used). Free tier has 2 seats, Basic unlocks 50% of registered seats with universal tokens, and Pro provides 100% of registered seats with universal tokens.`,
+        error: `Seat limit reached for your ${plan.toUpperCase()} tier (${existing.size}/${maxSeats} seats used). Allotted seats: Free (2 seats), Basic (5 seats), Pro (10 seats). Upgrade your subscription to add more team members.`,
         code: 'SEAT_LIMIT_REACHED',
         maxSeats,
         currentSeats: existing.size,

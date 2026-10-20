@@ -101,7 +101,7 @@ const Team = () => {
   const [isDeleting, setIsDeleting] = useState(false);
 
   // Seat Configuration State
-  const [seatsSelectedInput, setSeatsSelectedInput] = useState(6);
+  const [seatsSelectedInput, setSeatsSelectedInput] = useState(10);
   const [isUpdatingSeats, setIsUpdatingSeats] = useState(false);
 
   // Toast
@@ -126,7 +126,7 @@ const Team = () => {
       ]);
       setMembers(membersRes.data);
       setLimits(limitsRes.data);
-      setSeatsSelectedInput(limitsRes.data.seatsSelected || 6);
+      setSeatsSelectedInput(limitsRes.data.seatsSelected || 10);
     } catch (err) {
       console.error('Failed to fetch team data:', err);
     } finally {
@@ -284,9 +284,13 @@ const Team = () => {
   const totalAssigned = members.reduce((acc, m) => acc + (m.leadsAssigned || 0), 0);
   const totalQuota = members.reduce((acc, m) => acc + (m.monthlyQuota || 0), 0);
 
-  const maxSeats = limits ? limits.maxSeats : 2;
+  const maxSeats = limits ? limits.maxSeats : (user?.plan === 'basic' ? 5 : user?.plan === 'pro' ? 10 : 2);
   const isAtCapacity = members.length >= maxSeats;
   const plan = limits?.plan || user?.plan || 'free';
+  const availableSeats = Math.max(0, maxSeats - members.length);
+  const basicSeatCount = limits ? Math.max(5, Math.floor((limits.seatsSelected || 10) * 0.5)) : 5;
+  const proSeatCount = limits ? Math.max(10, limits.seatsSelected || 10) : 10;
+  const freeSeatCount = 2;
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-transparent">
@@ -340,9 +344,9 @@ const Team = () => {
                   <div>
                     <span className="font-bold text-amber-900 font-sans">Workspace Seat Limit Reached ({members.length}/{maxSeats} seats used)</span>
                     <p className="text-amber-800/80 font-sans text-[11px] mt-0.5">
-                      {plan === 'free' && 'Free tier is fixed to 2 seats. Upgrade to Basic (50% registered seats) or Pro (100% registered seats) with universal tokens.'}
-                      {plan === 'basic' && `Basic tier unlocks 50% of registered seats (${limits?.seatsSelected || 6} selected → ${maxSeats} seats). Upgrade to Pro for 100% capacity.`}
-                      {plan === 'pro' && `Pro tier provides 100% of registered seats (${limits?.seatsSelected || 10} selected). Adjust your registered seat volume to add more.`}
+                      {plan === 'free' && `Free tier is limited to ${freeSeatCount} seats. Upgrade to Basic (${basicSeatCount} seats) or Pro (${proSeatCount} seats) to add more teammates.`}
+                      {plan === 'basic' && `Basic tier includes ${maxSeats} workspace seats (${members.length}/${maxSeats} seats in use). Upgrade to Pro (${proSeatCount} seats) to invite more teammates.`}
+                      {plan === 'pro' && `Pro tier provides ${maxSeats} workspace seats (${members.length}/${maxSeats} seats in use). Increase your registered seat volume to add more seats.`}
                     </p>
                   </div>
                 </div>
@@ -381,8 +385,8 @@ const Team = () => {
                       <span className="font-bold font-delight text-slate-900">Free Tier</span>
                       {plan === 'free' && <span className="text-[10px] font-delight font-medium bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded-sm">Current</span>}
                     </div>
-                    <p className="text-[11px] text-slate-600 mb-2"><strong>2 Workspace Seats</strong> fixed allowance.</p>
-                    <span className="text-[10px] font-delight font-normal text-slate-400">Fixed limit • 15 token trial pool</span>
+                    <p className="text-[11px] text-slate-600 mb-2"><strong>{freeSeatCount} Workspace Seats</strong> total allowance.</p>
+                    <span className="text-[10px] font-delight font-normal text-slate-400">Fixed limit - 15 token trial pool</span>
                   </div>
 
                   <div className={`p-3 rounded-md border ${plan === 'basic' ? 'bg-white border-blue-500 shadow-xs' : 'bg-white border-slate-200'}`}>
@@ -390,7 +394,7 @@ const Team = () => {
                       <span className="font-bold font-delight text-slate-900">Basic Tier</span>
                       {plan === 'basic' && <span className="text-[10px] font-delight font-medium bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded-sm">Current</span>}
                     </div>
-                    <p className="text-[11px] text-slate-600 mb-2"><strong>50% of Seats</strong> selected at registration with universal tokens to use.</p>
+                    <p className="text-[11px] text-slate-600 mb-2"><strong>{basicSeatCount} Workspace Seats</strong> total allowance.</p>
                     <span className="text-[10px] font-delight font-medium text-blue-600">500 Universal Tokens Pool</span>
                   </div>
 
@@ -399,7 +403,7 @@ const Team = () => {
                       <span className="font-bold font-delight text-slate-900">Pro Tier</span>
                       {plan === 'pro' && <span className="text-[10px] font-delight font-medium bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded-sm">Current</span>}
                     </div>
-                    <p className="text-[11px] text-slate-600 mb-2"><strong>100% of Seats</strong> selected at registration with universal tokens to use.</p>
+                    <p className="text-[11px] text-slate-600 mb-2"><strong>{proSeatCount} Workspace Seats</strong> total allowance.</p>
                     <span className="text-[10px] font-delight font-medium text-purple-600">2,500 Universal Tokens Pool</span>
                   </div>
                 </div>
@@ -425,7 +429,7 @@ const Team = () => {
                   </div>
 
                   <div className="text-[11px] font-delight font-normal text-slate-500">
-                    Allowed: <strong className="text-slate-900 font-bold">{maxSeats} Seats</strong> on {plan.toUpperCase()} tier
+                    Allotted: <strong className="text-slate-900 font-bold">{maxSeats} Seats Total</strong> ({availableSeats} Available) on {plan.toUpperCase()} tier
                   </div>
                 </div>
               </div>
@@ -447,10 +451,10 @@ const Team = () => {
                 
                 <div className="mt-3 pt-2.5 border-t border-slate-100">
                   <div className="flex items-center justify-between text-[11px] font-delight font-medium mb-1">
-                    <span className="text-slate-500">
-                      {plan === 'free' && 'Free Tier: 2 Seats Fixed'}
-                      {plan === 'basic' && `Basic: 50% of ${limits?.seatsSelected || 6} Seats`}
-                      {plan === 'pro' && `Pro: 100% of ${limits?.seatsSelected || 10} Seats`}
+                    <span className="text-slate-600 font-medium">
+                      {plan === 'free' && `Free Tier: ${maxSeats} Seats Total (${availableSeats} Available)`}
+                      {plan === 'basic' && `Basic Tier: ${maxSeats} Seats Total (${availableSeats} Available)`}
+                      {plan === 'pro' && `Pro Tier: ${maxSeats} Seats Total (${availableSeats} Available)`}
                     </span>
                     <span className={`font-semibold ${isAtCapacity ? 'text-amber-600' : 'text-emerald-600'}`}>
                       {Math.round((members.length / maxSeats) * 100)}% Used
@@ -1057,27 +1061,27 @@ const Team = () => {
                 <div className={`p-3 rounded-md border flex items-center justify-between ${plan === 'free' ? 'bg-amber-50/50 border-amber-300' : 'bg-slate-50 border-slate-200'}`}>
                   <div>
                     <div className="font-bold font-delight text-slate-900">Free Tier</div>
-                    <div className="text-[11px] text-slate-500">Fixed limit of <strong>2 seats</strong> • <strong>15 tokens</strong> pool</div>
+                    <div className="text-[11px] text-slate-500">Fixed limit of <strong>{freeSeatCount} seats</strong> (15 token trial pool)</div>
                   </div>
-                  <span className="text-[10px] font-delight font-medium px-2 py-0.5 rounded-sm bg-slate-200 text-slate-700">2 Seats • 15 Tokens</span>
+                  <span className="text-[10px] font-delight font-medium px-2 py-0.5 rounded-sm bg-slate-200 text-slate-700">{freeSeatCount} Seats Total</span>
                 </div>
 
                 {/* Basic */}
                 <div className={`p-3 rounded-md border flex items-center justify-between ${plan === 'basic' ? 'bg-blue-50/50 border-blue-300' : 'bg-slate-50 border-slate-200'}`}>
                   <div>
                     <div className="font-bold font-delight text-slate-900">Basic Tier</div>
-                    <div className="text-[11px] text-slate-500">Add <strong>50% of seats selected at registration</strong> with universal tokens</div>
+                    <div className="text-[11px] text-slate-500">Total allowance of <strong>{basicSeatCount} seats</strong> with universal token pool</div>
                   </div>
-                  <span className="text-[10px] font-delight font-medium px-2 py-0.5 rounded-sm bg-blue-100 text-blue-800">50% Capacity</span>
+                  <span className="text-[10px] font-delight font-medium px-2 py-0.5 rounded-sm bg-blue-100 text-blue-800">{basicSeatCount} Seats Total</span>
                 </div>
 
                 {/* Pro */}
                 <div className={`p-3 rounded-md border flex items-center justify-between ${plan === 'pro' ? 'bg-purple-50/50 border-purple-300' : 'bg-slate-50 border-slate-200'}`}>
                   <div>
                     <div className="font-bold font-delight text-slate-900">Pro Tier</div>
-                    <div className="text-[11px] text-slate-500">Add <strong>100% of seats selected at registration</strong> with universal tokens</div>
+                    <div className="text-[11px] text-slate-500">Total allowance of <strong>{proSeatCount} seats</strong> with universal token pool</div>
                   </div>
-                  <span className="text-[10px] font-delight font-medium px-2 py-0.5 rounded-sm bg-purple-100 text-purple-800">100% Capacity</span>
+                  <span className="text-[10px] font-delight font-medium px-2 py-0.5 rounded-sm bg-purple-100 text-purple-800">{proSeatCount} Seats Total</span>
                 </div>
               </div>
 

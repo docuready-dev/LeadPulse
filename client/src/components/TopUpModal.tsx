@@ -438,6 +438,12 @@ const TopUpModal = () => {
                       <td className="p-3 text-center font-delight text-purple-700 font-bold">Multi-Step Behavioral Journeys + WhatsApp</td>
                     </tr>
                     <tr>
+                      <td className="p-3 pl-4 font-semibold text-slate-800">Team Workspace Seats</td>
+                      <td className="p-3 text-center font-delight font-medium text-slate-600">2 Seats Total</td>
+                      <td className="p-3 text-center font-delight font-bold text-blue-600">5 Seats Total</td>
+                      <td className="p-3 text-center font-delight font-bold text-purple-700">10 Seats Total</td>
+                    </tr>
+                    <tr>
                       <td className="p-3 pl-4 font-semibold text-slate-800">Bonus Lead Token Pool</td>
                       <td className="p-3 text-center font-delight font-medium text-slate-600">15 Tokens (4-day pool)</td>
                       <td className="p-3 text-center font-delight font-bold text-blue-600">600 Tokens (bonus)</td>
