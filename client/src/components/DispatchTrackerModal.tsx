@@ -35,6 +35,7 @@ interface DispatchTrackerModalProps {
   user: any;
   connectedMailbox?: any;
   onCampaignDispatched?: () => void;
+  attachments?: any[];
 }
 
 interface DeliveryLogItem {
@@ -62,7 +63,8 @@ const DispatchTrackerModal = ({
   currentPreviewLead,
   user,
   connectedMailbox,
-  onCampaignDispatched
+  onCampaignDispatched,
+  attachments = []
 }: DispatchTrackerModalProps) => {
   const { setUpgradeModalOpen, recordEmailDispatch } = useStore();
 
@@ -134,7 +136,8 @@ const DispatchTrackerModal = ({
           : audienceMode === 'single' && currentPreviewLead._id ? [currentPreviewLead._id] : [],
         fallbackLeads: selectedLeadsToDispatch,
         fromName: connectedMailbox?.fromName || (user?.name ? `${user.name} | Strovr` : 'Strovr Growth Engine'),
-        fromEmail: connectedMailbox?.fromEmail || connectedMailbox?.user || user?.email || 'outreach@strovr.space'
+        fromEmail: connectedMailbox?.fromEmail || connectedMailbox?.user || user?.email || 'outreach@strovr.space',
+        attachments: (attachments || []).filter((a: any) => a.enabled !== false)
       };
 
       setProgressPercent(45);
@@ -235,6 +238,11 @@ const DispatchTrackerModal = ({
                     <span className="px-2 py-0.5 rounded-sm bg-purple-50 text-purple-700 font-delight text-[10px] font-semibold border border-purple-200 flex items-center gap-1">
                       <span className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse"></span>
                       <span>50/50 A/B Split Active</span>
+                    </span>
+                  )}
+                  {attachments && attachments.some((a: any) => a.enabled) && (
+                    <span className="px-2 py-0.5 rounded-sm bg-indigo-50 text-indigo-700 font-delight text-[10px] font-semibold border border-indigo-200 flex items-center gap-1">
+                      <span>📎 {attachments.filter((a: any) => a.enabled).length} Attachment{attachments.filter((a: any) => a.enabled).length > 1 ? 's' : ''}</span>
                     </span>
                   )}
                   {connectedMailbox ? (

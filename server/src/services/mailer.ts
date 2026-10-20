@@ -15,6 +15,14 @@ export interface UserSmtpSettings {
   isRenderEnv?: boolean;
 }
 
+export interface EmailAttachmentPayload {
+  filename: string;
+  content?: string; // base64 string
+  path?: string; // URL or local path
+  contentType?: string;
+  disposition?: string;
+}
+
 export interface SendMailOptions {
   to: string;
   subject: string;
@@ -24,6 +32,7 @@ export interface SendMailOptions {
   fromEmail?: string;
   replyTo?: string;
   userSmtp?: UserSmtpSettings;
+  attachments?: EmailAttachmentPayload[];
 }
 
 export interface DispatchResult {
@@ -391,6 +400,21 @@ export async function sendDirectEmail(options: SendMailOptions): Promise<Dispatc
       payload.reply_to = { email: resolvedReplyTo };
     }
 
+    if (options.attachments && options.attachments.length > 0) {
+      payload.attachments = options.attachments.map(att => {
+        let cleanContent = att.content || '';
+        if (cleanContent.includes('base64,')) {
+          cleanContent = cleanContent.split('base64,')[1];
+        }
+        return {
+          content: cleanContent,
+          filename: att.filename,
+          type: att.contentType || 'application/pdf',
+          disposition: att.disposition || 'attachment'
+        };
+      });
+    }
+
     try {
       const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
         method: 'POST',
@@ -489,6 +513,32 @@ export async function sendDirectEmail(options: SendMailOptions): Promise<Dispatc
   const resolvedReplyTo = (replyTo || userSmtp?.replyTo || senderEmail).trim();
   if (resolvedReplyTo) {
     mailOptions.replyTo = resolvedReplyTo;
+  }
+
+  if (options.attachments && options.attachments.length > 0) {
+    mailOptions.attachments = options.attachments.map(att => {
+      let cleanContent = att.content || '';
+      if (cleanContent.includes('base64,')) {
+        cleanContent = cleanContent.split('base64,')[1];
+      }
+      if (cleanContent) {
+        return {
+          filename: att.filename,
+          content: Buffer.from(cleanContent, 'base64'),
+          contentType: att.contentType || 'application/pdf'
+        };
+      } else if (att.path) {
+        return {
+          filename: att.filename,
+          path: att.path,
+          contentType: att.contentType || 'application/pdf'
+        };
+      }
+      return {
+        filename: att.filename,
+        content: ''
+      };
+    });
   }
 
   try {

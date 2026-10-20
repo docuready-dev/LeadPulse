@@ -120,7 +120,8 @@ router.post('/dispatch-batch', requireAuth, async (req: any, res: any) => {
     fallbackLeads = [],
     fromName,
     fromEmail,
-    customSmtp
+    customSmtp,
+    attachments = []
   } = req.body;
 
   const userId = req.user._id.toString();
@@ -237,6 +238,16 @@ router.post('/dispatch-batch', requireAuth, async (req: any, res: any) => {
     let deliveredCount = 0;
     let failedCount = 0;
 
+    const rawBatchAttachments = Array.isArray(attachments) && attachments.length > 0 
+      ? attachments 
+      : (templateData.attachments || []);
+    const processedAttachments = rawBatchAttachments.filter((a: any) => a.enabled !== false).map((a: any) => ({
+      filename: a.fileName || a.filename || 'Document.pdf',
+      content: a.base64 || a.content,
+      path: a.url || a.path,
+      contentType: a.fileType === 'image' ? 'image/jpeg' : (a.contentType || 'application/pdf')
+    }));
+
     for (let i = 0; i < targetLeads.length; i++) {
       const lead = targetLeads[i];
       const activeData = (isAbTesting && templateDataB && (i % 2 === 1)) ? templateDataB : templateData;
@@ -255,9 +266,9 @@ router.post('/dispatch-batch', requireAuth, async (req: any, res: any) => {
         // Continue if unsubscribe lookup fails
       }
 
-      // Compile individualized HTML with merge tags & compliance footer
+      // Compile individualized HTML with merge tags, attachments & compliance footer
       const compiled = compileEmailHtml(
-        { templateId, templateData: activeData, templateStyling },
+        { templateId, templateData: activeData, templateStyling, attachments: rawBatchAttachments },
         lead
       );
 
@@ -269,7 +280,8 @@ router.post('/dispatch-batch', requireAuth, async (req: any, res: any) => {
         text: compiled.text,
         fromName: fromName || req.user.name || 'Strovr Growth Director',
         fromEmail: fromEmail || req.user.email,
-        userSmtp: userSmtpSettings
+        userSmtp: userSmtpSettings,
+        attachments: processedAttachments
       });
 
       if (result.success) {
@@ -409,7 +421,8 @@ router.post('/dispatch-single', requireAuth, async (req: any, res: any) => {
     customRecipientEmail,
     fromName,
     fromEmail,
-    customSmtp
+    customSmtp,
+    attachments = []
   } = req.body;
 
   const userPlan = (req.user?.plan || 'free').toLowerCase();
@@ -458,8 +471,18 @@ router.post('/dispatch-single', requireAuth, async (req: any, res: any) => {
 
     const recipient = customRecipientEmail || lead.email || `contact@${lead.businessName.toLowerCase().replace(/[^a-z0-9]/g, '')}.com`;
 
+    const rawSingleAttachments = Array.isArray(attachments) && attachments.length > 0 
+      ? attachments 
+      : (templateData.attachments || []);
+    const processedAttachments = rawSingleAttachments.filter((a: any) => a.enabled !== false).map((a: any) => ({
+      filename: a.fileName || a.filename || 'Document.pdf',
+      content: a.base64 || a.content,
+      path: a.url || a.path,
+      contentType: a.fileType === 'image' ? 'image/jpeg' : (a.contentType || 'application/pdf')
+    }));
+
     const compiled = compileEmailHtml(
-      { templateId, templateData, templateStyling },
+      { templateId, templateData, templateStyling, attachments: rawSingleAttachments },
       lead
     );
 
@@ -470,7 +493,8 @@ router.post('/dispatch-single', requireAuth, async (req: any, res: any) => {
       text: compiled.text,
       fromName: fromName || req.user.name || 'Strovr Growth Director',
       fromEmail: fromEmail || req.user.email,
-      userSmtp: userSmtpSettings
+      userSmtp: userSmtpSettings,
+      attachments: processedAttachments
     });
 
     if (result.success) {
@@ -938,6 +962,251 @@ router.get('/preview-delivered/:id', (req: any, res: any) => {
 // ============================================================================
 // 6. AI SMART ASSISTANCE COPILOT - AUTO-COMPOSE ALL TEMPLATE SEGMENTS
 // ============================================================================
+function synthesizeExecutiveB2BCopy(options: {
+  prompt: string;
+  templateId: string;
+  tone?: string;
+  companyName: string;
+  niche: string;
+  targetAudience: string;
+  goals: string;
+  bookingUrl: string;
+}) {
+  const { prompt, templateId, companyName, niche, targetAudience, goals, bookingUrl } = options;
+  const p = prompt.toLowerCase().trim();
+
+  // Intent classification
+  const isIntroOrCall = p.includes('call') || p.includes('15-minute') || p.includes('15 min') || 
+                        p.includes('introductory') || p.includes('growth call') || p.includes('decision maker') ||
+                        p.includes('meeting') || p.includes('discovery') || p.includes('chat') ||
+                        p.includes('appointment') || p.includes('calendar') || p.includes('schedule') ||
+                        p.includes('pipeline') || p.includes('book');
+
+  const isAudit = p.includes('audit') || p.includes('review') || p.includes('analysis') || 
+                  p.includes('benchmark') || p.includes('competitor') || p.includes('teardown') || p.includes('gap');
+
+  const isDiscount = p.includes('discount') || p.includes('offer') || p.includes('deal') || 
+                     p.includes('pilot') || p.includes('special') || p.includes('pricing') || p.includes('trial');
+
+  const isDemo = p.includes('demo') || p.includes('software') || p.includes('platform') || 
+                 p.includes('walkthrough') || p.includes('tool');
+
+  let subject = `Quick 15-minute growth conversation for {{business_name}}`;
+  let preheader = `Scaling pipeline and driving predictable revenue growth`;
+  let headline = `Predictable Pipeline & Growth for {{business_name}}`;
+  let subheadline = `Streamlining sales operations and connecting with high-value prospects.`;
+  let body = '';
+  let ctaText = 'Book 15-Min Growth Call';
+  const ctaUrl = bookingUrl || 'https://calendly.com/your-calendar';
+
+  if (isIntroOrCall) {
+    subject = `Quick 15-minute growth conversation for {{business_name}}`;
+    preheader = `Scaling pipeline and driving predictable revenue growth`;
+    headline = `Predictable Pipeline & Growth for {{business_name}}`;
+    subheadline = `Streamlining sales operations and connecting with high-value prospects.`;
+    body = `Are you looking to scale your pipeline and drive predictable revenue growth without the guesswork?
+
+We help businesses streamline their sales operations and connect directly with high-value prospects. I would love to invite you to a quick 15-minute introductory growth call to share how we can tailor this for your team.
+
+Feel free to grab a quick slot that works best for you here: {{booking_link}}
+
+Looking forward to connecting!`;
+    ctaText = 'Book 15-Min Growth Call';
+  } else if (isAudit) {
+    subject = `Complimentary Growth Audit & Benchmarks for {{business_name}}`;
+    preheader = `Uncovering high-impact revenue leverage points`;
+    headline = `Unlocking Hidden Revenue for {{business_name}}`;
+    subheadline = `Data-backed acquisition and conversion benchmarks across {{location}}.`;
+    body = `Are you getting the maximum return from your client acquisition channels in {{location}}?
+
+We conducted a preliminary analysis on the local footprint of {{business_name}} and identified three actionable opportunities to accelerate qualified pipeline.
+
+I have compiled the full benchmarks and recommendations into a brief executive breakdown.
+
+Feel free to review your complimentary audit here: {{booking_link}}
+
+Excited to hear your thoughts!`;
+    ctaText = 'View Free Growth Audit';
+  } else if (isDiscount) {
+    subject = `Exclusive Preferred Partner Terms for {{business_name}}`;
+    preheader = `Reserved acquisition infrastructure for your team`;
+    headline = `Accelerate Growth with Preferred Partner Access`;
+    subheadline = `Dedicated pipeline acceleration for industry leaders in {{location}}.`;
+    body = `Looking for an unfair advantage to scale customer acquisition this quarter without adding overhead?
+
+We are rolling out an exclusive growth initiative for select leaders in {{location}}, delivering automated prospecting and verified decision-maker introductions on preferred terms.
+
+We have reserved a dedicated pilot slot for {{business_name}}.
+
+Review the reserved terms and pick a convenient slot here: {{booking_link}}
+
+Looking forward to collaborating!`;
+    ctaText = 'Claim Preferred Terms';
+  } else if (isDemo) {
+    subject = `Interactive Pipeline Walkthrough for {{business_name}}`;
+    preheader = `Zero manual prospecting and verified inbox deliverability`;
+    headline = `Automate Your Acquisition Pipeline`;
+    subheadline = `Autonomous discovery and personalized multi-channel outreach.`;
+    body = `How much time is your team spending every week on manual prospecting and lead research?
+
+Our autonomous platform discovers verified decision makers, validates real-time email deliverability, and orchestrates personalized outreach in minutes.
+
+I would love to walk you through a brief 10-minute live demonstration tailored to {{business_name}}.
+
+Grab a quick walkthrough slot that works best for you here: {{booking_link}}
+
+Looking forward to connecting!`;
+    ctaText = 'Book Live Demo';
+  } else {
+    subject = `Strategic Growth Initiative for {{business_name}}`;
+    preheader = `Predictable revenue growth and pipeline acceleration`;
+    headline = `Scale Acquisition for {{business_name}} in {{location}}`;
+    subheadline = `Connecting directly with verified high-value decision makers.`;
+    body = `Are you looking to scale your pipeline and drive predictable revenue growth without the guesswork?
+
+We help businesses streamline their sales operations and connect directly with high-value prospects across {{location}}. I would love to invite you to a quick 15-minute introductory growth call to share how we can tailor this for your team.
+
+Feel free to grab a quick slot that works best for you here: {{booking_link}}
+
+Looking forward to connecting!`;
+    ctaText = 'Book 15-Min Growth Call';
+  }
+
+  const generatedData: any = {
+    subject,
+    preheader,
+    headline,
+    subheadline,
+    body,
+    ctaText,
+    ctaUrl,
+    secondaryCtaText: 'View Growth Deck',
+    secondaryCtaUrl: 'https://www.strovr.space/assets/Strovr_Executive_Deck.pdf'
+  };
+
+  switch (templateId) {
+    case 'two_column':
+      generatedData.col1Title = '15-Min Strategy Session';
+      generatedData.col1Body = `Walk through tailored pipeline bottlenecks and revenue opportunities for {{business_name}}.`;
+      generatedData.col1Cta = 'Reserve Strategy Slot';
+      generatedData.col1CtaUrl = ctaUrl;
+      generatedData.col2Title = 'Executive Briefing Deck';
+      generatedData.col2Body = `Review our high-ticket conversion metrics and verified client case studies on your own schedule.`;
+      generatedData.col2Cta = 'Download Executive Deck';
+      generatedData.col2CtaUrl = 'https://www.strovr.space/assets/Strovr_Executive_Deck.pdf';
+      break;
+
+    case 'hybrid':
+      generatedData.col1Title = 'Predictable Pipeline';
+      generatedData.col1Body = `Connect directly with pre-qualified decision makers across {{location}} without manual prospecting.`;
+      generatedData.col1Cta = 'Explore Strategy';
+      generatedData.col1CtaUrl = ctaUrl;
+      generatedData.col2Title = 'Direct Inbox Transport';
+      generatedData.col2Body = `Achieve high response rates with personalized variable injection and direct inbox delivery.`;
+      generatedData.col2Cta = 'See Case Studies';
+      generatedData.col2CtaUrl = 'https://www.strovr.space/software';
+      break;
+
+    case 'interactive_calendar':
+      generatedData.hostName = companyName && companyName !== 'our company' ? companyName : 'Growth Advisory Team';
+      generatedData.hostTitle = 'Strategic Partnerships';
+      generatedData.duration = '15 Minutes';
+      generatedData.meetingAgenda = [
+        'Review current pipeline bottlenecks and target market in {{location}}',
+        'Explore verified decision-maker acquisition strategies',
+        'Determine custom integration fit for {{business_name}}'
+      ];
+      break;
+
+    case 'inverted_pyramid':
+      generatedData.headline = `A Special Growth Invitation for {{business_name}}`;
+      generatedData.subheadline = `Exclusively tailored for commercial leaders in {{location}}.`;
+      generatedData.body = body;
+      generatedData.ctaText = ctaText;
+      break;
+
+    case 'zig_zag':
+      generatedData.zig1Title = '1. Pipeline Scalability';
+      generatedData.zig1Text = `Identify and connect with high-intent decision makers across {{location}} with zero scraping friction.`;
+      generatedData.zig1Cta = 'Explore Discovery';
+      generatedData.zig1CtaUrl = ctaUrl;
+      generatedData.zig2Title = '2. Predictable Execution';
+      generatedData.zig2Text = `Turn cold prospects into booked discovery calls with proven executive outreach frameworks.`;
+      generatedData.zig2Cta = 'Book 15-Min Call';
+      generatedData.zig2CtaUrl = ctaUrl;
+      break;
+
+    case 'f_pattern':
+      generatedData.fBullet1 = `Predictable Pipeline: Reach verified commercial decision makers across {{location}}.`;
+      generatedData.fBullet2 = `Zero Guesswork: Streamline sales operations with automated, high-deliverability dispatch.`;
+      generatedData.fBullet3 = `Tailored Growth: 15-minute introductory session focused entirely on {{business_name}}'s revenue goals.`;
+      generatedData.fBottomNote = `Direct calendar booking link: {{booking_link}}`;
+      break;
+
+    case 'interactive_roi':
+      generatedData.comparisonCurrent = {
+        title: 'Manual Cold Outreach',
+        monthlyCost: '₹45,000 / mo',
+        timeSpent: '28 hrs / wk',
+        replyRate: '1.2%',
+        badge: 'High Friction'
+      };
+      generatedData.comparisonPulse = {
+        title: 'Predictable Growth Pipeline',
+        monthlyCost: '₹699 / mo',
+        timeSpent: '2 hrs / wk',
+        replyRate: '18.4%',
+        badge: 'Automated'
+      };
+      generatedData.roiMetrics = [
+        { metric: 'Time Saved / Mo', value: '104 hrs' },
+        { metric: 'Verified Contacts', value: '1,500+' },
+        { metric: 'Average Cost / Lead', value: '₹0.46' }
+      ];
+      break;
+
+    case 'dynamic_product_feed':
+      generatedData.headline = `Growth Solutions Tailored for {{business_name}}`;
+      generatedData.subheadline = `Curated pipeline packages designed to scale your operations in {{location}}`;
+      generatedData.body = `Take a look at how we can help {{business_name}} accelerate qualified meetings this quarter:`;
+      generatedData.products = [
+        { 
+          name: 'Starter Pipeline', 
+          category: 'Lead Discovery', 
+          price: '₹699 / mo', 
+          badge: 'Starter', 
+          imageUrl: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600&auto=format&fit=crop&q=80', 
+          description: `Get started with verified local prospects in {{location}}.`, 
+          ctaText: 'Select Starter', 
+          ctaUrl: ctaUrl 
+        },
+        { 
+          name: 'Pro Multi-Channel Suite', 
+          category: 'Full Automation', 
+          price: '₹1,999 / mo', 
+          badge: 'Most Popular', 
+          imageUrl: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&auto=format&fit=crop&q=80', 
+          description: `Engage decision makers directly across Email and WhatsApp.`, 
+          ctaText: 'Select Pro', 
+          ctaUrl: ctaUrl 
+        },
+        { 
+          name: 'Executive Partnership', 
+          category: 'Dedicated Scale', 
+          price: '₹4,999 / mo', 
+          badge: 'Best Value', 
+          imageUrl: 'https://images.unsplash.com/photo-1504868584819-f8e8b4b6d7e3?w=600&auto=format&fit=crop&q=80', 
+          description: `Full done-for-you pipeline scaling for {{business_name}}.`, 
+          ctaText: 'Select Enterprise', 
+          ctaUrl: ctaUrl 
+        }
+      ];
+      break;
+  }
+
+  return generatedData;
+}
+
 router.post('/ai-generate', requireAuth, async (req: any, res: any) => {
   const { templateId = 'one_column', prompt = '', tone = 'friendly' } = req.body;
   if (!prompt || typeof prompt !== 'string' || prompt.trim().length === 0) {
@@ -953,96 +1222,89 @@ router.post('/ai-generate', requireAuth, async (req: any, res: any) => {
     });
   }
 
-  let niche = 'general clients';
-  let targetAudience = 'high-value clients';
-  let goals = 'scale your operations and increase revenue';
-  let companyName = 'our company';
+  let niche = 'B2B Services';
+  let targetAudience = 'Decision Makers';
+  let goals = 'scale revenue and accelerate pipeline';
+  let companyName = 'Strovr Growth Platform';
+  let bookingUrl = 'https://calendly.com/your-calendar';
+
   try {
     const userDoc = await db.collection('users').doc(req.user._id.toString()).get();
-      const uData = userDoc.data();
-      if (uData) {
-        niche = uData.niche || uData.field_of_work || niche;
-        targetAudience = uData.target_audience || targetAudience;
-        goals = uData.goals || goals;
-        companyName = uData.company_name || companyName;
-      }
+    const uData = userDoc.data();
+    if (uData) {
+      niche = uData.niche || uData.field_of_work || niche;
+      targetAudience = uData.target_audience || targetAudience;
+      goals = uData.goals || goals;
+      companyName = uData.company_name || companyName;
+      bookingUrl = uData.calendar_link || uData.calendly_url || bookingUrl;
+    }
   } catch (err) {
     console.warn('[AI] Could not fetch user context:', err);
   }
+
   const cleanPrompt = prompt.trim();
-  const isDiscount = cleanPrompt.toLowerCase().includes('discount') || cleanPrompt.toLowerCase().includes('offer');
-  
-  const generatedData: any = {
-    subject: isDiscount ? `Special Offer from ${companyName} for {{business_name}}` : `Quick question regarding {{business_name}} and ${niche}`,
-    preheader: `Exciting news tailored for {{business_name}}`,
-    headline: isDiscount ? `Claim Your Exclusive ${companyName} Deal` : `Helping {{business_name}} reach ${targetAudience} effortlessly`,
-    subheadline: `Tailored ${niche} solutions designed to help you ${goals}.`,
-    body: `Hi {{first_name}},
 
-${cleanPrompt}.
+  // 1. Generate high-converting executive B2B framework
+  let generatedData = synthesizeExecutiveB2BCopy({
+    prompt: cleanPrompt,
+    templateId,
+    tone,
+    companyName,
+    niche,
+    targetAudience,
+    goals,
+    bookingUrl
+  });
 
-At ${companyName}, our primary focus is helping businesses just like yours in the ${niche} space connect with ${targetAudience}. Our ultimate goal? To help you ${goals} without the usual stress or guesswork.
+  // 2. Optional Gemini API enhancement if GEMINI_API_KEY is configured
+  const geminiKey = (process.env.GEMINI_API_KEY || '').trim();
+  if (geminiKey) {
+    try {
+      const geminiPrompt = `You are a world-class B2B cold email copywriter crafting an executive outreach pitch.
+Target prospect placeholder: {{business_name}} in {{location}} (Field: {{field_of_work}}).
+Sender company: ${companyName}.
+Sender niche: ${niche}.
+Booking link tag: {{booking_link}}.
+User Goal/Prompt: "${cleanPrompt}".
 
-Would you be open to a quick, friendly chat this week to see if we'd be a good fit for {{business_name}}?`,
-    ctaText: isDiscount ? 'Claim Offer' : 'Let\'s Chat',
-    ctaUrl: 'https://calendly.com/your-calendar',
-    secondaryCtaText: 'Learn More',
-    secondaryCtaUrl: 'https://yourwebsite.com'
-  };
-  
-  switch (templateId) {
-    case 'two_column':
-      generatedData.col1Title = 'Option 1: Done-For-You';
-      generatedData.col1Body = `We handle the heavy lifting to engage ${targetAudience} for {{business_name}}.`;
-      generatedData.col1Cta = 'View Option 1';
-      generatedData.col1CtaUrl = 'https://example.com/1';
-      generatedData.col2Title = 'Option 2: Do-It-Yourself';
-      generatedData.col2Body = `Use our simple ${niche} toolkit to ${goals} at your own pace.`;
-      generatedData.col2Cta = 'View Option 2';
-      generatedData.col2CtaUrl = 'https://example.com/2';
-      break;
-    case 'hybrid':
-      generatedData.col1Title = 'Market Insights';
-      generatedData.col1Body = `Discover how ${niche} businesses in {{location}} are capturing more ${targetAudience}.`;
-      generatedData.col1Cta = 'Read Tips';
-      generatedData.col1CtaUrl = 'https://example.com';
-      generatedData.col2Title = 'Direct Outreach';
-      generatedData.col2Body = `Easily start a conversation with ${targetAudience} in {{location}}.`;
-      generatedData.col2Cta = 'See How';
-      generatedData.col2CtaUrl = 'https://example.com';
-      break;
-    case 'inverted_pyramid':
-      generatedData.headline = `A Special Invitation for {{business_name}}`;
-      generatedData.subheadline = `Exclusively for ${niche} businesses in {{location}}.`;
-      generatedData.body = `We are looking for partners who want to ${goals}. We think {{business_name}} is a perfect fit for our new ${targetAudience} initiative. ${cleanPrompt}.`;
-      generatedData.ctaText = 'Learn More';
-      break;
-    case 'zig_zag':
-      generatedData.zig1Title = '1. Understand Your Audience';
-      generatedData.zig1Text = `We help {{business_name}} pinpoint exactly what ${targetAudience} in {{location}} are looking for.`;
-      generatedData.zig1Cta = 'Learn More';
-      generatedData.zig1CtaUrl = 'https://example.com';
-      generatedData.zig2Title = '2. Achieve Your Goals';
-      generatedData.zig2Text = `With our tools, you can finally ${goals} consistently and reliably.`;
-      generatedData.zig2Cta = 'View Steps';
-      generatedData.zig2CtaUrl = 'https://example.com';
-      break;
-    case 'f_pattern':
-      generatedData.fBullet1 = `Tailored strategy for ${niche} in {{location}}.`;
-      generatedData.fBullet2 = `Engage directly with ${targetAudience}.`;
-      generatedData.fBullet3 = `Achieve your ultimate objective: ${goals}.`;
-      generatedData.fBottomNote = `Let's make it happen for {{business_name}}!`;
-      break;
-    case 'dynamic_product_feed':
-      generatedData.headline = `Our ${niche} Offerings for {{business_name}}`;
-      generatedData.subheadline = `Curated specifically to help you ${goals}`;
-      generatedData.body = `Take a look at how we can support {{business_name}} in {{location}}:`;
-      generatedData.products = [
-        { name: 'Starter Package', category: niche, price: '₹699 / mo', badge: 'Starter', imageUrl: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600&auto=format&fit=crop&q=80', description: `Essential ${niche} setup.`, ctaText: 'Select Starter', ctaUrl: '#' },
-        { name: 'Pro Suite', category: 'Full Automation', price: '₹1,999 / mo', badge: 'Most Popular', imageUrl: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&auto=format&fit=crop&q=80', description: `Engage ${targetAudience} at scale.`, ctaText: 'Select Pro', ctaUrl: '#' },
-        { name: 'Enterprise', category: 'Dedicated', price: '₹4,999 / mo', badge: 'Best Value', imageUrl: 'https://images.unsplash.com/photo-1504868584819-f8e8b4b6d7e3?w=600&auto=format&fit=crop&q=80', description: `Achieve ${goals} effortlessly.`, ctaText: 'Select Enterprise', ctaUrl: '#' }
-      ];
-      break;
+CRITICAL RULES:
+- Never repeat or echo the user's prompt verbatim into the output body.
+- Write in an executive, curious, high-converting tone.
+- Start with a compelling hook question about scaling their pipeline or predictable revenue growth.
+- In 1-2 punchy sentences, articulate how we streamline operations and connect directly with high-value prospects.
+- Invite them to a quick 15-minute introductory growth call.
+- Provide a clean call to action pointing to {{booking_link}}.
+- Output valid JSON only with keys: "subject", "preheader", "headline", "subheadline", "body", "ctaText".`;
+
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: geminiPrompt }] }],
+          generationConfig: {
+            responseMimeType: 'application/json',
+            temperature: 0.7
+          }
+        })
+      });
+
+      if (response.ok) {
+        const geminiJson: any = await response.json();
+        const rawContent = geminiJson.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (rawContent) {
+          const parsed = JSON.parse(rawContent);
+          if (parsed.body && parsed.subject) {
+            generatedData = {
+              ...generatedData,
+              ...parsed,
+              ctaUrl: bookingUrl
+            };
+          }
+        }
+      }
+    } catch (llmErr) {
+      console.warn('[AI] Gemini LLM refinement failed, relying on deterministic executive matrix:', llmErr);
+    }
   }
 
   // Increment user's ai_pitches_used in Firestore

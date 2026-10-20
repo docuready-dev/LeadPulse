@@ -18,13 +18,24 @@ export interface TemplateStyling {
   showComplianceFooter?: boolean;
 }
 
+export interface EmailAttachmentData {
+  id?: string;
+  fileName: string;
+  fileSize?: string;
+  fileType?: string;
+  url?: string;
+  base64?: string;
+  enabled?: boolean;
+}
+
 export interface TemplatePayload {
   templateId: string;
   templateData: Record<string, any>;
   templateStyling?: TemplateStyling;
+  attachments?: EmailAttachmentData[];
 }
 
-export function replaceMergeTags(text: string | undefined, lead: LeadData): string {
+export function replaceMergeTags(text: string | undefined, lead: LeadData, extraReplacements?: Record<string, string>): string {
   if (!text) return '';
   const firstName = lead.firstName || (lead.businessName ? lead.businessName.split(' ')[0] : 'Partner');
   const fieldOfWork = lead.fieldOfWork || lead.category || 'Local Business';
@@ -32,13 +43,21 @@ export function replaceMergeTags(text: string | undefined, lead: LeadData): stri
   const phone = lead.phone || 'N/A';
   const rating = lead.rating || '4.8';
 
-  return text
+  let res = text
     .replace(/{{business_name}}/g, lead.businessName)
     .replace(/{{location}}/g, location)
     .replace(/{{field_of_work}}/g, fieldOfWork)
     .replace(/{{first_name}}/g, firstName)
     .replace(/{{phone}}/g, phone)
     .replace(/{{rating}}/g, rating);
+
+  if (extraReplacements) {
+    for (const [key, val] of Object.entries(extraReplacements)) {
+      res = res.split(key).join(val);
+    }
+  }
+
+  return res;
 }
 
 export function compileEmailHtml(payload: TemplatePayload, lead: LeadData): { subject: string; html: string; text: string } {
@@ -46,13 +65,18 @@ export function compileEmailHtml(payload: TemplatePayload, lead: LeadData): { su
   const accentColor = templateStyling.accentColor || '#4F46E5';
   const borderRadius = templateStyling.borderRadius || '16px';
   const showFooter = templateStyling.showComplianceFooter !== false;
-
-  const subject = replaceMergeTags(templateData.subject || 'Special B2B Proposal for {{business_name}}', lead);
-  const headline = replaceMergeTags(templateData.headline || '', lead);
-  const subheadline = replaceMergeTags(templateData.subheadline || '', lead);
-  const body = replaceMergeTags(templateData.body || '', lead);
-  const ctaText = replaceMergeTags(templateData.ctaText || '', lead);
   const ctaUrl = templateData.ctaUrl || 'https://www.strovr.space';
+
+  const extraTags: Record<string, string> = {
+    '{{booking_link}}': ctaUrl,
+    '[Link]': `<a href="${ctaUrl}" style="color: ${accentColor}; font-weight: 700; text-decoration: underline;">${ctaUrl}</a>`
+  };
+
+  const subject = replaceMergeTags(templateData.subject || 'Special B2B Proposal for {{business_name}}', lead, extraTags);
+  const headline = replaceMergeTags(templateData.headline || '', lead, extraTags);
+  const subheadline = replaceMergeTags(templateData.subheadline || '', lead, extraTags);
+  const body = replaceMergeTags(templateData.body || '', lead, extraTags);
+  const ctaText = replaceMergeTags(templateData.ctaText || '', lead, extraTags);
 
   const recipientEmail = lead.email || `contact@${lead.businessName.toLowerCase().replace(/[^a-z0-9]/g, '') || 'company'}.com`;
 
@@ -548,6 +572,64 @@ export function compileEmailHtml(payload: TemplatePayload, lead: LeadData): { su
       break;
   }
 
+  // Render authentic attachment box if any files are attached
+  const rawAttachments = payload.attachments || templateData.attachments || [];
+  const activeAttachments = Array.isArray(rawAttachments)
+    ? rawAttachments.filter((a: any) => a.enabled !== false)
+    : [];
+
+  let attachmentBoxHtml = '';
+  if (activeAttachments.length > 0) {
+    attachmentBoxHtml = `
+      <div style="margin: 20px 24px 8px 24px; padding: 14px 18px; background-color: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 10px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+        <div style="margin-bottom: 10px; border-bottom: 1px solid #E2E8F0; padding-bottom: 8px;">
+          <table width="100%" cellpadding="0" cellspacing="0" border="0">
+            <tr>
+              <td align="left" style="font-size: 11px; font-weight: 800; color: #334155; text-transform: uppercase; letter-spacing: 0.5px;">
+                &#128206; Attached Documents (${activeAttachments.length})
+              </td>
+              <td align="right" style="font-size: 10px; color: #94A3B8; font-weight: 600;">
+                Verified Secure
+              </td>
+            </tr>
+          </table>
+        </div>
+        <table width="100%" cellpadding="0" cellspacing="0" border="0">
+          ${activeAttachments.map((att: any) => {
+            const resolvedName = replaceMergeTags(att.fileName || 'Document.pdf', lead);
+            const size = att.fileSize || '2.4 MB';
+            const type = (att.fileType || 'PDF').toUpperCase();
+            const targetUrl = att.url || '#';
+            return `
+              <tr>
+                <td style="padding: 5px 0;">
+                  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 8px; padding: 10px 14px;">
+                    <tr>
+                      <td width="36" align="left" style="vertical-align: middle;">
+                        <span style="display: inline-block; background: #F1F5F9; color: #0F172A; font-weight: 800; font-size: 10px; padding: 3px 6px; border-radius: 4px; border: 1px solid #CBD5E1;">
+                          ${type}
+                        </span>
+                      </td>
+                      <td align="left" style="vertical-align: middle; padding-left: 10px;">
+                        <div style="font-weight: 700; font-size: 12px; color: #0F172A;">${resolvedName}</div>
+                        <div style="font-size: 10px; color: #64748B;">${size}</div>
+                      </td>
+                      <td align="right" style="vertical-align: middle;">
+                        <a href="${targetUrl}" target="_blank" style="display: inline-block; background: ${accentColor}; color: #FFFFFF; text-decoration: none; font-size: 11px; font-weight: 700; padding: 6px 14px; border-radius: 6px;">
+                          View &darr;
+                        </a>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            `;
+          }).join('')}
+        </table>
+      </div>
+    `;
+  }
+
   const html = `
     <!DOCTYPE html>
     <html lang="en">
@@ -564,6 +646,7 @@ export function compileEmailHtml(payload: TemplatePayload, lead: LeadData): { su
               <tr>
                 <td>
                   ${bodyContent}
+                  ${attachmentBoxHtml}
                   ${complianceFooterHtml}
                 </td>
               </tr>

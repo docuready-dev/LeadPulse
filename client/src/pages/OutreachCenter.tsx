@@ -156,6 +156,27 @@ const OutreachCenter = () => {
     pageCount: '6 pages'
   });
 
+  // Universal Email Attachments State (Supported across all 10 Email Frameworks)
+  const [emailAttachments, setEmailAttachments] = useState<Array<{
+    id: string;
+    fileName: string;
+    fileSize: string;
+    fileType: 'pdf' | 'image' | 'doc' | 'sheet';
+    url: string;
+    base64?: string;
+    enabled: boolean;
+  }>>([
+    {
+      id: 'email-att-1',
+      fileName: '{{business_name}}_Growth_Blueprint.pdf',
+      fileSize: '2.4 MB',
+      fileType: 'pdf',
+      url: 'https://www.strovr.space/assets/Strovr_Executive_Deck.pdf',
+      enabled: true
+    }
+  ]);
+  const emailFileInputRef = useRef<HTMLInputElement>(null);
+
   const [activeMediaPresetId, setActiveMediaPresetId] = useState<string>('executive_deck');
   const [copiedMediaLinks, setCopiedMediaLinks] = useState(false);
 
@@ -398,62 +419,134 @@ const OutreachCenter = () => {
         return;
       }
       console.warn('Backend AI endpoint failed, falling back to instant client AI synthesis:', err);
-      // Robust client-side fallback synthesizer
-      const p = promptToUse.trim();
+      // High-converting executive client-side synthesis
+      const p = promptToUse.trim().toLowerCase();
+
+      const isIntroOrCall = p.includes('call') || p.includes('15-minute') || p.includes('15 min') || 
+                            p.includes('introductory') || p.includes('growth call') || p.includes('decision maker') ||
+                            p.includes('meeting') || p.includes('discovery') || p.includes('chat') ||
+                            p.includes('appointment') || p.includes('calendar') || p.includes('schedule') ||
+                            p.includes('pipeline') || p.includes('book');
+
+      const isAudit = p.includes('audit') || p.includes('review') || p.includes('analysis') || 
+                      p.includes('benchmark') || p.includes('competitor') || p.includes('teardown') || p.includes('gap');
+
+      const isDiscount = p.includes('discount') || p.includes('offer') || p.includes('deal') || 
+                         p.includes('pilot') || p.includes('special') || p.includes('pricing') || p.includes('trial');
+
+      const isDemo = p.includes('demo') || p.includes('software') || p.includes('platform') || 
+                     p.includes('walkthrough') || p.includes('tool');
+
+      let subject = `Quick 15-minute growth conversation for {{business_name}}`;
+      let preheader = `Scaling pipeline and driving predictable revenue growth`;
+      let headline = `Predictable Pipeline & Growth for {{business_name}}`;
+      let subheadline = `Streamlining sales operations and connecting with high-value prospects.`;
+      let body = '';
+      let ctaText = 'Book 15-Min Growth Call';
+
+      if (isIntroOrCall) {
+        subject = `Quick 15-minute growth conversation for {{business_name}}`;
+        preheader = `Scaling pipeline and driving predictable revenue growth`;
+        headline = `Predictable Pipeline & Growth for {{business_name}}`;
+        subheadline = `Streamlining sales operations and connecting with high-value prospects.`;
+        body = `Are you looking to scale your pipeline and drive predictable revenue growth without the guesswork?\n\nWe help businesses streamline their sales operations and connect directly with high-value prospects. I would love to invite you to a quick 15-minute introductory growth call to share how we can tailor this for your team.\n\nFeel free to grab a quick slot that works best for you here: {{booking_link}}\n\nLooking forward to connecting!`;
+        ctaText = 'Book 15-Min Growth Call';
+      } else if (isAudit) {
+        subject = `Complimentary Growth Audit & Benchmarks for {{business_name}}`;
+        preheader = `Uncovering high-impact revenue leverage points`;
+        headline = `Unlocking Hidden Revenue for {{business_name}}`;
+        subheadline = `Data-backed acquisition and conversion benchmarks across {{location}}.`;
+        body = `Are you getting the maximum return from your client acquisition channels in {{location}}?\n\nWe conducted a preliminary analysis on the local footprint of {{business_name}} and identified three actionable opportunities to accelerate qualified pipeline.\n\nI have compiled the full benchmarks and recommendations into a brief executive breakdown.\n\nFeel free to review your complimentary audit here: {{booking_link}}\n\nExcited to hear your thoughts!`;
+        ctaText = 'View Free Growth Audit';
+      } else if (isDiscount) {
+        subject = `Exclusive Preferred Partner Terms for {{business_name}}`;
+        preheader = `Reserved acquisition infrastructure for your team`;
+        headline = `Accelerate Growth with Preferred Partner Access`;
+        subheadline = `Dedicated pipeline acceleration for industry leaders in {{location}}.`;
+        body = `Looking for an unfair advantage to scale customer acquisition this quarter without adding overhead?\n\nWe are rolling out an exclusive growth initiative for select leaders in {{location}}, delivering automated prospecting and verified decision-maker introductions on preferred terms.\n\nWe have reserved a dedicated pilot slot for {{business_name}}.\n\nReview the reserved terms and pick a convenient slot here: {{booking_link}}\n\nLooking forward to collaborating!`;
+        ctaText = 'Claim Preferred Terms';
+      } else if (isDemo) {
+        subject = `Interactive Pipeline Walkthrough for {{business_name}}`;
+        preheader = `Zero manual prospecting and verified inbox deliverability`;
+        headline = `Automate Your Acquisition Pipeline`;
+        subheadline = `Autonomous discovery and personalized multi-channel outreach.`;
+        body = `How much time is your team spending every week on manual prospecting and lead research?\n\nOur autonomous platform discovers verified decision makers, validates real-time email deliverability, and orchestrates personalized outreach in minutes.\n\nI would love to walk you through a brief 10-minute live demonstration tailored to {{business_name}}.\n\nGrab a quick walkthrough slot that works best for you here: {{booking_link}}\n\nLooking forward to connecting!`;
+        ctaText = 'Book Live Demo';
+      } else {
+        subject = `Strategic Growth Initiative for {{business_name}}`;
+        preheader = `Predictable revenue growth and pipeline acceleration`;
+        headline = `Scale Acquisition for {{business_name}} in {{location}}`;
+        subheadline = `Connecting directly with verified high-value decision makers.`;
+        body = `Are you looking to scale your pipeline and drive predictable revenue growth without the guesswork?\n\nWe help businesses streamline their sales operations and connect directly with high-value prospects across {{location}}. I would love to invite you to a quick 15-minute introductory growth call to share how we can tailor this for your team.\n\nFeel free to grab a quick slot that works best for you here: {{booking_link}}\n\nLooking forward to connecting!`;
+        ctaText = 'Book 15-Min Growth Call';
+      }
+
       const generated: any = {
-        subject: `Strategic Growth Initiative for {{business_name}}`,
-        preheader: `Custom Strategic Proposal`,
-        headline: `Hi {{first_name}}, Scale {{business_name}} in {{location}}`,
-        subheadline: `A tailored strategy designed for ${previewLead?.fieldOfWork || '{{field_of_work}}'}`,
-        body: `Hi {{first_name}},\n\n${p}\n\nWe analyzed the local footprint of {{business_name}} across {{location}} and prepared an autonomous growth framework specifically designed to help your team achieve consistent high-ticket conversions.\n\nKey highlights for {{business_name}}:\n• Verified decision-maker connections across {{location}}\n• Zero manual outreach friction with high-deliverability transport\n• Measurable response improvements for {{field_of_work}} operators\n\nWould you have 5 minutes this week for a brief conversation?`,
-        ctaText: 'Book an Appointment ',
-        ctaUrl: resolvedBookingUrl
+        subject,
+        preheader,
+        headline,
+        subheadline,
+        body,
+        ctaText,
+        ctaUrl: resolvedBookingUrl,
+        secondaryCtaText: 'View Growth Deck',
+        secondaryCtaUrl: 'https://www.strovr.space/assets/Strovr_Executive_Deck.pdf'
       };
 
       if (selectedTemplateId === 'two_column' || selectedTemplateId === 'hybrid') {
-        generated.col1Title = 'Option A: Managed System';
-        generated.col1Body = `Let our team execute campaigns for {{business_name}} across {{location}}.`;
-        generated.col1Cta = 'View Managed Setup';
-        generated.col1CtaUrl = 'https://www.strovr.space/managed';
-        generated.col2Title = 'Option B: Self-Serve Suite';
-        generated.col2Body = `Use our autonomous lead harvester with email and WhatsApp triggers.`;
-        generated.col2Cta = 'Explore Software';
-        generated.col2CtaUrl = 'https://www.strovr.space/software';
+        generated.col1Title = '15-Min Strategy Session';
+        generated.col1Body = `Walk through tailored pipeline bottlenecks and revenue opportunities for {{business_name}}.`;
+        generated.col1Cta = 'Reserve Strategy Slot';
+        generated.col1CtaUrl = resolvedBookingUrl;
+        generated.col2Title = 'Executive Briefing Deck';
+        generated.col2Body = `Review our high-ticket conversion metrics and verified client case studies on your own schedule.`;
+        generated.col2Cta = 'Download Executive Deck';
+        generated.col2CtaUrl = 'https://www.strovr.space/assets/Strovr_Executive_Deck.pdf';
       } else if (selectedTemplateId === 'zig_zag') {
-        generated.zig1Title = '1. Geographic Discovery';
-        generated.zig1Text = `Extract verified contacts in {{location}} with zero scraping blocks.`;
-        generated.zig1Cta = 'Learn More →';
-        generated.zig1CtaUrl = 'https://www.strovr.space/harvester';
-        generated.zig2Title = '2. Autonomous Outreach';
-        generated.zig2Text = `Send personalized merge tag emails directly to recipient inboxes.`;
-        generated.zig2Cta = 'View Live Demo →';
-        generated.zig2CtaUrl = 'https://www.strovr.space/demo';
+        generated.zig1Title = '1. Pipeline Scalability';
+        generated.zig1Text = `Identify and connect with high-intent decision makers across {{location}} with zero scraping friction.`;
+        generated.zig1Cta = 'Explore Discovery';
+        generated.zig1CtaUrl = resolvedBookingUrl;
+        generated.zig2Title = '2. Predictable Execution';
+        generated.zig2Text = `Turn cold prospects into booked discovery calls with proven executive outreach frameworks.`;
+        generated.zig2Cta = 'Book 15-Min Call';
+        generated.zig2CtaUrl = resolvedBookingUrl;
       } else if (selectedTemplateId === 'f_pattern') {
-        generated.fBullet1 = `Local Geo-Targeting: Reach verified businesses in {{location}} instantly.`;
-        generated.fBullet2 = `Inbox Deliverability: 99.4% deliverability with compliance footers.`;
-        generated.fBullet3 = `Predictable Conversion: High response templates tailored to {{field_of_work}}.`;
-        generated.fBottomNote = `Strategic Summary: ${p}`;
+        generated.fBullet1 = `Predictable Pipeline: Reach verified commercial decision makers across {{location}}.`;
+        generated.fBullet2 = `Zero Guesswork: Streamline sales operations with automated, high-deliverability dispatch.`;
+        generated.fBullet3 = `Tailored Growth: 15-minute introductory session focused entirely on {{business_name}}'s revenue goals.`;
+        generated.fBottomNote = `Direct calendar booking link: {{booking_link}}`;
       } else if (selectedTemplateId === 'dynamic_product_feed') {
         generated.products = [
           {
-            name: 'Local Market Starter',
+            name: 'Starter Pipeline',
             category: 'Lead Discovery',
             price: '₹699 / mo',
             badge: 'Starter',
             imageUrl: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600&auto=format&fit=crop&q=80',
             description: `Get started with verified local prospects in {{location}}.`,
             ctaText: 'Select Starter',
-            ctaUrl: 'https://www.strovr.space/checkout?plan=starter'
+            ctaUrl: resolvedBookingUrl
           },
           {
             name: 'Pro Multi-Channel Suite',
-            category: 'Email + WhatsApp',
+            category: 'Full Automation',
             price: '₹1,999 / mo',
             badge: 'Most Popular',
             imageUrl: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&auto=format&fit=crop&q=80',
-            description: `Full autonomous dispatch with dedicated worker node.`,
+            description: `Engage decision makers directly across Email and WhatsApp.`,
             ctaText: 'Select Pro',
-            ctaUrl: 'https://www.strovr.space/checkout?plan=pro'
+            ctaUrl: resolvedBookingUrl
+          },
+          {
+            name: 'Executive Partnership',
+            category: 'Dedicated Scale',
+            price: '₹4,999 / mo',
+            badge: 'Enterprise',
+            imageUrl: 'https://images.unsplash.com/photo-1504868584819-f8e8b4b6d7e3?w=600&auto=format&fit=crop&q=80',
+            description: `Full done-for-you pipeline scaling for {{business_name}}.`,
+            ctaText: 'Select Enterprise',
+            ctaUrl: resolvedBookingUrl
           }
         ];
       }
@@ -511,6 +604,7 @@ const OutreachCenter = () => {
     rendered = rendered.replace(/{{phone}}/g, `<span class="bg-gray-200 text-gray-900 font-bold px-1 rounded">${phone}</span>`);
     rendered = rendered.replace(/{{rating}}/g, `<span class="bg-amber-100 text-amber-900 font-bold px-1 rounded">${rating}</span>`);
     rendered = rendered.replace(/{{(booking_link|calendly_link|appointment_link)}}/g, `<a href="${resolvedBookingUrl}" target="_blank" rel="noreferrer" class="bg-indigo-50 text-indigo-700 hover:text-indigo-900 border border-indigo-200 font-delight font-bold px-2 py-0.5 rounded underline inline-flex items-center gap-1 shadow-2xs"><span>Book an Appointment </span>↗</a>`);
+    rendered = rendered.replace(/\[Link\]/g, `<a href="${resolvedBookingUrl}" target="_blank" rel="noreferrer" class="bg-indigo-50 text-indigo-700 hover:text-indigo-900 border border-indigo-200 font-delight font-bold px-2 py-0.5 rounded underline inline-flex items-center gap-1 shadow-2xs"><span>[Select 15-Min Slot]</span>↗</a>`);
     rendered = rendered.replace(/{{sender_name}}/g, `<span class="bg-blue-100 text-blue-900 font-bold px-1 rounded">${senderName}</span>`);
     rendered = rendered.replace(/{{user_name}}/g, `<span class="bg-blue-100 text-blue-900 font-bold px-1 rounded">${senderName}</span>`);
     rendered = rendered.replace(/{{sender_email}}/g, `<span class="bg-blue-100 text-blue-900 font-bold px-1 rounded">${senderEmail}</span>`);
@@ -694,11 +788,114 @@ const OutreachCenter = () => {
     setTimeout(() => setCopiedWhatsApp(false), 2500);
   };
 
+  // Email Attachment Presets
+  const EMAIL_ATTACHMENT_PRESETS = [
+    {
+      id: 'deck',
+      name: 'Executive Pitch Deck',
+      fileName: '{{business_name}}_Executive_Deck.pdf',
+      fileSize: '2.4 MB',
+      fileType: 'pdf' as const,
+      url: 'https://www.strovr.space/assets/Strovr_Executive_Deck.pdf'
+    },
+    {
+      id: 'audit',
+      name: 'Strategic Growth Audit',
+      fileName: '{{business_name}}_Growth_Audit.pdf',
+      fileSize: '1.8 MB',
+      fileType: 'pdf' as const,
+      url: 'https://www.strovr.space/assets/Strovr_Growth_Audit.pdf'
+    },
+    {
+      id: 'casestudy',
+      name: 'B2B Client ROI Case Study',
+      fileName: 'B2B_Client_ROI_CaseStudy.pdf',
+      fileSize: '3.1 MB',
+      fileType: 'pdf' as const,
+      url: 'https://www.strovr.space/assets/Strovr_Case_Study.pdf'
+    },
+    {
+      id: 'pricing',
+      name: 'Commercial Pricing & Scope',
+      fileName: 'Commercial_Pricing_Sheet.pdf',
+      fileSize: '950 KB',
+      fileType: 'sheet' as const,
+      url: 'https://www.strovr.space/assets/Strovr_Pricing_Sheet.pdf'
+    }
+  ];
+
+  const handleEmailFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    Array.from(files).forEach((file) => {
+      const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+      const sizeStr = parseFloat(sizeMb) > 0.1 ? `${sizeMb} MB` : `${Math.round(file.size / 1024)} KB`;
+
+      let fileType: 'pdf' | 'image' | 'doc' | 'sheet' = 'pdf';
+      const name = file.name.toLowerCase();
+      if (name.endsWith('.png') || name.endsWith('.jpg') || name.endsWith('.jpeg') || name.endsWith('.webp')) {
+        fileType = 'image';
+      } else if (name.endsWith('.xls') || name.endsWith('.xlsx') || name.endsWith('.csv')) {
+        fileType = 'sheet';
+      } else if (name.endsWith('.doc') || name.endsWith('.docx') || name.endsWith('.txt')) {
+        fileType = 'doc';
+      }
+
+      const reader = new FileReader();
+      reader.onload = (uploadEvent) => {
+        const base64Data = uploadEvent.target?.result as string;
+        const newAttachment = {
+          id: `upload-${Date.now()}-${Math.random().toString(36).substring(7)}`,
+          fileName: file.name,
+          fileSize: sizeStr,
+          fileType,
+          url: base64Data,
+          base64: base64Data,
+          enabled: true
+        };
+        setEmailAttachments(prev => [...prev, newAttachment]);
+      };
+      reader.readAsDataURL(file);
+    });
+
+    e.target.value = '';
+  };
+
+  const handleAddPresetAttachment = (preset: typeof EMAIL_ATTACHMENT_PRESETS[0]) => {
+    const exists = emailAttachments.some(a => a.fileName === preset.fileName);
+    if (exists) {
+      setEmailAttachments(prev => prev.map(a => a.fileName === preset.fileName ? { ...a, enabled: true } : a));
+      return;
+    }
+    const newAtt = {
+      id: `preset-${preset.id}-${Date.now()}`,
+      fileName: preset.fileName,
+      fileSize: preset.fileSize,
+      fileType: preset.fileType,
+      url: preset.url,
+      enabled: true
+    };
+    setEmailAttachments(prev => [...prev, newAtt]);
+  };
+
+  const handleRemoveAttachment = (id: string) => {
+    setEmailAttachments(prev => prev.filter(a => a.id !== id));
+  };
+
+  const handleToggleAttachment = (id: string) => {
+    setEmailAttachments(prev => prev.map(a => a.id === id ? { ...a, enabled: !a.enabled } : a));
+  };
+
   // Open in Webmail / External Email Client fallback
   const handleOpenWebmail = (lead: any) => {
     const to = lead.email || '';
     const subject = renderPreviewHtml(templateData.subject || 'Strategic Partnership Inquiry');
-    const body = `${renderPreviewHtml(templateData.headline || '')}\n\n${renderPreviewHtml(templateData.body || templateData.content || '')}\n\nBest regards,\n${user?.name || 'Growth Specialist'}\n${user?.company_name || ''}`;
+    const activeAtts = emailAttachments.filter(a => a.enabled);
+    const attachmentNote = activeAtts.length > 0 
+      ? `\n\n[Attached Collateral]\n${activeAtts.map(a => `• ${renderPreviewHtml(a.fileName)}: ${a.url}`).join('\n')}`
+      : '';
+    const body = `${renderPreviewHtml(templateData.headline || '')}\n\n${renderPreviewHtml(templateData.body || templateData.content || '')}${attachmentNote}\n\nBest regards,\n${user?.name || 'Growth Specialist'}\n${user?.company_name || ''}`;
     
     const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(to)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     window.open(gmailUrl, '_blank');
@@ -746,7 +943,8 @@ const OutreachCenter = () => {
         targetLead: previewLead,
         customRecipientEmail: previewLead.email,
         fromName: connectedMailbox?.fromName || user?.name || 'Workspace Operator',
-        fromEmail: connectedMailbox?.fromEmail || connectedMailbox?.user || user?.email || 'outreach@strovr.space'
+        fromEmail: connectedMailbox?.fromEmail || connectedMailbox?.user || user?.email || 'outreach@strovr.space',
+        attachments: emailAttachments.filter(a => a.enabled)
       }, {
         headers
       });
@@ -2594,6 +2792,172 @@ const OutreachCenter = () => {
                         </div>
                       )}
 
+                      {/* ======================================================== */}
+                      {/* UNIVERSAL EMAIL ATTACHMENTS & DECKS (ALL 10 LAYOUTS)      */}
+                      {/* ======================================================== */}
+                      <div className="bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-2xs">
+                        <div className="px-4 py-3 bg-slate-50/80 border-b border-slate-100 flex flex-wrap items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <div className="w-6 h-6 rounded-md bg-indigo-50 border border-indigo-200/70 flex items-center justify-center text-indigo-700">
+                              <Paperclip className="w-3.5 h-3.5" />
+                            </div>
+                            <div>
+                              <span className="text-xs font-delight font-bold text-slate-800 flex items-center gap-1.5">
+                                <span>Email Attachments &amp; Decks</span>
+                                <span className="text-[10px] font-medium text-indigo-700 bg-indigo-50 px-2 py-0.2 rounded border border-indigo-200/60">
+                                  All Layouts
+                                </span>
+                              </span>
+                              <p className="text-[10px] text-slate-500 font-sans">
+                                Attach collateral (PDF decks, audits, case studies, pricing) dispatched with every outbound email.
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1.5">
+                            <input 
+                              type="file" 
+                              ref={emailFileInputRef}
+                              onChange={handleEmailFileUpload}
+                              multiple
+                              accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx,.csv"
+                              className="hidden"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => emailFileInputRef.current?.click()}
+                              className="bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-delight font-semibold px-2.5 py-1.5 rounded-lg shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer border border-slate-900"
+                              title="Upload custom attachment from your computer"
+                            >
+                              <Upload className="w-3 h-3" />
+                              <span>Upload File</span>
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="p-4 space-y-3">
+                          {/* Quick B2B Presets */}
+                          <div>
+                            <span className="text-[10px] font-delight font-semibold uppercase tracking-wider text-slate-400 block mb-1.5">
+                              Quick B2B Presets:
+                            </span>
+                            <div className="flex flex-wrap gap-1.5">
+                              {EMAIL_ATTACHMENT_PRESETS.map((preset) => {
+                                const isAdded = emailAttachments.some(a => a.fileName === preset.fileName && a.enabled);
+                                return (
+                                  <button
+                                    key={preset.id}
+                                    type="button"
+                                    onClick={() => handleAddPresetAttachment(preset)}
+                                    className={`text-[10px] font-delight font-semibold px-2.5 py-1 rounded-md border transition-all cursor-pointer flex items-center gap-1 shadow-2xs ${
+                                      isAdded 
+                                        ? 'bg-emerald-50 text-emerald-800 border-emerald-300' 
+                                        : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
+                                    }`}
+                                  >
+                                    {isAdded ? <Check className="w-2.5 h-2.5 text-emerald-600" /> : <Plus className="w-2.5 h-2.5 text-slate-500" />}
+                                    <span>{preset.name}</span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          {/* List of Attachments */}
+                          {emailAttachments.length === 0 ? (
+                            <div className="text-center py-5 border border-dashed border-slate-200 rounded-xl bg-slate-50/50">
+                              <Paperclip className="w-5 h-5 text-slate-400 mx-auto mb-1.5" />
+                              <p className="text-xs font-delight font-medium text-slate-600">No collateral attached yet</p>
+                              <p className="text-[10px] text-slate-400">Upload a file or choose a quick B2B preset above.</p>
+                            </div>
+                          ) : (
+                            <div className="space-y-2">
+                              {emailAttachments.map((att) => {
+                                const badgeColor = att.fileType === 'pdf' 
+                                  ? 'bg-rose-50 text-rose-700 border-rose-200' 
+                                  : att.fileType === 'image'
+                                  ? 'bg-purple-50 text-purple-700 border-purple-200'
+                                  : att.fileType === 'sheet'
+                                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                  : 'bg-amber-50 text-amber-700 border-amber-200';
+
+                                return (
+                                  <div 
+                                    key={att.id} 
+                                    className={`p-3 rounded-xl border transition-all ${
+                                      att.enabled 
+                                        ? 'bg-white border-slate-200/90 shadow-2xs' 
+                                        : 'bg-slate-50/60 border-slate-200 opacity-60'
+                                    }`}
+                                  >
+                                    <div className="flex items-center justify-between gap-2 mb-2">
+                                      <div className="flex items-center gap-2 min-w-0">
+                                        <button
+                                          type="button"
+                                          onClick={() => handleToggleAttachment(att.id)}
+                                          className={`w-4 h-4 rounded flex items-center justify-center transition-colors cursor-pointer border ${
+                                            att.enabled 
+                                              ? 'bg-indigo-600 border-indigo-600 text-white' 
+                                              : 'bg-white border-slate-300 text-transparent'
+                                          }`}
+                                          title={att.enabled ? 'Click to disable' : 'Click to enable'}
+                                        >
+                                          <Check className="w-3 h-3 stroke-[3]" />
+                                        </button>
+                                        <span className={`text-[9px] font-delight font-extrabold uppercase px-1.5 py-0.2 rounded border ${badgeColor}`}>
+                                          {att.fileType.toUpperCase()}
+                                        </span>
+                                        <span className="text-[11px] font-sans text-slate-500 font-medium">
+                                          {att.fileSize}
+                                        </span>
+                                      </div>
+
+                                      <div className="flex items-center gap-1.5">
+                                        {att.url && (
+                                          <a
+                                            href={att.url}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="text-slate-400 hover:text-slate-700 p-1 rounded transition-colors"
+                                            title="View attachment"
+                                          >
+                                            <ExternalLink className="w-3.5 h-3.5" />
+                                          </a>
+                                        )}
+                                        <button
+                                          type="button"
+                                          onClick={() => handleRemoveAttachment(att.id)}
+                                          className="text-slate-400 hover:text-rose-600 p-1 rounded transition-colors cursor-pointer"
+                                          title="Remove attachment"
+                                        >
+                                          <Trash2 className="w-3.5 h-3.5" />
+                                        </button>
+                                      </div>
+                                    </div>
+
+                                    <div>
+                                      <label className="block text-[10px] font-delight font-semibold text-slate-500 mb-1">
+                                        File Name (Merge tags supported: <span className="font-mono text-indigo-600">&#123;&#123;business_name&#125;&#125;</span>)
+                                      </label>
+                                      <input 
+                                        type="text" 
+                                        value={att.fileName}
+                                        onChange={(e) => {
+                                          const val = e.target.value;
+                                          setEmailAttachments(prev => prev.map(a => a.id === att.id ? { ...a, fileName: val } : a));
+                                        }}
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs font-delight font-medium text-slate-900 outline-none focus:border-slate-400 focus:bg-white transition-all"
+                                        placeholder="e.g. {{business_name}}_Growth_Blueprint.pdf"
+                                      />
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
                     </div>
                   )}
 
@@ -2732,6 +3096,12 @@ const OutreachCenter = () => {
                 </div>
               ) : (
                 <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                  {emailAttachments.some(a => a.enabled) && (
+                    <span className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-800 text-[10px] font-delight font-bold">
+                      <Paperclip className="w-3 h-3 text-indigo-600" />
+                      <span>{emailAttachments.filter(a => a.enabled).length} Deck{emailAttachments.filter(a => a.enabled).length > 1 ? 's' : ''} Attached</span>
+                    </span>
+                  )}
                   <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 border border-indigo-200/80 text-[11px] font-delight text-indigo-700">
                     <span className="font-bold text-indigo-900">{user?.emails_sent || 0}</span>
                     <span className="text-indigo-400">/</span>
@@ -3726,6 +4096,63 @@ const OutreachCenter = () => {
                   )}
 
                   {/* ==================================================== */}
+                  {/* ATTACHED DOCUMENTS & DECKS PREVIEW CONTAINER         */}
+                  {/* ==================================================== */}
+                  {emailAttachments.some(a => a.enabled) && (
+                    <div className="mx-6 my-4 p-3.5 bg-slate-50/90 rounded-xl border border-slate-200/90 font-sans">
+                      <div className="flex items-center justify-between pb-2 mb-2.5 border-b border-slate-200/80">
+                        <div className="flex items-center gap-1.5 text-xs font-delight font-bold text-slate-700">
+                          <Paperclip className="w-3.5 h-3.5 text-indigo-600" />
+                          <span>Attached Documents ({emailAttachments.filter(a => a.enabled).length})</span>
+                        </div>
+                        <span className="text-[10px] font-delight font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200/60 flex items-center gap-1">
+                          <Check className="w-2.5 h-2.5" />
+                          <span>Verified Collateral</span>
+                        </span>
+                      </div>
+                      <div className="space-y-2">
+                        {emailAttachments.filter(a => a.enabled).map((att) => {
+                          const resolvedName = att.fileName.replace(/{{business_name}}/g, previewLead?.businessName || 'Business');
+                          const badgeColor = att.fileType === 'pdf' 
+                            ? 'bg-rose-50 text-rose-700 border-rose-200' 
+                            : att.fileType === 'image'
+                            ? 'bg-purple-50 text-purple-700 border-purple-200'
+                            : att.fileType === 'sheet'
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                            : 'bg-amber-50 text-amber-700 border-amber-200';
+
+                          return (
+                            <div key={att.id} className="flex items-center justify-between p-2.5 bg-white border border-slate-200 rounded-lg shadow-2xs hover:border-slate-300 transition-colors">
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <div className={`w-8 h-8 rounded-md flex items-center justify-center font-bold text-[10px] border shrink-0 ${badgeColor}`}>
+                                  {att.fileType.toUpperCase()}
+                                </div>
+                                <div className="min-w-0">
+                                  <div className="text-xs font-semibold text-slate-900 truncate">
+                                    {resolvedName}
+                                  </div>
+                                  <div className="text-[10px] text-slate-500 font-sans">
+                                    {att.fileSize} • Attached with outreach
+                                  </div>
+                                </div>
+                              </div>
+                              <a 
+                                href={att.url || '#'} 
+                                target="_blank" 
+                                rel="noreferrer"
+                                className="px-3 py-1 bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-semibold rounded-md flex items-center gap-1 shrink-0 ml-2 shadow-xs transition-colors"
+                              >
+                                <Download className="w-3 h-3" />
+                                <span>View</span>
+                              </a>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ==================================================== */}
                   {/* COMPLIANCE & DELIVERABILITY FOOTER (MANDATORY)       */}
                   {/* ==================================================== */}
                   {templateStyling.showComplianceFooter && (
@@ -3939,6 +4366,7 @@ const OutreachCenter = () => {
         currentPreviewLead={previewLead}
         user={user}
         connectedMailbox={connectedMailbox}
+        attachments={emailAttachments.filter(a => a.enabled)}
         onCampaignDispatched={() => {
           fetchMailboxStatus();
           setDispatchNotification({
