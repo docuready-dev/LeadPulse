@@ -1163,20 +1163,11 @@ const Audience = () => {
                               ) : (
                                 <div className="flex items-center gap-1.5">
                                   <button 
-                                    onClick={() => handleEnrichContact(lead)}
-                                    disabled={enrichingLeadId === lead._id}
-                                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-sm bg-violet-50 hover:bg-violet-100 text-violet-700 border border-violet-200/80 text-[10px] font-delight font-semibold transition-colors cursor-pointer"
-                                    title={`Enrich verified email via ${activeEnrichApp.name}`}
-                                  >
-                                    <Sparkles className="w-2.5 h-2.5 text-violet-600" />
-                                    <span>{enrichingLeadId === lead._id ? 'Enriching...' : `Enrich (${activeEnrichApp.name})`}</span>
-                                  </button>
-                                  <button 
                                     onClick={() => setEditingContact({ ...lead })}
-                                    className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-sm bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200 text-[10px] font-delight font-medium transition-colors cursor-pointer"
-                                    title="Add direct email manually"
+                                    className="inline-flex items-center justify-center w-6 h-6 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 border border-slate-200 transition-colors cursor-pointer shadow-2xs"
+                                    title="Add email manually"
                                   >
-                                    <Plus className="w-2.5 h-2.5" />
+                                    <Plus className="w-3.5 h-3.5" />
                                   </button>
                                 </div>
                               )}
