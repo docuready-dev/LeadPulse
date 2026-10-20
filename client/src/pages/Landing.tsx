@@ -1545,7 +1545,7 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
 
           <div className="pt-5 border-t border-[#E5E0D5] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs font-delight text-[#78716A]">
             <p>
-              Strovr is a <strong>DocuReady Entity</strong> (Derived from &quot;Strove&quot; - striving for growth). Engineered to deliver enterprise B2B discovery, AI outreach synthesis, and pipeline automation at a fraction of current market rates.
+              Strovr is a <strong>DocuReady Entity</strong>. Engineered to deliver enterprise B2B discovery, AI outreach synthesis, and pipeline automation at a fraction of current market rates.
             </p>
             <p className="shrink-0">
               &copy; {new Date().getFullYear()} DocuReady / Strovr. All rights reserved. www.strovr.space
