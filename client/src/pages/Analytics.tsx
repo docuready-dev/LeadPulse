@@ -32,10 +32,31 @@ const Analytics = () => {
       if (!user?._id) return;
       try {
         const [leadsRes, campRes] = await Promise.all([
-          axios.get(`${API_URL}/api/leads`, { headers: { userid: user._id } }),
-          axios.get(`${API_URL}/api/outreach/campaigns`, { headers: { userid: user._id } }).catch(() => ({ data: [] }))
+          axios.get(`${API_URL}/api/leads`, { 
+            headers: { 
+              userid: user._id || '',
+              useremail: user.email || ''
+            } 
+          }),
+          axios.get(`${API_URL}/api/outreach/campaigns`, { 
+            headers: { 
+              userid: user._id || '',
+              useremail: user.email || ''
+            } 
+          }).catch(() => ({ data: [] }))
         ]);
-        setLeads(leadsRes.data || []);
+        let rawLeads = Array.isArray(leadsRes.data) ? leadsRes.data : [];
+        if (rawLeads.length === 0) {
+          try {
+            const raw = (user?.email && localStorage.getItem(`strovr_leads_cache_${user.email}`)) ||
+                        (user?._id && localStorage.getItem(`strovr_leads_cache_${user._id}`));
+            if (raw) {
+              const parsed = JSON.parse(raw);
+              if (Array.isArray(parsed) && parsed.length > 0) rawLeads = parsed;
+            }
+          } catch {}
+        }
+        setLeads(rawLeads);
         setCampaigns(campRes.data || []);
       } catch (err) {
         console.error('Failed to load analytics data', err);

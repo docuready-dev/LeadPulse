@@ -32,18 +32,46 @@ const SerpApiConnectModal: React.FC<SerpApiConnectModalProps> = ({
   const strovrPlan = (user?.plan || 'free').toLowerCase();
   const isPaidTier = strovrPlan === 'basic' || strovrPlan === 'pro';
 
-  // Load active connection status on mount
+  // Load active connection status on mount with auto-vault recovery
   useEffect(() => {
-    if (!isOpen || !user?._id) return;
+    if (!isOpen || (!user?._id && !user?.email)) return;
     const fetchStatus = async () => {
       setIsLoadingStatus(true);
+      const vaultKey = user?.email || user?._id || 'global';
+      const storedVault = localStorage.getItem(`strovr_serpapi_vault_${vaultKey}`) || 
+                          localStorage.getItem('strovr_serpapi_vault_global');
       try {
         const res = await axios.get(`${API_URL}/api/leads/serpapi/status`, {
-          headers: { userid: user._id }
+          headers: { 
+            userid: user._id || '',
+            useremail: user.email || ''
+          }
         });
         if (res.data?.isConnected && res.data.account) {
           setSerpAccount(res.data.account);
           setApiKey(res.data.account.apiKey || '');
+          if (res.data.account.apiKey) {
+            localStorage.setItem(`strovr_serpapi_vault_${vaultKey}`, res.data.account.apiKey);
+            localStorage.setItem('strovr_serpapi_vault_global', res.data.account.apiKey);
+          }
+        } else if (storedVault) {
+          // Auto-reconnect using vaulted key if server woke up fresh
+          try {
+            const reRes = await axios.post(
+              `${API_URL}/api/leads/serpapi/connect`,
+              { apiKey: storedVault },
+              { headers: { userid: user._id || '', useremail: user.email || '' } }
+            );
+            if (reRes.data?.success && reRes.data.account) {
+              setSerpAccount(reRes.data.account);
+              setApiKey(storedVault);
+              if (onConnected) onConnected(reRes.data.account);
+            } else {
+              setSerpAccount(null);
+            }
+          } catch {
+            setSerpAccount(null);
+          }
         } else {
           setSerpAccount(null);
         }
@@ -54,7 +82,7 @@ const SerpApiConnectModal: React.FC<SerpApiConnectModalProps> = ({
       }
     };
     fetchStatus();
-  }, [isOpen, user?._id]);
+  }, [isOpen, user?._id, user?.email]);
 
   if (!isOpen) return null;
 
@@ -87,16 +115,28 @@ const SerpApiConnectModal: React.FC<SerpApiConnectModalProps> = ({
     setErrorMessage(null);
     setSuccessMessage(null);
 
+    const vaultKey = user?.email || user?._id || 'global';
+
     try {
       const res = await axios.post(
         `${API_URL}/api/leads/serpapi/connect`,
         { apiKey: cleanKey },
-        { headers: { userid: user?._id } }
+        { 
+          headers: { 
+            userid: user?._id || '',
+            useremail: user?.email || ''
+          } 
+        }
       );
 
       if (res.data?.success) {
         setSerpAccount(res.data.account);
         setSuccessMessage(res.data.message || 'SerpApi connected successfully!');
+        // Vault key across devices sharing same account
+        try {
+          localStorage.setItem(`strovr_serpapi_vault_${vaultKey}`, cleanKey);
+          localStorage.setItem('strovr_serpapi_vault_global', cleanKey);
+        } catch {}
         if (onConnected) onConnected(res.data.account);
       } else {
         setErrorMessage(res.data?.error || 'Failed to connect SerpApi.');
@@ -111,14 +151,22 @@ const SerpApiConnectModal: React.FC<SerpApiConnectModalProps> = ({
 
   const handleDisconnect = async () => {
     setIsDisconnecting(true);
+    const vaultKey = user?.email || user?._id || 'global';
     try {
       await axios.delete(`${API_URL}/api/leads/serpapi/disconnect`, {
-        headers: { userid: user?._id }
+        headers: { 
+          userid: user?._id || '',
+          useremail: user?.email || ''
+        }
       });
       setSerpAccount(null);
       setApiKey('');
       setSuccessMessage(null);
       setErrorMessage(null);
+      try {
+        localStorage.removeItem(`strovr_serpapi_vault_${vaultKey}`);
+        localStorage.removeItem('strovr_serpapi_vault_global');
+      } catch {}
       if (onConnected) onConnected(null);
       await alertDialog({
         title: 'SerpApi Disconnected',

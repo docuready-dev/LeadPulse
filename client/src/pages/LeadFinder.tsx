@@ -28,18 +28,43 @@ const LeadFinder = () => {
   const isFree = (user?.plan || 'free').toLowerCase() === 'free';
 
   const fetchSerpStatus = async () => {
-    if (!user?._id) return;
+    if (!user?._id && !user?.email) return;
+    const vaultKey = user?.email || user?._id || 'global';
+    const storedVault = localStorage.getItem(`strovr_serpapi_vault_${vaultKey}`) || 
+                        localStorage.getItem('strovr_serpapi_vault_global');
     try {
       const res = await axios.get(`${API_URL}/api/leads/serpapi/status`, {
-        headers: { userid: user._id }
+        headers: { 
+          userid: user._id || '',
+          useremail: user.email || ''
+        }
       });
-      setSerpApiStatus(res.data);
+      if (res.data?.isConnected) {
+        setSerpApiStatus(res.data);
+      } else if (storedVault) {
+        try {
+          const reRes = await axios.post(
+            `${API_URL}/api/leads/serpapi/connect`,
+            { apiKey: storedVault },
+            { headers: { userid: user._id || '', useremail: user.email || '' } }
+          );
+          if (reRes.data?.success) {
+            setSerpApiStatus({ isConnected: true, account: reRes.data.account });
+          } else {
+            setSerpApiStatus(res.data);
+          }
+        } catch {
+          setSerpApiStatus(res.data);
+        }
+      } else {
+        setSerpApiStatus(res.data);
+      }
     } catch {}
   };
 
   useEffect(() => {
     fetchSerpStatus();
-  }, [user?._id]);
+  }, [user?._id, user?.email]);
 
   // Integration Sync & Enrich state
   const [isSyncDropdownOpen, setIsSyncDropdownOpen] = useState(false);
@@ -63,14 +88,98 @@ const LeadFinder = () => {
   const [editingLead, setEditingLead] = useState<any | null>(null);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
 
+  // Helper deduplication merge
+  const mergeLeads = (localList: any[], serverList: any[]) => {
+    const map = new Map<string, any>();
+    for (const l of localList) {
+      if (l._id) map.set(l._id, l);
+      const nameKey = (l.businessName || '').toLowerCase().trim();
+      if (nameKey && l.email) map.set(`${nameKey}__${l.email.toLowerCase().trim()}`, l);
+      if (nameKey && l.phone) map.set(`${nameKey}__${l.phone.replace(/[^0-9]/g, '')}`, l);
+    }
+    for (const s of serverList) {
+      if (s._id && map.has(s._id)) {
+        map.set(s._id, { ...map.get(s._id), ...s });
+      } else {
+        const nameKey = (s.businessName || '').toLowerCase().trim();
+        const emailKey = s.email ? `${nameKey}__${s.email.toLowerCase().trim()}` : '';
+        const phoneKey = s.phone ? `${nameKey}__${s.phone.replace(/[^0-9]/g, '')}` : '';
+        if (emailKey && map.has(emailKey)) {
+          map.set(emailKey, { ...map.get(emailKey), ...s });
+        } else if (phoneKey && map.has(phoneKey)) {
+          map.set(phoneKey, { ...map.get(phoneKey), ...s });
+        } else {
+          map.set(s._id || `lead_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`, s);
+        }
+      }
+    }
+    return Array.from(map.values()).sort((a, b) => {
+      const timeB = new Date(b.harvestedAt || b.createdAt || 0).getTime();
+      const timeA = new Date(a.harvestedAt || a.createdAt || 0).getTime();
+      return timeB - timeA;
+    });
+  };
+
+  const updateCache = (list: any[]) => {
+    setLeads(list);
+    try {
+      if (user?.email) localStorage.setItem(`strovr_leads_cache_${user.email}`, JSON.stringify(list));
+      if (user?._id) localStorage.setItem(`strovr_leads_cache_${user._id}`, JSON.stringify(list));
+    } catch {}
+  };
+
   const fetchLeads = async () => {
-    if (!user?._id) return;
+    if (!user?._id && !user?.email) return;
     setLoading(true);
     try {
       const res = await axios.get(`${API_URL}/api/leads`, {
-        headers: { userid: user._id }
+        headers: { 
+          userid: user._id || '',
+          useremail: user.email || ''
+        }
       });
-      setLeads(res.data);
+      const serverLeads = Array.isArray(res.data) ? res.data : [];
+
+      let localCached: any[] = [];
+      try {
+        const raw = (user?.email && localStorage.getItem(`strovr_leads_cache_${user.email}`)) ||
+                    (user?._id && localStorage.getItem(`strovr_leads_cache_${user._id}`));
+        if (raw) localCached = JSON.parse(raw);
+      } catch {}
+
+      if (serverLeads.length === 0 && localCached.length > 0) {
+        // Auto-rehydrate Render server
+        try {
+          const syncRes = await axios.post(`${API_URL}/api/leads/sync-vault`, {
+            leads: localCached
+          }, {
+            headers: { 
+              userid: user._id || '',
+              useremail: user.email || ''
+            }
+          });
+          if (syncRes.data?.leads) {
+            updateCache(syncRes.data.leads);
+            return;
+          }
+        } catch {}
+        updateCache(localCached);
+        return;
+      }
+
+      const merged = mergeLeads(localCached, serverLeads);
+      updateCache(merged);
+
+      if (localCached.length > serverLeads.length) {
+        axios.post(`${API_URL}/api/leads/sync-vault`, {
+          leads: merged
+        }, {
+          headers: { 
+            userid: user._id || '',
+            useremail: user.email || ''
+          }
+        }).catch(() => {});
+      }
     } catch (err) {
       console.error('Failed to fetch harvested leads:', err);
     } finally {
@@ -79,8 +188,17 @@ const LeadFinder = () => {
   };
 
   useEffect(() => {
+    // Immediate hydration from cache
+    try {
+      const raw = (user?.email && localStorage.getItem(`strovr_leads_cache_${user.email}`)) ||
+                  (user?._id && localStorage.getItem(`strovr_leads_cache_${user._id}`));
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) setLeads(parsed);
+      }
+    } catch {}
     fetchLeads();
-  }, [user?._id]);
+  }, [user?._id, user?.email]);
 
   const handleSaveEditLead = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -96,10 +214,14 @@ const LeadFinder = () => {
         website: editingLead.website || '',
         status: editingLead.status || 'New'
       }, {
-        headers: { userid: user._id }
+        headers: { 
+          userid: user._id || '',
+          useremail: user.email || ''
+        }
       });
 
-      setLeads(leads.map(l => l._id === editingLead._id ? { ...l, ...editingLead } : l));
+      const nextLeads = leads.map(l => l._id === editingLead._id ? { ...l, ...editingLead } : l);
+      updateCache(nextLeads);
       setEditingLead(null);
     } catch (err) {
       console.error('Failed to update lead:', err);

@@ -166,23 +166,57 @@ const Audience = () => {
   const [newSegmentTitle, setNewSegmentTitle] = useState('');
   const [newSegmentDesc, setNewSegmentDesc] = useState('');
 
+  // Helper deduplication merge
+  const mergeLeads = (localList: any[], serverList: any[]) => {
+    const map = new Map<string, any>();
+    for (const l of localList) {
+      if (!l) continue;
+      if (l._id) map.set(l._id, l);
+      const nameKey = (l.businessName || '').toLowerCase().trim();
+      if (nameKey && l.email) map.set(`${nameKey}__${l.email.toLowerCase().trim()}`, l);
+      if (nameKey && l.phone) map.set(`${nameKey}__${l.phone.replace(/[^0-9]/g, '')}`, l);
+    }
+    for (const s of serverList) {
+      if (!s) continue;
+      if (s._id && map.has(s._id)) {
+        map.set(s._id, { ...map.get(s._id), ...s });
+      } else {
+        const nameKey = (s.businessName || '').toLowerCase().trim();
+        const emailKey = s.email ? `${nameKey}__${s.email.toLowerCase().trim()}` : '';
+        const phoneKey = s.phone ? `${nameKey}__${s.phone.replace(/[^0-9]/g, '')}` : '';
+        if (emailKey && map.has(emailKey)) {
+          map.set(emailKey, { ...map.get(emailKey), ...s });
+        } else if (phoneKey && map.has(phoneKey)) {
+          map.set(phoneKey, { ...map.get(phoneKey), ...s });
+        } else {
+          map.set(s._id || `lead_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`, s);
+        }
+      }
+    }
+    return Array.from(map.values()).sort((a, b) => {
+      const timeB = new Date(b.harvestedAt || b.createdAt || 0).getTime();
+      const timeA = new Date(a.harvestedAt || a.createdAt || 0).getTime();
+      return timeB - timeA;
+    });
+  };
+
   // Persist leads helper
   const updateLocalLeads = (newLeadsList: any[]) => {
     setLeads(newLeadsList);
-    if (user?._id) {
-      try {
-        localStorage.setItem(`strovr_leads_cache_${user._id}`, JSON.stringify(newLeadsList));
-      } catch {}
-    }
+    try {
+      if (user?.email) localStorage.setItem(`strovr_leads_cache_${user.email}`, JSON.stringify(newLeadsList));
+      if (user?._id) localStorage.setItem(`strovr_leads_cache_${user._id}`, JSON.stringify(newLeadsList));
+    } catch {}
   };
 
   useEffect(() => {
-    if (user?._id) {
+    if (user?._id || user?.email) {
       // Re-hydrate cache for this user immediately
       try {
-        const cached = localStorage.getItem(`strovr_leads_cache_${user._id}`);
-        if (cached) {
-          const parsed = JSON.parse(cached);
+        const raw = (user?.email && localStorage.getItem(`strovr_leads_cache_${user.email}`)) ||
+                    (user?._id && localStorage.getItem(`strovr_leads_cache_${user._id}`));
+        if (raw) {
+          const parsed = JSON.parse(raw);
           if (Array.isArray(parsed) && parsed.length > 0) {
             setLeads(parsed);
           }
@@ -190,17 +224,61 @@ const Audience = () => {
       } catch {}
       fetchLeads();
     }
-  }, [user?._id]);
+  }, [user?._id, user?.email]);
 
   const fetchLeads = async () => {
-    if (!user?._id) return;
+    if (!user?._id && !user?.email) return;
     setLoading(true);
     try {
       const res = await axios.get(`${API_URL}/api/leads`, {
-        headers: { userid: user._id }
+        headers: { 
+          userid: user._id || '',
+          useremail: user.email || ''
+        }
       });
-      if (Array.isArray(res.data)) {
-        updateLocalLeads(res.data);
+      const serverLeads = Array.isArray(res.data) ? res.data : [];
+
+      let localCached: any[] = [];
+      try {
+        const raw = (user?.email && localStorage.getItem(`strovr_leads_cache_${user.email}`)) ||
+                    (user?._id && localStorage.getItem(`strovr_leads_cache_${user._id}`));
+        if (raw) localCached = JSON.parse(raw);
+      } catch {}
+
+      // CRITICAL: If server returned 0 leads after container restart but local vault has leads, auto-rehydrate!
+      if (serverLeads.length === 0 && localCached.length > 0) {
+        try {
+          const syncRes = await axios.post(`${API_URL}/api/leads/sync-vault`, {
+            leads: localCached
+          }, {
+            headers: { 
+              userid: user._id || '',
+              useremail: user.email || ''
+            }
+          });
+          if (syncRes.data?.leads) {
+            updateLocalLeads(syncRes.data.leads);
+            return;
+          }
+        } catch {}
+        updateLocalLeads(localCached);
+        return;
+      }
+
+      // Merge server and local vault so leads permanently pile up across all devices
+      const merged = mergeLeads(localCached, serverLeads);
+      updateLocalLeads(merged);
+
+      // If client has extra leads (e.g. added offline or before wake-up), sync to server in background
+      if (localCached.length > serverLeads.length) {
+        axios.post(`${API_URL}/api/leads/sync-vault`, {
+          leads: merged
+        }, {
+          headers: { 
+            userid: user._id || '',
+            useremail: user.email || ''
+          }
+        }).catch(() => {});
       }
     } catch (err) {
       console.error('Failed to fetch contacts:', err);
@@ -211,17 +289,26 @@ const Audience = () => {
 
   // Helper extraction functions
   const getLeadCity = (lead: any): string => {
-    return (lead.city || lead.location || lead.address || '').trim();
+    if (lead.city && typeof lead.city === 'string' && lead.city.trim()) {
+      return lead.city.trim();
+    }
+    const loc = (lead.location || lead.address || '').trim();
+    if (!loc) return 'Unknown';
+    const parts = loc.split(',').map((p: string) => p.trim()).filter(Boolean);
+    return parts[0] || 'Unknown';
   };
 
   const getLeadDateNumber = (lead: any): number => {
-    const d = lead.createdAt || lead.harvestedAt || lead.created_at || lead.timestamp || lead.date;
+    const d = lead.harvestedAt || lead.createdAt || lead.created_at || lead.timestamp || lead.date;
     if (!d) return 0;
     const time = new Date(d).getTime();
     return isNaN(time) ? 0 : time;
   };
 
-  const formatHarvestDate = (dateVal?: string): string => {
+  const formatHarvestDate = (leadOrDate: any): string => {
+    const dateVal = typeof leadOrDate === 'object' && leadOrDate !== null
+      ? (leadOrDate.harvestedAt || leadOrDate.createdAt || leadOrDate.created_at)
+      : leadOrDate;
     if (!dateVal) return 'Recently';
     try {
       const d = new Date(dateVal);
@@ -358,16 +445,20 @@ const Audience = () => {
   // Handle Add Contact Submit
   const handleAddContact = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user?._id) return;
+    if (!user?._id && !user?.email) return;
     setIsSubmittingContact(true);
     try {
       const res = await axios.post(`${API_URL}/api/leads`, {
         ...newContact,
         location: newContact.location || newContact.city || '',
         city: newContact.city || newContact.location || '',
+        harvestedAt: new Date().toISOString(),
         tags: newContact.tags ? [newContact.tags] : []
       }, {
-        headers: { userid: user._id }
+        headers: { 
+          userid: user?._id || '',
+          useremail: user?.email || ''
+        }
       });
 
       const updated = [res.data, ...leads];
@@ -399,7 +490,7 @@ const Audience = () => {
   // Handle Save / Update Contact (e.g. shortening business name, editing coordinates)
   const handleSaveEditContact = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingContact?._id || !user?._id) return;
+    if (!editingContact?._id || (!user?._id && !user?.email)) return;
     setIsSavingEdit(true);
     try {
       const payload = {
@@ -409,10 +500,14 @@ const Audience = () => {
         website: editingContact.website || '',
         category: editingContact.category || 'General',
         location: editingContact.location || '',
+        city: editingContact.city || (editingContact.location ? editingContact.location.split(',')[0].trim() : ''),
         status: editingContact.status || 'New'
       };
       const res = await axios.patch(`${API_URL}/api/leads/${editingContact._id}`, payload, {
-        headers: { userid: user._id }
+        headers: { 
+          userid: user?._id || '',
+          useremail: user?.email || ''
+        }
       });
       const updated = res.data?.lead || { ...editingContact, ...payload };
       const nextLeads = leads.map(l => l._id === editingContact._id ? updated : l);
@@ -444,7 +539,10 @@ const Audience = () => {
     if (!confirmed) return;
     try {
       await axios.delete(`${API_URL}/api/leads/${id}`, {
-        headers: { userid: user?._id }
+        headers: { 
+          userid: user?._id || '',
+          useremail: user?.email || ''
+        }
       });
       const nextLeads = leads.filter(l => l._id !== id);
       updateLocalLeads(nextLeads);
@@ -469,14 +567,17 @@ const Audience = () => {
       await axios.post(`${API_URL}/api/leads/batch-delete`, {
         ids: selectedLeadIds
       }, {
-        headers: { userid: user?._id }
+        headers: { 
+          userid: user?._id || '',
+          useremail: user?.email || ''
+        }
       });
       const nextLeads = leads.filter(l => !selectedLeadIds.includes(l._id));
       updateLocalLeads(nextLeads);
       setSelectedLeadIds([]);
-      showToast(`Deleted ${selectedLeadIds.length} contacts.`);
+      showToast(`Removed ${selectedLeadIds.length} contacts from database.`);
     } catch (err) {
-      console.error('Failed to batch delete contacts:', err);
+      console.error('Failed to batch delete leads:', err);
     }
   };
 

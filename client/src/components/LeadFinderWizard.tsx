@@ -45,18 +45,44 @@ const LeadFinderWizard = ({ onHarvestStarted }: WizardProps) => {
   const [serpApiStatus, setSerpApiStatus] = useState<{ isConnected: boolean; account?: any } | null>(null);
 
   const fetchSerpStatus = async () => {
-    if (!user?._id) return;
+    if (!user?._id && !user?.email) return;
+    const vaultKey = user?.email || user?._id || 'global';
+    const storedVault = localStorage.getItem(`strovr_serpapi_vault_${vaultKey}`) || 
+                        localStorage.getItem('strovr_serpapi_vault_global');
     try {
       const res = await axios.get(`${API_URL}/api/leads/serpapi/status`, {
-        headers: { userid: user._id }
+        headers: { 
+          userid: user?._id || '',
+          useremail: user?.email || ''
+        }
       });
-      setSerpApiStatus(res.data);
+      if (res.data?.isConnected) {
+        setSerpApiStatus(res.data);
+      } else if (storedVault) {
+        // Silently re-connect using client account vault
+        try {
+          const reRes = await axios.post(
+            `${API_URL}/api/leads/serpapi/connect`,
+            { apiKey: storedVault },
+            { headers: { userid: user?._id || '', useremail: user?.email || '' } }
+          );
+          if (reRes.data?.success) {
+            setSerpApiStatus({ isConnected: true, account: reRes.data.account });
+          } else {
+            setSerpApiStatus(res.data);
+          }
+        } catch {
+          setSerpApiStatus(res.data);
+        }
+      } else {
+        setSerpApiStatus(res.data);
+      }
     } catch {}
   };
 
   useEffect(() => {
     fetchSerpStatus();
-  }, [user?._id]);
+  }, [user?._id, user?.email]);
 
   // Real-Time Progress Tracker State
   const [activeJob, setActiveJob] = useState<ActiveJobInfo | null>(null);
@@ -93,7 +119,10 @@ const LeadFinderWizard = ({ onHarvestStarted }: WizardProps) => {
       refreshUserProfile(user._id);
       try {
         const res = await axios.get(`${API_URL}/api/leads/active-job`, {
-          headers: { userid: user._id }
+          headers: { 
+            userid: user._id || '',
+            useremail: user.email || ''
+          }
         });
         if (res.data?.activeJob && (res.data.activeJob.status === 'in_progress' || res.data.activeJob.status === 'queued')) {
           startPollingJob(res.data.activeJob.id);
@@ -219,7 +248,12 @@ const LeadFinderWizard = ({ onHarvestStarted }: WizardProps) => {
       const res = await axios.post(
         `${API_URL}/api/leads/scrape`,
         { keyword, location, scope },
-        { headers: { userid: user?._id } }
+        { 
+          headers: { 
+            userid: user?._id || '',
+            useremail: user?.email || ''
+          } 
+        }
       );
 
       setUser({

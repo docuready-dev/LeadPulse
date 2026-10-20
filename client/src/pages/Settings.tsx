@@ -230,9 +230,22 @@ const Settings = () => {
 
     try {
       const res = await axios.get(`${API_URL}/api/leads`, {
-        headers: { userid: user?._id }
+        headers: { 
+          userid: user?._id || '',
+          useremail: user?.email || ''
+        }
       });
-      const leads = res.data || [];
+      let leads = Array.isArray(res.data) ? res.data : [];
+      if (leads.length === 0) {
+        try {
+          const raw = (user?.email && localStorage.getItem(`strovr_leads_cache_${user.email}`)) ||
+                      (user?._id && localStorage.getItem(`strovr_leads_cache_${user._id}`));
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed) && parsed.length > 0) leads = parsed;
+          }
+        } catch {}
+      }
       if (leads.length === 0) {
         await alertDialog({
           title: 'Nothing to Export',

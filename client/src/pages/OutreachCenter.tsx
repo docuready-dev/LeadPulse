@@ -256,13 +256,28 @@ const OutreachCenter = () => {
   // Fetch real leads from DB
   useEffect(() => {
     const fetchUserLeads = async () => {
-      if (!user?._id) return;
+      if (!user?._id && !user?.email) return;
       try {
         const res = await axios.get(`${API_URL}/api/leads`, {
-          headers: { userid: user._id }
+          headers: { 
+            userid: user?._id || '',
+            useremail: user?.email || ''
+          }
         });
-        if (Array.isArray(res.data) && res.data.length > 0) {
-          const mapped = res.data.map((l: any) => ({
+        let rawLeads = Array.isArray(res.data) ? res.data : [];
+        if (rawLeads.length === 0) {
+          try {
+            const raw = (user?.email && localStorage.getItem(`strovr_leads_cache_${user.email}`)) ||
+                        (user?._id && localStorage.getItem(`strovr_leads_cache_${user._id}`));
+            if (raw) {
+              const parsed = JSON.parse(raw);
+              if (Array.isArray(parsed) && parsed.length > 0) rawLeads = parsed;
+            }
+          } catch {}
+        }
+
+        if (rawLeads.length > 0) {
+          const mapped = rawLeads.map((l: any) => ({
             _id: l._id,
             businessName: l.businessName || 'Unnamed Business',
             location: l.location || user?.target_audience || 'Local Market',

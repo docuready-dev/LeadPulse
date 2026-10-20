@@ -8,12 +8,30 @@ import { triggerMatchingAutomations } from './automations';
 
 const router = express.Router();
 
-router.get('/', async (req, res) => {
-  const userId = req.headers.userid as string;
-  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+export function resolveUserContext(req: express.Request): { userId: string; userEmail?: string } | null {
+  const rawUserId = (req.headers.userid as string || (req.body && req.body.userId) || '').trim();
+  const rawUserEmail = (req.headers.useremail as string || (req.body && req.body.userEmail) || '').trim().toLowerCase();
+  
+  if (!rawUserId && !rawUserEmail) return null;
 
-  const localUser = userStore.getUserById(userId) || (userId.includes('@') ? userStore.getUserByEmail(userId) : null);
-  const userEmail = localUser?.email || (userId.includes('@') ? userId : null);
+  let localUser = rawUserId ? userStore.getUserById(rawUserId) : null;
+  if (!localUser && rawUserEmail) {
+    localUser = userStore.getUserByEmail(rawUserEmail);
+  }
+
+  const effectiveEmail = rawUserEmail || localUser?.email?.toLowerCase().trim() || (rawUserId.includes('@') ? rawUserId.toLowerCase().trim() : undefined);
+  const effectiveUserId = rawUserId || localUser?._id || (effectiveEmail ? `user_${effectiveEmail.replace(/[^a-zA-Z0-9]/g, '_')}` : 'anonymous');
+
+  return {
+    userId: effectiveUserId,
+    userEmail: effectiveEmail
+  };
+}
+
+router.get('/', async (req, res) => {
+  const userCtx = resolveUserContext(req);
+  if (!userCtx) return res.status(401).json({ error: 'Unauthorized' });
+  const { userId, userEmail } = userCtx;
   
   let firestoreLeads: any[] = [];
   try {
@@ -23,7 +41,7 @@ router.get('/', async (req, res) => {
 
     // If user has alternate ID/email, also fetch those leads from Firestore
     if (userEmail && userEmail !== userId) {
-      const emailSnapshot = await leadsRef.where('userId', '==', userEmail).limit(500).get();
+      const emailSnapshot = await leadsRef.where('userEmail', '==', userEmail).limit(500).get();
       const existingIds = new Set(firestoreLeads.map(l => l._id));
       emailSnapshot.docs.forEach(doc => {
         if (!existingIds.has(doc.id)) {
@@ -36,7 +54,7 @@ router.get('/', async (req, res) => {
   }
 
   // Merge with local persistent store
-  const localLeads = leadStore.getLeads(userId, userEmail || undefined);
+  const localLeads = leadStore.getLeads(userId, userEmail);
   const seenIds = new Set(firestoreLeads.map(l => l._id));
   const merged = [...firestoreLeads];
 
@@ -54,14 +72,57 @@ router.get('/', async (req, res) => {
     }
   }
 
-  merged.sort((a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+  merged.sort((a: any, b: any) => {
+    const timeB = new Date(b.harvestedAt || b.createdAt || 0).getTime();
+    const timeA = new Date(a.harvestedAt || a.createdAt || 0).getTime();
+    return timeB - timeA;
+  });
   res.json(merged);
+});
+
+// Bi-directional lead vault synchronization endpoint
+router.post('/sync-vault', async (req, res) => {
+  const userCtx = resolveUserContext(req);
+  if (!userCtx) return res.status(401).json({ error: 'Unauthorized' });
+  const { userId, userEmail } = userCtx;
+
+  const { leads = [] } = req.body;
+  if (!Array.isArray(leads) || leads.length === 0) {
+    const current = leadStore.getLeads(userId, userEmail);
+    return res.json({ success: true, count: current.length, leads: current });
+  }
+
+  const mergedLeads = leadStore.upsertSyncVault(leads, userId, userEmail);
+
+  // Attempt async sync to Firestore in background
+  try {
+    const batch = db.collection('leads').firestore.batch();
+    let batchCount = 0;
+    for (const item of mergedLeads.slice(0, 100)) {
+      if (item && item._id) {
+        const leadRef = db.collection('leads').doc(item._id);
+        const { _id, ...firestoreData } = item;
+        batch.set(leadRef, firestoreData, { merge: true });
+        batchCount++;
+      }
+    }
+    if (batchCount > 0) {
+      await batch.commit().catch(() => {});
+    }
+  } catch {}
+
+  res.json({
+    success: true,
+    count: mergedLeads.length,
+    leads: mergedLeads
+  });
 });
 
 // Manual Contact / Lead Creation
 router.post('/', async (req, res) => {
-  const userId = req.headers.userid as string;
-  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+  const userCtx = resolveUserContext(req);
+  if (!userCtx) return res.status(401).json({ error: 'Unauthorized' });
+  const { userId, userEmail } = userCtx;
 
   const { businessName, email, phone, category, location, city, website, status = 'New', tags = [], source = 'Manual Entry' } = req.body;
   if (!businessName && !email) {
@@ -69,21 +130,26 @@ router.post('/', async (req, res) => {
   }
 
   const resolvedLocation = (location || city || '').trim();
+  const resolvedCity = (city || resolvedLocation).split(',')[0].trim();
+  const nowIso = new Date().toISOString();
+
   const newLead = {
     userId,
+    userEmail,
     businessName: businessName || (email ? email.split('@')[0] : 'New Contact'),
     email: email || '',
     phone: phone || '',
     category: category || 'General B2B',
     location: resolvedLocation,
-    city: city || resolvedLocation,
+    city: resolvedCity,
     website: website || '',
     status: status || 'New',
     tags: Array.isArray(tags) ? tags : [tags].filter(Boolean),
     source,
     saved: true,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
+    harvestedAt: nowIso,
+    createdAt: nowIso,
+    updatedAt: nowIso
   };
 
   let savedId = `lead_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
@@ -233,16 +299,17 @@ export const memorySerpApiStore = new Map<string, any>();
 
 // Check SerpApi engine connection and live quota
 router.get('/serpapi/status', async (req, res) => {
-  const userId = req.headers.userid as string;
-  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+  const userCtx = resolveUserContext(req);
+  if (!userCtx) return res.status(401).json({ error: 'Unauthorized' });
+  const { userId, userEmail } = userCtx;
 
   try {
-    let serpInfo = memorySerpApiStore.get(userId);
+    let serpInfo = memorySerpApiStore.get(userId) || (userEmail ? memorySerpApiStore.get(userEmail) : null);
     let apiKey = serpInfo?.apiKey;
 
     if (!apiKey) {
       // 1. Check local persistent UserStore first
-      const localUser = userStore.getUserById(userId) || (userId.includes('@') ? userStore.getUserByEmail(userId) : null);
+      const localUser = userStore.getUserById(userId) || (userEmail ? userStore.getUserByEmail(userEmail) : null);
       if (localUser && localUser.serpapi_key) {
         apiKey = localUser.serpapi_key;
         serpInfo = {
@@ -254,14 +321,19 @@ router.get('/serpapi/status', async (req, res) => {
           this_month_usage: localUser.serpapi_this_month_usage || 0
         };
         memorySerpApiStore.set(userId, serpInfo);
+        if (userEmail) memorySerpApiStore.set(userEmail, serpInfo);
       }
     }
 
     if (!apiKey) {
       // 2. Query Firestore and back-propagate to UserStore
       try {
-        const userDoc = await db.collection('users').doc(userId).get();
-        if (userDoc.exists) {
+        let userDoc = await db.collection('users').doc(userId).get();
+        if (!userDoc.exists && userEmail) {
+          const snap = await db.collection('users').where('email', '==', userEmail).limit(1).get();
+          if (!snap.empty) userDoc = snap.docs[0];
+        }
+        if (userDoc && userDoc.exists) {
           const udata = userDoc.data() || {};
           apiKey = udata.serpapi_key;
           if (apiKey) {
@@ -274,6 +346,7 @@ router.get('/serpapi/status', async (req, res) => {
               this_month_usage: udata.serpapi_this_month_usage || 0
             };
             memorySerpApiStore.set(userId, serpInfo);
+            if (userEmail) memorySerpApiStore.set(userEmail, serpInfo);
             userStore.updateUser(userId, {
               serpapi_key: apiKey,
               serpapi_connected: true,
@@ -281,6 +354,15 @@ router.get('/serpapi/status', async (req, res) => {
               serpapi_plan_name: serpInfo.plan_name,
               serpapi_searches_left: serpInfo.plan_searches_left
             });
+            if (userEmail && userEmail !== userId) {
+              userStore.updateUser(userEmail, {
+                serpapi_key: apiKey,
+                serpapi_connected: true,
+                serpapi_plan: serpInfo.plan_id,
+                serpapi_plan_name: serpInfo.plan_name,
+                serpapi_searches_left: serpInfo.plan_searches_left
+              });
+            }
           }
         }
       } catch (dbErr) {}
@@ -308,6 +390,7 @@ router.get('/serpapi/status', async (req, res) => {
           account_email: data.account_email || ''
         };
         memorySerpApiStore.set(userId, updated);
+        if (userEmail) memorySerpApiStore.set(userEmail, updated);
         return res.json({
           isConnected: true,
           account: updated
@@ -328,8 +411,9 @@ router.get('/serpapi/status', async (req, res) => {
 
 // Verify & connect user SerpApi key
 router.post('/serpapi/connect', async (req, res) => {
-  const userId = req.headers.userid as string;
-  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+  const userCtx = resolveUserContext(req);
+  if (!userCtx) return res.status(401).json({ error: 'Unauthorized' });
+  const { userId, userEmail } = userCtx;
 
   const { apiKey } = req.body;
   const cleanKey = (apiKey || '').trim();
@@ -360,18 +444,9 @@ router.post('/serpapi/connect', async (req, res) => {
     };
 
     memorySerpApiStore.set(userId, accountRecord);
-    userStore.updateUser(userId, {
-      serpapi_key: cleanKey,
-      serpapi_connected: true,
-      serpapi_plan: accountRecord.plan_id,
-      serpapi_plan_name: accountRecord.plan_name,
-      serpapi_searches_left: accountRecord.plan_searches_left,
-      serpapi_searches_per_month: accountRecord.searches_per_month,
-      serpapi_this_month_usage: accountRecord.this_month_usage,
-      serpapi_updated_at: new Date().toISOString()
-    });
+    if (userEmail) memorySerpApiStore.set(userEmail, accountRecord);
 
-    await db.collection('users').doc(userId).set({
+    const updatePayload = {
       serpapi_key: cleanKey,
       serpapi_connected: true,
       serpapi_plan: accountRecord.plan_id,
@@ -380,9 +455,21 @@ router.post('/serpapi/connect', async (req, res) => {
       serpapi_searches_per_month: accountRecord.searches_per_month,
       serpapi_this_month_usage: accountRecord.this_month_usage,
       serpapi_updated_at: new Date().toISOString()
-    }, { merge: true }).catch(err => {
+    };
+
+    userStore.updateUser(userId, updatePayload);
+    if (userEmail && userEmail !== userId) {
+      userStore.updateUser(userEmail, updatePayload);
+    }
+
+    try {
+      await db.collection('users').doc(userId).set(updatePayload, { merge: true });
+      if (userEmail && userEmail !== userId) {
+        await db.collection('users').doc(userEmail).set(updatePayload, { merge: true }).catch(() => {});
+      }
+    } catch (err) {
       console.warn('[Leads] Could not persist SerpApi info to Firestore:', err);
-    });
+    }
 
     res.json({
       success: true,
@@ -397,17 +484,25 @@ router.post('/serpapi/connect', async (req, res) => {
 
 // Disconnect SerpApi key
 router.delete('/serpapi/disconnect', async (req, res) => {
-  const userId = req.headers.userid as string;
-  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+  const userCtx = resolveUserContext(req);
+  if (!userCtx) return res.status(401).json({ error: 'Unauthorized' });
+  const { userId, userEmail } = userCtx;
 
   memorySerpApiStore.delete(userId);
-  userStore.updateUser(userId, {
+  if (userEmail) memorySerpApiStore.delete(userEmail);
+
+  const disconnectPayload = {
     serpapi_key: undefined,
     serpapi_connected: false,
     serpapi_plan: undefined,
     serpapi_plan_name: undefined,
     serpapi_searches_left: undefined
-  });
+  };
+
+  userStore.updateUser(userId, disconnectPayload);
+  if (userEmail && userEmail !== userId) {
+    userStore.updateUser(userEmail, disconnectPayload);
+  }
 
   try {
     await db.collection('users').doc(userId).update({
@@ -423,9 +518,10 @@ router.delete('/serpapi/disconnect', async (req, res) => {
 });
 
 router.post('/scrape', async (req, res) => {
-  const userId = req.headers.userid as string;
+  const userCtx = resolveUserContext(req);
+  if (!userCtx) return res.status(401).json({ error: 'Unauthorized' });
+  const { userId, userEmail } = userCtx;
   const { keyword, location, scope = 'quick' } = req.body;
-  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
   if (!keyword || !location) return res.status(400).json({ error: 'Keyword and Location required' });
 
   try {
@@ -443,7 +539,7 @@ router.post('/scrape', async (req, res) => {
     }
 
     if (!userData) {
-      const localU = userStore.getUserById(userId);
+      const localU = userStore.getUserById(userId) || (userEmail ? userStore.getUserByEmail(userEmail) : null);
       if (localU) {
         userData = { ...localU };
       }
@@ -473,7 +569,7 @@ router.post('/scrape', async (req, res) => {
     }
 
     // Check SerpApi engine requirement
-    const userSerpInfo = memorySerpApiStore.get(userId);
+    const userSerpInfo = memorySerpApiStore.get(userId) || (userEmail ? memorySerpApiStore.get(userEmail) : null);
     const resolvedSerpKey = userSerpInfo?.apiKey || userData?.serpapi_key || process.env.SERPAPI_KEY || '';
 
     if (!resolvedSerpKey) {
@@ -539,16 +635,23 @@ router.post('/scrape', async (req, res) => {
       }
       // If Firestore transaction fails due to offline/permission, proceed with local deduction
       userStore.updateUser(userId, { lead_credits: creditsRemaining });
+      if (userEmail && userEmail !== userId) {
+        userStore.updateUser(userEmail, { lead_credits: creditsRemaining });
+      }
     }
     
     // Always persist deduction in local store
     userStore.updateUser(userId, { lead_credits: creditsRemaining });
+    if (userEmail && userEmail !== userId) {
+      userStore.updateUser(userEmail, { lead_credits: creditsRemaining });
+    }
     
     const jobId = `job_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
 
     scraperQueue.add({ 
       id: jobId,
       userId, 
+      userEmail,
       keyword, 
       location, 
       scope, 
@@ -597,11 +700,12 @@ router.get('/active-job', (req, res) => {
 // Batch Save / Update Leads
 router.post('/batch-save', async (req, res) => {
   try {
-    const userId = req.headers.userid as string;
-    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    const userCtx = resolveUserContext(req);
+    if (!userCtx) return res.status(401).json({ error: 'Unauthorized' });
+    const { userId, userEmail } = userCtx;
     const { ids, all, saved = true } = req.body;
 
-    const localCount = leadStore.batchSaveStatus(Array.isArray(ids) ? ids : [], saved, userId);
+    const localCount = leadStore.batchSaveStatus(Array.isArray(ids) ? ids : [], saved, userId, userEmail);
 
     try {
       const leadsRef = db.collection('leads');
@@ -639,8 +743,8 @@ router.post('/batch-save', async (req, res) => {
 // Batch Delete Specific Leads
 router.post('/batch-delete', async (req, res) => {
   try {
-    const userId = req.headers.userid as string;
-    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    const userCtx = resolveUserContext(req);
+    if (!userCtx) return res.status(401).json({ error: 'Unauthorized' });
     const { ids } = req.body;
 
     if (!Array.isArray(ids) || ids.length === 0) {
@@ -674,10 +778,11 @@ router.post('/batch-delete', async (req, res) => {
 // Delete All User Leads
 router.delete('/all', async (req, res) => {
   try {
-    const userId = req.headers.userid as string;
-    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    const userCtx = resolveUserContext(req);
+    if (!userCtx) return res.status(401).json({ error: 'Unauthorized' });
+    const { userId, userEmail } = userCtx;
 
-    const localDeleted = leadStore.deleteAll(userId);
+    const localDeleted = leadStore.deleteAll(userId, userEmail);
 
     try {
       const leadsRef = db.collection('leads');

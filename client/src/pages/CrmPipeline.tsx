@@ -122,11 +122,41 @@ const CrmPipeline = () => {
   const fetchLeads = async () => {
     try {
       const res = await axios.get(`${API_URL}/api/leads`, {
-        headers: { userid: user?._id }
+        headers: { 
+          userid: user?._id || '',
+          useremail: user?.email || ''
+        }
       });
-      setLeads(res.data);
+      const fetched = Array.isArray(res.data) ? res.data : [];
+      if (fetched.length > 0) {
+        setLeads(fetched);
+      } else {
+        try {
+          const raw = (user?.email && localStorage.getItem(`strovr_leads_cache_${user.email}`)) ||
+                      (user?._id && localStorage.getItem(`strovr_leads_cache_${user._id}`));
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setLeads(parsed);
+              return;
+            }
+          }
+        } catch {}
+        setLeads([]);
+      }
     } catch (err) {
       console.error(err);
+      try {
+        const raw = (user?.email && localStorage.getItem(`strovr_leads_cache_${user.email}`)) ||
+                    (user?._id && localStorage.getItem(`strovr_leads_cache_${user._id}`));
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setLeads(parsed);
+            return;
+          }
+        }
+      } catch {}
       setLeads([]);
     }
   };
@@ -159,7 +189,10 @@ const CrmPipeline = () => {
     try {
       setLeads(prev => prev.map(l => l._id === leadId ? { ...l, status: newStatus } : l));
       await axios.patch(`${API_URL}/api/leads/${leadId}`, { status: newStatus }, {
-        headers: { userid: user?._id }
+        headers: { 
+          userid: user?._id || '',
+          useremail: user?.email || ''
+        }
       });
 
       if (activeAlertApp) {
@@ -193,7 +226,10 @@ const CrmPipeline = () => {
         setSelectedLeadDetails(updatedLead);
       }
       await axios.patch(`${API_URL}/api/leads/${updatedLead._id}`, updatedLead, {
-        headers: { userid: user?._id }
+        headers: { 
+          userid: user?._id || '',
+          useremail: user?.email || ''
+        }
       });
       showToast(`Saved updates for "${updatedLead.businessName}"`);
     } catch (err) {
@@ -402,7 +438,10 @@ const CrmPipeline = () => {
         emailStatus: 'Verified Email',
         status: 'Email Verified & Captured'
       }, {
-        headers: { userid: user?._id }
+        headers: { 
+          userid: user?._id || '',
+          useremail: user?.email || ''
+        }
       });
 
       setCapturingLeadId(null);
@@ -436,7 +475,10 @@ const CrmPipeline = () => {
         status: editingLead.status || 'New'
       };
       const res = await axios.patch(`${API_URL}/api/leads/${editingLead._id}`, payload, {
-        headers: { userid: user?._id }
+        headers: { 
+          userid: user?._id || '',
+          useremail: user?.email || ''
+        }
       });
       const updated = res.data?.lead || { ...editingLead, ...payload };
       setLeads(prev => prev.map(l => l._id === editingLead._id ? updated : l));
@@ -579,7 +621,12 @@ const CrmPipeline = () => {
                 <button 
                   onClick={async () => {
                     for (const id of selectedLeads) {
-                      await axios.delete(`${API_URL}/api/leads/${id}`, { headers: { userid: user?._id } }).catch(() => {});
+                      await axios.delete(`${API_URL}/api/leads/${id}`, { 
+                        headers: { 
+                          userid: user?._id || '',
+                          useremail: user?.email || ''
+                        } 
+                      }).catch(() => {});
                     }
                     setSelectedLeads([]);
                     fetchLeads();

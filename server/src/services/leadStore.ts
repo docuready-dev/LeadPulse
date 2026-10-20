@@ -4,6 +4,7 @@ import path from 'path';
 export interface LeadRecord {
   _id: string;
   userId: string;
+  userEmail?: string;
   businessName: string;
   category?: string;
   fieldOfWork?: string;
@@ -14,11 +15,13 @@ export interface LeadRecord {
   website?: string;
   rating?: number;
   location?: string;
+  city?: string;
   scope?: string;
   status?: string;
   tags?: string[];
   saved?: boolean;
   source?: string;
+  harvestedAt?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -73,12 +76,43 @@ class LeadStore {
     }
   }
 
-  getLeads(userId?: string, altUserId?: string): LeadRecord[] {
+  getLeads(userId?: string, userEmail?: string): LeadRecord[] {
     const all = Array.from(this.leads.values());
-    const filtered = userId 
-      ? all.filter(l => l.userId === userId || (altUserId && l.userId === altUserId)) 
-      : all;
-    return filtered.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+    const cleanUserId = userId?.toLowerCase().trim();
+    const cleanEmail = userEmail?.toLowerCase().trim();
+
+    if (!cleanUserId && !cleanEmail) {
+      return all.sort((a, b) => {
+        const timeB = new Date(b.harvestedAt || b.createdAt || 0).getTime();
+        const timeA = new Date(a.harvestedAt || a.createdAt || 0).getTime();
+        return timeB - timeA;
+      });
+    }
+
+    const filtered = all.filter(l => {
+      const lUid = (l.userId || '').toLowerCase().trim();
+      const lEmail = (l.userEmail || '').toLowerCase().trim();
+
+      // Direct match on userId or userEmail
+      if (cleanUserId && (lUid === cleanUserId || lEmail === cleanUserId)) return true;
+      if (cleanEmail && (lEmail === cleanEmail || lUid === cleanEmail)) return true;
+
+      // Ashley Super Admin cross-session aliases
+      if (cleanUserId?.includes('ashleyghose64') || cleanEmail?.includes('ashleyghose64')) {
+        if (lUid.includes('ashleyghose64') || lEmail.includes('ashleyghose64')) return true;
+      }
+      if (cleanUserId?.includes('ashleyghose28') || cleanEmail?.includes('ashleyghose28')) {
+        if (lUid.includes('ashleyghose28') || lEmail.includes('ashleyghose28')) return true;
+      }
+
+      return false;
+    });
+
+    return filtered.sort((a, b) => {
+      const timeB = new Date(b.harvestedAt || b.createdAt || 0).getTime();
+      const timeA = new Date(a.harvestedAt || a.createdAt || 0).getTime();
+      return timeB - timeA;
+    });
   }
 
   getLeadById(id: string): LeadRecord | null {
@@ -88,9 +122,13 @@ class LeadStore {
   addLead(lead: Partial<LeadRecord> & { userId: string; businessName: string }): LeadRecord {
     const id = lead._id || `lead_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     const nowIso = new Date().toISOString();
+    const city = lead.city || (lead.location ? lead.location.split(',')[0].trim() : '');
+    const harvestedAt = lead.harvestedAt || lead.createdAt || nowIso;
+
     const record: LeadRecord = {
       _id: id,
       userId: lead.userId,
+      userEmail: lead.userEmail,
       businessName: lead.businessName,
       category: lead.category || 'General B2B',
       fieldOfWork: lead.fieldOfWork || lead.category || 'General B2B',
@@ -100,13 +138,15 @@ class LeadStore {
       emailStatus: lead.emailStatus || (lead.email ? 'Verified Email' : 'Phone Only / No Email Found'),
       website: lead.website || '',
       rating: lead.rating || 0,
-      location: lead.location || '',
+      location: lead.location || city || '',
+      city: city,
       scope: lead.scope || 'quick',
       status: lead.status || 'New',
       tags: Array.isArray(lead.tags) ? lead.tags : [],
       saved: lead.saved ?? true,
       source: lead.source || 'Scraper Engine',
-      createdAt: lead.createdAt || nowIso,
+      harvestedAt: harvestedAt,
+      createdAt: lead.createdAt || harvestedAt,
       updatedAt: lead.updatedAt || nowIso
     };
 
@@ -122,9 +162,13 @@ class LeadStore {
     for (let i = 0; i < newLeads.length; i++) {
       const l = newLeads[i];
       const id = l._id || `lead_${Date.now()}_${i}_${Math.random().toString(36).substring(2, 7)}`;
+      const city = l.city || (l.location ? l.location.split(',')[0].trim() : '');
+      const harvestedAt = l.harvestedAt || l.createdAt || new Date(Date.now() - i * 1000).toISOString();
+
       const record: LeadRecord = {
         _id: id,
         userId: l.userId,
+        userEmail: l.userEmail,
         businessName: l.businessName,
         category: l.category || 'General B2B',
         fieldOfWork: l.fieldOfWork || l.category || 'General B2B',
@@ -134,13 +178,15 @@ class LeadStore {
         emailStatus: l.emailStatus || (l.email ? 'Verified Email' : 'Phone Only / No Email Found'),
         website: l.website || '',
         rating: l.rating || 0,
-        location: l.location || '',
+        location: l.location || city || '',
+        city: city,
         scope: l.scope || 'quick',
         status: l.status || 'New',
         tags: Array.isArray(l.tags) ? l.tags : [],
         saved: l.saved ?? true,
         source: l.source || 'Harvest Pipeline',
-        createdAt: l.createdAt || new Date(Date.now() - i * 1000).toISOString(),
+        harvestedAt: harvestedAt,
+        createdAt: l.createdAt || harvestedAt,
         updatedAt: nowIso
       };
 
@@ -150,6 +196,99 @@ class LeadStore {
 
     this.saveToDisk();
     return saved;
+  }
+
+  upsertSyncVault(
+    vaultLeads: Array<Partial<LeadRecord> & { businessName: string }>,
+    defaultUserId?: string,
+    defaultUserEmail?: string
+  ): LeadRecord[] {
+    const nowIso = new Date().toISOString();
+    const cleanUserEmail = defaultUserEmail?.toLowerCase().trim();
+    const cleanUserId = defaultUserId?.trim();
+
+    // Map existing records for smart deduplication
+    const existingById = new Map<string, LeadRecord>();
+    const existingByKey = new Map<string, LeadRecord>();
+
+    for (const item of this.leads.values()) {
+      if (item._id) existingById.set(item._id, item);
+      const nameKey = (item.businessName || '').toLowerCase().trim();
+      if (nameKey && item.email) existingByKey.set(`${nameKey}__${item.email.toLowerCase().trim()}`, item);
+      if (nameKey && item.phone) existingByKey.set(`${nameKey}__${item.phone.replace(/[^0-9]/g, '')}`, item);
+    }
+
+    for (const l of vaultLeads) {
+      if (!l || !l.businessName) continue;
+      const nameNorm = l.businessName.toLowerCase().trim();
+      const emailNorm = (l.email || '').toLowerCase().trim();
+      const phoneNorm = (l.phone || '').replace(/[^0-9]/g, '');
+
+      let existing: LeadRecord | undefined;
+      if (l._id && existingById.has(l._id)) {
+        existing = existingById.get(l._id);
+      } else if (emailNorm && existingByKey.has(`${nameNorm}__${emailNorm}`)) {
+        existing = existingByKey.get(`${nameNorm}__${emailNorm}`);
+      } else if (phoneNorm && existingByKey.has(`${nameNorm}__${phoneNorm}`)) {
+        existing = existingByKey.get(`${nameNorm}__${phoneNorm}`);
+      }
+
+      const assignedUserId = l.userId || existing?.userId || cleanUserId || 'anonymous';
+      const assignedUserEmail = l.userEmail || existing?.userEmail || cleanUserEmail || undefined;
+      const assignedCity = l.city || existing?.city || (l.location ? l.location.split(',')[0].trim() : '');
+      const assignedHarvestedAt = l.harvestedAt || existing?.harvestedAt || l.createdAt || existing?.createdAt || nowIso;
+
+      if (existing) {
+        existing.businessName = l.businessName || existing.businessName;
+        if (l.email && !existing.email) existing.email = l.email;
+        if (l.phone && !existing.phone) existing.phone = l.phone;
+        if (l.website && !existing.website) existing.website = l.website;
+        if (l.rating && !existing.rating) existing.rating = l.rating;
+        if (l.category && (!existing.category || existing.category === 'General B2B')) existing.category = l.category;
+        if (assignedCity && !existing.city) existing.city = assignedCity;
+        if (l.location && !existing.location) existing.location = l.location;
+        if (l.status) existing.status = l.status;
+        if (Array.isArray(l.tags) && l.tags.length > 0) {
+          existing.tags = Array.from(new Set([...(existing.tags || []), ...l.tags]));
+        }
+        if (assignedUserEmail && !existing.userEmail) existing.userEmail = assignedUserEmail;
+        existing.updatedAt = nowIso;
+        this.leads.set(existing._id, existing);
+      } else {
+        const id = l._id || `lead_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+        const record: LeadRecord = {
+          _id: id,
+          userId: assignedUserId,
+          userEmail: assignedUserEmail,
+          businessName: l.businessName,
+          category: l.category || 'General B2B',
+          fieldOfWork: l.fieldOfWork || l.category || 'General B2B',
+          firstName: l.firstName || '',
+          phone: l.phone || '',
+          email: l.email || '',
+          emailStatus: l.emailStatus || (l.email ? 'Verified Email' : 'Phone Only / No Email Found'),
+          website: l.website || '',
+          rating: l.rating || 0,
+          location: l.location || assignedCity || '',
+          city: assignedCity,
+          scope: l.scope || 'quick',
+          status: l.status || 'New',
+          tags: Array.isArray(l.tags) ? l.tags : [],
+          saved: l.saved ?? true,
+          source: l.source || 'Vault Rehydration',
+          harvestedAt: assignedHarvestedAt,
+          createdAt: l.createdAt || assignedHarvestedAt,
+          updatedAt: nowIso
+        };
+        this.leads.set(id, record);
+        existingById.set(id, record);
+        if (emailNorm) existingByKey.set(`${nameNorm}__${emailNorm}`, record);
+        if (phoneNorm) existingByKey.set(`${nameNorm}__${phoneNorm}`, record);
+      }
+    }
+
+    this.saveToDisk();
+    return this.getLeads(cleanUserId, cleanUserEmail);
   }
 
   updateLead(id: string, updates: Partial<LeadRecord>): LeadRecord | null {
@@ -190,10 +329,15 @@ class LeadStore {
     return count;
   }
 
-  deleteAll(userId: string): number {
+  deleteAll(userId: string, userEmail?: string): number {
     let count = 0;
+    const cleanUserId = userId?.toLowerCase().trim();
+    const cleanEmail = userEmail?.toLowerCase().trim();
     for (const [id, lead] of this.leads.entries()) {
-      if (lead.userId === userId) {
+      const lUid = (lead.userId || '').toLowerCase().trim();
+      const lEmail = (lead.userEmail || '').toLowerCase().trim();
+      if ((cleanUserId && (lUid === cleanUserId || lEmail === cleanUserId)) ||
+          (cleanEmail && (lEmail === cleanEmail || lUid === cleanEmail))) {
         this.leads.delete(id);
         count++;
       }
@@ -204,15 +348,22 @@ class LeadStore {
     return count;
   }
 
-  batchSaveStatus(ids: string[], saved: boolean, userId: string): number {
+  batchSaveStatus(ids: string[], saved: boolean, userId: string, userEmail?: string): number {
     let count = 0;
     const nowIso = new Date().toISOString();
+    const cleanUserId = userId?.toLowerCase().trim();
+    const cleanEmail = userEmail?.toLowerCase().trim();
     for (const id of ids) {
       const existing = this.leads.get(id);
-      if (existing && existing.userId === userId) {
-        existing.saved = saved;
-        existing.updatedAt = nowIso;
-        count++;
+      if (existing) {
+        const lUid = (existing.userId || '').toLowerCase().trim();
+        const lEmail = (existing.userEmail || '').toLowerCase().trim();
+        if (!cleanUserId || lUid === cleanUserId || lEmail === cleanUserId ||
+            (cleanEmail && (lEmail === cleanEmail || lUid === cleanEmail))) {
+          existing.saved = saved;
+          existing.updatedAt = nowIso;
+          count++;
+        }
       }
     }
     if (count > 0) {

@@ -39,9 +39,23 @@ const Appointments = () => {
     const fetchLeads = async () => {
       try {
         const res = await axios.get(`${apiBase}/api/leads`, {
-          headers: { userid: user?._id }
+          headers: { 
+            userid: user?._id || '',
+            useremail: user?.email || ''
+          }
         });
-        setLeads(res.data || []);
+        let rawLeads = Array.isArray(res.data) ? res.data : [];
+        if (rawLeads.length === 0) {
+          try {
+            const raw = (user?.email && localStorage.getItem(`strovr_leads_cache_${user.email}`)) ||
+                        (user?._id && localStorage.getItem(`strovr_leads_cache_${user._id}`));
+            if (raw) {
+              const parsed = JSON.parse(raw);
+              if (Array.isArray(parsed) && parsed.length > 0) rawLeads = parsed;
+            }
+          } catch {}
+        }
+        setLeads(rawLeads);
       } catch {
         setLeads([]);
       }

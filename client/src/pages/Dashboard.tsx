@@ -333,11 +333,43 @@ const Dashboard = () => {
   const fetchLeads = async () => {
     try {
       const res = await axios.get(`${API_URL}/api/leads`, {
-        headers: { userid: user?._id }
+        headers: { 
+          userid: user?._id || '',
+          useremail: user?.email || ''
+        }
       });
-      setLeads(Array.isArray(res.data) ? res.data : (Array.isArray(res.data?.leads) ? res.data.leads : []));
+      const fetched = Array.isArray(res.data) ? res.data : (Array.isArray(res.data?.leads) ? res.data.leads : []);
+      if (fetched.length > 0) {
+        setLeads(fetched);
+      } else {
+        // Fallback to local vault if server woke up fresh
+        try {
+          const raw = (user?.email && localStorage.getItem(`strovr_leads_cache_${user.email}`)) ||
+                      (user?._id && localStorage.getItem(`strovr_leads_cache_${user._id}`));
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setLeads(parsed);
+              return;
+            }
+          }
+        } catch {}
+        setLeads([]);
+      }
     } catch (err) {
       console.error('Failed to fetch leads', err);
+      // Fallback to local vault
+      try {
+        const raw = (user?.email && localStorage.getItem(`strovr_leads_cache_${user.email}`)) ||
+                    (user?._id && localStorage.getItem(`strovr_leads_cache_${user._id}`));
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setLeads(parsed);
+            return;
+          }
+        }
+      } catch {}
       setLeads([]);
     }
   };

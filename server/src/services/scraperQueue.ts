@@ -7,6 +7,7 @@ import { userStore } from './userStore';
 export interface ScrapeJob {
   id: string;
   userId: string;
+  userEmail?: string;
   keyword: string;
   location: string;
   scope?: 'quick' | 'deep';
@@ -566,9 +567,12 @@ class InMemScraperQueue {
         if (!existingNames.has(normalizedName)) {
           existingNames.add(normalizedName);
           const leadId = `lead_${Date.now()}_${index}_${Math.random().toString(36).substring(2, 7)}`;
+          const harvestIso = new Date(Date.now() - index * 1000).toISOString();
+          const resolvedCity = ((lead as any).city || job.location || lead.location || '').split(',')[0].trim();
           leadsToSave.push({
             _id: leadId,
             userId: job.userId,
+            userEmail: job.userEmail,
             businessName: lead.businessName,
             category: lead.category,
             fieldOfWork: lead.fieldOfWork,
@@ -578,13 +582,15 @@ class InMemScraperQueue {
             emailStatus: lead.emailStatus || 'Phone Only / No Email Found',
             website: lead.website,
             rating: lead.rating,
-            location: lead.location,
-            scope: lead.scope,
-            status: lead.status,
+            location: lead.location || job.location,
+            city: resolvedCity,
+            scope: lead.scope || job.scope,
+            status: lead.status || 'New',
             tags: lead.tags,
             saved: true,
             source: isDeep ? 'Deep Harvest Engine' : 'Quick Harvest Engine',
-            createdAt: new Date(Date.now() - index * 1000).toISOString(),
+            harvestedAt: harvestIso,
+            createdAt: harvestIso,
             updatedAt: new Date().toISOString()
           });
         }
