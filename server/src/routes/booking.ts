@@ -8,6 +8,7 @@ import {
   BookingSlotDetails
 } from '../services/googleCalendar';
 import { sendDirectEmail } from '../services/mailer';
+import { userStore } from '../services/userStore';
 
 const router = Router();
 
@@ -22,6 +23,11 @@ async function getUserCalendarSettings(userId?: string): Promise<GoogleCalendarS
   if (!userId) return undefined;
   if (memoryCalendarStore.has(userId)) {
     return memoryCalendarStore.get(userId);
+  }
+  const localUser = userStore.getUserById(userId);
+  if (localUser?.googleCalendarSettings) {
+    memoryCalendarStore.set(userId, localUser.googleCalendarSettings);
+    return localUser.googleCalendarSettings;
   }
   try {
     const userDoc = await db.collection('users').doc(userId).get();
@@ -154,11 +160,12 @@ router.post('/configure', async (req: Request, res: Response) => {
 
     // Cache in memory immediately so UI updates and stays responsive
     memoryCalendarStore.set(userId, savedRecord);
+    userStore.updateUser(userId, { googleCalendarSettings: savedRecord });
 
     try {
-      await db.collection('users').doc(userId).update({
+      await db.collection('users').doc(userId).set({
         googleCalendarSettings: savedRecord
-      });
+      }, { merge: true });
     } catch (dbErr) {
       console.warn('[Booking Route] Could not persist googleCalendarSettings to Firestore (cached in-memory):', dbErr);
     }

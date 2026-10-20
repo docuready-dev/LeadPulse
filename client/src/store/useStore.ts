@@ -149,7 +149,24 @@ export const useStore = create<AppState>()(
       upgradeTab: 'plans',
       integrations: INITIAL_WORKSPACE_INTEGRATIONS,
       integrationLogs: [],
-      setUser: (user) => set({ user: normalizeUserCredits(user) }),
+      setUser: (user) => {
+        const normalized = normalizeUserCredits(user);
+        if (normalized && typeof window !== 'undefined' && normalized.email) {
+          try {
+            if (normalized.profile_picture) {
+              const vaultData = {
+                profile_picture: normalized.profile_picture,
+                company_name: normalized.company_name,
+                name: normalized.name,
+                updatedAt: new Date().toISOString()
+              };
+              localStorage.setItem(`strovr_profile_vault_${normalized.email}`, JSON.stringify(vaultData));
+              localStorage.setItem('strovr_profile_vault_global', JSON.stringify(vaultData));
+            }
+          } catch {}
+        }
+        set({ user: normalized });
+      },
       setToken: (token) => set({ token }),
       setActiveFilter: (filter) => set({ activeFilter: filter }),
       updateCredits: (credits, topup) => set((state) => ({ 

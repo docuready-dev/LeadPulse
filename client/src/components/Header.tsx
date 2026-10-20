@@ -83,6 +83,21 @@ const Header = ({ title: _title }: HeaderProps) => {
         >
           <Bell className="w-3.5 h-3.5" />
         </button>
+
+        {/* User Profile Avatar Button */}
+        <button 
+          onClick={() => navigate('/settings')}
+          className="w-8 h-8 rounded-md overflow-hidden border border-[#D6CFC2] bg-white flex items-center justify-center hover:border-slate-400 hover:shadow-2xs transition-all cursor-pointer shrink-0"
+          title={`Signed in as ${user?.name || 'User'} - Open Settings`}
+        >
+          {user?.profile_picture ? (
+            <img src={user.profile_picture} className="w-full h-full object-cover" alt="Profile" />
+          ) : (
+            <span className="text-[11px] font-bold text-[#191716] font-delight">
+              {user?.name?.charAt(0) || 'U'}
+            </span>
+          )}
+        </button>
       </div>
     </header>
   );

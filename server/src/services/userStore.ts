@@ -29,6 +29,7 @@ export interface UserRecord {
   target_audience?: string;
   goals?: string;
   profile_picture?: string;
+  googleCalendarSettings?: any;
   smtp_settings?: any;
   smtpSettings?: any;
   outreach_defaults?: any;
@@ -206,6 +207,7 @@ class UserStore {
       target_audience: user.target_audience !== undefined ? user.target_audience : existing?.target_audience,
       goals: user.goals !== undefined ? user.goals : existing?.goals,
       profile_picture: user.profile_picture !== undefined ? user.profile_picture : existing?.profile_picture,
+      googleCalendarSettings: user.googleCalendarSettings !== undefined ? user.googleCalendarSettings : existing?.googleCalendarSettings,
       smtp_settings: user.smtp_settings !== undefined ? user.smtp_settings : existing?.smtp_settings,
       smtpSettings: user.smtpSettings !== undefined ? user.smtpSettings : existing?.smtpSettings,
       outreach_defaults: user.outreach_defaults !== undefined ? user.outreach_defaults : existing?.outreach_defaults,

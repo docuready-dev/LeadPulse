@@ -34,6 +34,7 @@ async function provisionSystemAccounts() {
     const superAdminUser: any = {
       ...existingSuper,
       _id: 'user_ashleyghose64',
+      profile_picture: existingSuper?.profile_picture || '',
       email: 'ashleyghose64@gmail.com',
       name: 'Ashley',
       phone: '+919004804043',
@@ -89,6 +90,7 @@ async function provisionSystemAccounts() {
     const biconUser: any = {
       ...existingBicon,
       _id: 'user_ashleyghose28',
+      profile_picture: existingBicon?.profile_picture || '',
       email: 'ashleyghose28@gmail.com',
       name: 'Bicon Ghose',
       phone: '+919004804043',
@@ -971,8 +973,21 @@ router.post('/reset-password-otp', async (req, res) => {
 });
 
 router.patch('/profile', async (req, res) => {
-  const userId = req.headers.userid as string;
+  let userId = (req.headers.userid as string) || '';
+  const userEmail = (req.headers.useremail as string || req.body.email || '').toLowerCase().trim();
+
+  if (!userId && userEmail) {
+    const found = userStore.getUserByEmail(userEmail);
+    if (found) userId = found._id;
+    else userId = userEmail;
+  }
+
   if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+  const cleanUid = userId.toLowerCase().trim();
+  const isSuperAshley = cleanUid === 'user_ashleyghose64' || cleanUid.includes('ashleyghose64') || userEmail === 'ashleyghose64@gmail.com';
+  const isBicon = cleanUid === 'user_ashleyghose28' || cleanUid.includes('ashleyghose28') || userEmail === 'ashleyghose28@gmail.com';
+  const targetDocId = isSuperAshley ? 'user_ashleyghose64' : (isBicon ? 'user_ashleyghose28' : (userId || userEmail));
 
   const { 
     name, 
@@ -1005,26 +1020,115 @@ router.patch('/profile', async (req, res) => {
     if (serpapi_connected !== undefined) updates.serpapi_connected = serpapi_connected;
     updates.updatedAt = new Date().toISOString();
 
-    // 1. Update in local persistent store
-    const localUpdated = userStore.updateUser(userId, updates);
+    // 1. Update in local persistent store across primary and alias accounts
+    let localUpdated = userStore.updateUser(targetDocId, updates);
+    if (!localUpdated) {
+      const existing = userStore.getUserById(targetDocId) || (userEmail ? userStore.getUserByEmail(userEmail) : null);
+      if (existing) {
+        localUpdated = userStore.updateUser(existing._id, updates);
+      } else {
+        localUpdated = userStore.saveUser({
+          _id: targetDocId,
+          email: userEmail || (targetDocId.includes('@') ? targetDocId : `${targetDocId}@strovr.space`),
+          name: name || (isSuperAshley ? 'Ashley' : isBicon ? 'Bicon Ghose' : 'Strovr User'),
+          ...updates
+        });
+      }
+    }
 
-    // 2. Update in Firestore
+    // Mirror to alias keys for Ashley & Bicon so both ID and email lookups have the exact same profile data
+    if (isSuperAshley) {
+      userStore.updateUser('user_ashleyghose64', updates);
+      const ashEmailDoc = userStore.getUserByEmail('ashleyghose64@gmail.com');
+      if (ashEmailDoc && ashEmailDoc._id !== 'user_ashleyghose64') {
+        userStore.updateUser(ashEmailDoc._id, updates);
+      }
+    } else if (isBicon) {
+      userStore.updateUser('user_ashleyghose28', updates);
+      const biconEmailDoc = userStore.getUserByEmail('ashleyghose28@gmail.com');
+      if (biconEmailDoc && biconEmailDoc._id !== 'user_ashleyghose28') {
+        userStore.updateUser(biconEmailDoc._id, updates);
+      }
+    }
+
+    // 2. Persist to Firestore with set merge: true (never throws NOT_FOUND)
     try {
-      const userRef = db.collection('users').doc(userId);
-      await userRef.update(updates);
+      await db.collection('users').doc(targetDocId).set(updates, { merge: true });
+      if (userEmail && userEmail !== targetDocId) {
+        await db.collection('users').doc(userEmail).set(updates, { merge: true }).catch(() => {});
+      }
     } catch (fsErr: any) {
       console.warn('[Auth] Firestore update skipped for profile:', fsErr.message);
     }
 
-    const currentUser = localUpdated || userStore.getUserById(userId) || { _id: userId, ...updates };
-    const syncedData = await syncUserPoolCredits(userId, currentUser);
-    const userData = { _id: userId, ...syncedData };
+    const currentUser = localUpdated || userStore.getUserById(targetDocId) || { _id: targetDocId, ...updates };
+    const syncedData = await syncUserPoolCredits(targetDocId, currentUser);
+    const userData = { _id: targetDocId, ...syncedData };
     delete (userData as any).password;
 
     res.json({ message: 'Profile updated successfully', user: userData });
   } catch (err) {
     console.error('Failed to update profile:', err);
     res.status(500).json({ error: 'Failed to update profile' });
+  }
+});
+
+// POST /api/auth/rehydrate-profile - Allows any client (mobile/PC) to rehydrate missing profile data into server memory
+router.post('/rehydrate-profile', async (req, res) => {
+  let userId = (req.headers.userid as string) || '';
+  const userEmail = (req.headers.useremail as string || req.body.email || '').toLowerCase().trim();
+  const { profile_picture, company_name, field_of_work, phone, niche, target_audience, goals, name } = req.body;
+
+  if (!userId && !userEmail) return res.status(400).json({ error: 'Missing user identifier' });
+
+  const cleanUid = userId.toLowerCase().trim();
+  const isSuperAshley = cleanUid === 'user_ashleyghose64' || cleanUid.includes('ashleyghose64') || userEmail === 'ashleyghose64@gmail.com';
+  const isBicon = cleanUid === 'user_ashleyghose28' || cleanUid.includes('ashleyghose28') || userEmail === 'ashleyghose28@gmail.com';
+  const targetDocId = isSuperAshley ? 'user_ashleyghose64' : (isBicon ? 'user_ashleyghose28' : (userId || userEmail));
+
+  try {
+    const existing = userStore.getUserById(targetDocId) || (userEmail ? userStore.getUserByEmail(userEmail) : null);
+    const updates: any = { updatedAt: new Date().toISOString() };
+
+    if (profile_picture && (!existing?.profile_picture || existing.profile_picture.length < 50)) {
+      updates.profile_picture = profile_picture;
+    }
+    if (company_name && !existing?.company_name) updates.company_name = company_name;
+    if (field_of_work && !existing?.field_of_work) updates.field_of_work = field_of_work;
+    if (phone && !existing?.phone) updates.phone = phone;
+    if (niche && !existing?.niche) updates.niche = niche;
+    if (target_audience && !existing?.target_audience) updates.target_audience = target_audience;
+    if (goals && !existing?.goals) updates.goals = goals;
+    if (name && !existing?.name) updates.name = name;
+
+    let updated = existing;
+    if (Object.keys(updates).length > 1) {
+      if (existing) {
+        updated = userStore.updateUser(existing._id, updates);
+      } else {
+        updated = userStore.saveUser({
+          _id: targetDocId,
+          email: userEmail || `${targetDocId}@strovr.space`,
+          name: name || (isSuperAshley ? 'Ashley' : 'Strovr User'),
+          ...updates
+        });
+      }
+
+      if (isSuperAshley) {
+        userStore.updateUser('user_ashleyghose64', updates);
+      } else if (isBicon) {
+        userStore.updateUser('user_ashleyghose28', updates);
+      }
+
+      try {
+        await db.collection('users').doc(targetDocId).set(updates, { merge: true });
+      } catch {}
+    }
+
+    res.json({ message: 'Profile rehydrated successfully', user: updated });
+  } catch (err: any) {
+    console.error('Failed to rehydrate profile:', err);
+    res.status(500).json({ error: 'Rehydration failed' });
   }
 });
 
