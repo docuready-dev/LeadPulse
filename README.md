@@ -22,12 +22,12 @@
 ## Table of Contents
 
 - [Core Features](#core-features)
-- [Interactive Email Frameworks](#interactive-email-frameworks-all-10-blueprints)
+- [Interactive Email Frameworks](#interactive-email-frameworks)
 - [Universal Email Attachments Engine](#universal-email-attachments-engine)
 - [Executive AI Co-Pilot](#executive-ai-co-pilot)
 - [Multi-Channel Outbox Architecture](#multi-channel-outbox-architecture)
 - [System Architecture & Data Flow](#system-architecture--data-flow)
-- [Comprehensive Tech Stack](#comprehensive-tech-stack)
+- [Tech Stack](#tech-stack)
 - [Project Directory Structure](#project-directory-structure)
 - [Environment Variables](#environment-variables)
 - [Getting Started](#getting-started)
@@ -158,7 +158,7 @@ v                    v                    v
 
 ---
 
-## Comprehensive Tech Stack
+## Tech Stack
 
 ### Frontend Application
 - **Core Library**: React 19 with TypeScript
@@ -179,127 +179,6 @@ v                    v                    v
 
 ---
 
-## Project Directory Structure
-
-
-```
-
-Strovr/
-├── client/                     # React TypeScript Frontend
-│   ├── src/
-│   │   ├── components/         # Modals, Navbars, Template Galleries
-│   │   │   ├── DispatchTrackerModal.tsx
-│   │   │   ├── EmailProviderModal.tsx
-│   │   │   ├── LeadFinderWizard.tsx
-│   │   │   └── SerpApiConnectModal.tsx
-│   │   ├── data/               # Layout presets & WhatsApp blueprints
-│   │   │   ├── emailTemplates.ts
-│   │   │   └── whatsappTemplates.ts
-│   │   ├── pages/              # Application Views
-│   │   │   ├── Audience.tsx      # CRM Lead Management
-│   │   │   ├── Dashboard.tsx     # Acquisition Metrics
-│   │   │   ├── LeadFinder.tsx    # Discovery Engine
-│   │   │   ├── OutreachCenter.tsx # Email & WhatsApp Studio
-│   │   │   └── Settings.tsx      # Mailbox & Integration Config
-│   │   ├── store/              # Zustand Global State
-│   │   └── config/             # API Endpoint Configuration
-│   └── package.json
-│
-├── server/                     # Express TypeScript Backend
-│   ├── src/
-│   │   ├── routes/             # Modular API Controllers
-│   │   │   ├── auth.ts         # Authentication & Tokens
-│   │   │   ├── leads.ts        # Harvesting, CRM & SerpApi
-│   │   │   ├── outreach.ts     # AI Co-Pilot & Dispatch Engine
-│   │   │   └── integrations.ts # Third-Party Connectors
-│   │   ├── services/           # Core Infrastructure Services
-│   │   │   ├── emailRenderer.ts # HTML Template Compilation
-│   │   │   ├── mailer.ts       # SendGrid & SMTP Sockets
-│   │   │   ├── leadStore.ts    # Lead Cache & Fallback Store
-│   │   │   └── userStore.ts    # User Session Management
-│   │   └── index.ts            # App Entry & Firestore Boot
-│   └── package.json
-│
-└── README.md
-
-```
-
----
-
-## Environment Variables
-
-### Server Configuration (`server/.env`)
-
-```env
-PORT=3001
-NODE_ENV=production
-JWT_SECRET=your_secure_jwt_secret_key
-
-# Google Cloud Firestore Service Account (JSON string or Path)
-FIREBASE_SERVICE_ACCOUNT_KEY={"type":"service_account","project_id":"..."}
-FIREBASE_PROJECT_ID=your-project-id
-
-# SendGrid Direct Cloud Dispatch (HTTPS 443)
-SENDGRID_API_KEY=SG.your_sendgrid_api_key
-SENDGRID_FROM_EMAIL=verified-sender@yourdomain.com
-
-# Optional Headless AI Acceleration
-GEMINI_API_KEY=your_gemini_api_key
-
-# CORS Whitelist (Comma-separated)
-CORS_ORIGINS=[https://your-frontend-domain.com](https://your-frontend-domain.com),http://localhost:5173
-
-```
-
-### Client Configuration (`client/.env`)
-
-```env
-VITE_API_URL=[https://your-api-domain.com](https://your-api-domain.com)
-
-```
-
----
-
-## Getting Started
-
-### Prerequisites
-
-* Node.js 18.0.0 or higher
-* npm 9.0.0 or higher
-* A Google Cloud Firebase project with Firestore enabled
-
-### 1. Clone the Repository
-
-```bash
-git clone [https://github.com/docuready-dev/Strovr.git](https://github.com/docuready-dev/Strovr.git)
-cd Strovr
-
-```
-
-### 2. Backend Setup
-
-```bash
-cd server
-npm install
-npm run build
-npm start
-
-```
-
-The server will boot on `http://localhost:3001`.
-
-### 3. Frontend Setup
-
-```bash
-cd ../client
-npm install
-npm run dev
-
-```
-
-The client application will launch on `http://localhost:5173`.
-
----
 
 ## CAN-SPAM & Deliverability Compliance
 
