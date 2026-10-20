@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="https://raw.githubusercontent.com/docuready-dev/Strovr/blob/main/assets/Strovr%20Logo.png" alt="Strovr Logo" width="350" height="350">
+<img src="https://raw.githubusercontent.com/docuready-dev/Strovr/main/assets/Strovr%20Logo.png" alt="Strovr Logo" width="350" height="350">
 
 # Strovr | Autonomous B2B Lead Harvester & Outreach Infrastructure
 
