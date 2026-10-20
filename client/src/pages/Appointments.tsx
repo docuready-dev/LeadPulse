@@ -7,13 +7,15 @@ import {
   Send, MessageCircle, Sparkles,
   Server, Settings, Users,
   FolderKanban, ArrowRight, Video,
-  Key, ShieldCheck
+  Key, ShieldCheck, Pencil, Trash2, X, Save,
+  Phone, User, Mail, Building, AlertCircle
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
 import BookingWidget from '../components/BookingWidget';
 import AppointmentMobileWhatsAppModal from '../components/AppointmentMobileWhatsAppModal';
+import { confirmDialog } from '../components/AppConfirmModal';
 
 const Appointments = () => {
   const { user } = useStore();
@@ -26,6 +28,11 @@ const Appointments = () => {
   const [copiedLink, setCopiedLink] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [calendarStatus, setCalendarStatus] = useState<any>(null);
+
+  // Edit Booking Modal State
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingBooking, setEditingBooking] = useState<any | null>(null);
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
 
   const apiBase = API_URL;
   const publicBookingUrl = typeof window !== 'undefined' ? `${window.location.origin}/appointments` : '/appointments';
@@ -102,6 +109,70 @@ const Appointments = () => {
     const message = `Hi ${lead.firstName || lead.businessName}! Let's lock in a brief walkthrough for ${lead.businessName}. You can pick any open Google Calendar slot right here: ${publicBookingUrl}`;
     const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
     window.open(url, '_blank');
+  };
+
+  const handleOpenEditModal = (app: any) => {
+    setEditingBooking({
+      ...app,
+      serviceName: app.serviceName || app.title || '30-Min Strategy Consultation',
+      customerName: app.customerName || app.businessName || '',
+      businessName: app.businessName || app.customerName || '',
+      customerEmail: app.customerEmail || '',
+      customerPhone: app.customerPhone || '',
+      appointmentDate: app.appointmentDate ? app.appointmentDate.split('T')[0] : new Date().toISOString().split('T')[0],
+      timeSlot: app.timeSlot || '10:00 AM',
+      notes: app.notes || '',
+      status: app.status || 'Confirmed',
+      meetLink: app.meetLink || ''
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleSaveEditBooking = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingBooking?.id) return;
+    setIsSavingEdit(true);
+
+    try {
+      const res = await axios.put(`${apiBase}/api/booking/appointments/${editingBooking.id}`, editingBooking, {
+        headers: { userid: user?._id }
+      });
+
+      if (res.data?.success) {
+        showToast('Appointment booking updated successfully!');
+        setAppointmentsList(prev => prev.map(a => a.id === editingBooking.id ? { ...a, ...res.data.appointment } : a));
+        setIsEditModalOpen(false);
+        setEditingBooking(null);
+      }
+    } catch (err: any) {
+      console.error('Failed to update booking:', err);
+      showToast(err.response?.data?.error || 'Failed to update booking');
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
+
+  const handleDeleteBooking = async (id: string, name: string) => {
+    const confirmed = await confirmDialog({
+      title: 'Delete Confirmed Booking?',
+      message: `Are you sure you want to permanently delete the confirmed booking with "${name}"? This will cancel the session and remove it from your calendar records.`,
+      confirmText: 'Delete Booking',
+      cancelText: 'Keep Booking',
+      variant: 'danger'
+    });
+
+    if (!confirmed) return;
+
+    try {
+      await axios.delete(`${apiBase}/api/booking/appointments/${id}`, {
+        headers: { userid: user?._id }
+      });
+      setAppointmentsList(prev => prev.filter(a => a.id !== id));
+      showToast('Confirmed booking deleted successfully');
+    } catch (err: any) {
+      console.error('Failed to delete booking:', err);
+      showToast('Failed to delete booking');
+    }
   };
 
   const pipelineProspects = leads.slice(0, 12);
@@ -249,7 +320,8 @@ const Appointments = () => {
                         <th className="py-2.5 px-4">Session Date &amp; Slot</th>
                         <th className="py-2.5 px-4">Meeting Room</th>
                         <th className="py-2.5 px-4 text-center">WhatsApp Mobile View</th>
-                        <th className="py-2.5 px-4 text-right">Status</th>
+                        <th className="py-2.5 px-4 text-center">Status</th>
+                        <th className="py-2.5 px-4 text-right">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -302,10 +374,38 @@ const Appointments = () => {
                               <span>Send WhatsApp</span>
                             </button>
                           </td>
-                          <td className="py-3 px-4 text-right">
-                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                          <td className="py-3 px-4 text-center" onClick={(e) => e.stopPropagation()}>
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
+                              app.status === 'Completed'
+                                ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                : app.status === 'Cancelled'
+                                ? 'bg-rose-50 text-rose-700 border-rose-200'
+                                : app.status === 'Rescheduled'
+                                ? 'bg-amber-50 text-amber-800 border-amber-200'
+                                : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                            }`}>
                               {app.status || 'Confirmed'}
                             </span>
+                          </td>
+                          <td className="py-3 px-4 text-right" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => handleOpenEditModal(app)}
+                                className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 transition-colors cursor-pointer"
+                                title="Edit Booking Details"
+                              >
+                                <Pencil className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteBooking(app.id, app.customerName || app.businessName)}
+                                className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 hover:text-rose-700 transition-colors cursor-pointer"
+                                title="Delete Booking"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -431,6 +531,215 @@ const Appointments = () => {
         appointment={selectedAppointmentForModal}
         user={user}
       />
+
+      {/* Edit Booking Modal */}
+      {isEditModalOpen && editingBooking && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in">
+          <div className="relative w-full max-w-lg bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
+            
+            {/* Modal Header */}
+            <div className="px-6 py-4 bg-slate-950 text-white flex items-center justify-between border-b border-slate-800 shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-blue-600/20 text-blue-400 flex items-center justify-center">
+                  <Pencil className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">Edit Confirmed Booking</h3>
+                  <p className="text-[11px] text-slate-400">Modify attendee details, session date, or meeting status.</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsEditModalOpen(false);
+                  setEditingBooking(null);
+                }}
+                className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Modal Form */}
+            <form onSubmit={handleSaveEditBooking} className="p-6 overflow-y-auto space-y-4 custom-scrollbar text-xs">
+              
+              {/* Service Name */}
+              <div className="space-y-1">
+                <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider font-delight">
+                  Service / Consultation Topic
+                </label>
+                <select
+                  value={editingBooking.serviceName || '30-Min Strategy Consultation'}
+                  onChange={(e) => setEditingBooking({ ...editingBooking, serviceName: e.target.value })}
+                  className="w-full h-9 px-3 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-900 focus:outline-none focus:border-blue-500"
+                >
+                  <option value="15-Min Strovr Walkthrough">15-Min Strovr Walkthrough</option>
+                  <option value="30-Min Strategy Consultation">30-Min Strategy Consultation</option>
+                  <option value="45-Min Technical Architecture Review">45-Min Technical Architecture Review</option>
+                  <option value="20-Min Executive Discovery Call">20-Min Executive Discovery Call</option>
+                  <option value="Product Demonstration">Product Demonstration</option>
+                  <option value="Growth Strategy Call">Growth Strategy Call</option>
+                </select>
+              </div>
+
+              {/* Attendee Name & Company */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-slate-700">Attendee Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingBooking.customerName || ''}
+                    onChange={(e) => setEditingBooking({ ...editingBooking, customerName: e.target.value })}
+                    className="w-full h-9 px-3 bg-white border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:border-blue-500"
+                    placeholder="Full Name"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-slate-700">Company / Business</label>
+                  <input
+                    type="text"
+                    value={editingBooking.businessName || ''}
+                    onChange={(e) => setEditingBooking({ ...editingBooking, businessName: e.target.value })}
+                    className="w-full h-9 px-3 bg-white border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:border-blue-500"
+                    placeholder="Company Name"
+                  />
+                </div>
+              </div>
+
+              {/* Email & Phone */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-slate-700">Email Address</label>
+                  <input
+                    type="email"
+                    required
+                    value={editingBooking.customerEmail || ''}
+                    onChange={(e) => setEditingBooking({ ...editingBooking, customerEmail: e.target.value })}
+                    className="w-full h-9 px-3 bg-white border border-slate-200 rounded-lg text-xs font-mono text-slate-900 focus:outline-none focus:border-blue-500"
+                    placeholder="name@company.com"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-slate-700">Phone / WhatsApp</label>
+                  <input
+                    type="tel"
+                    value={editingBooking.customerPhone || ''}
+                    onChange={(e) => setEditingBooking({ ...editingBooking, customerPhone: e.target.value })}
+                    className="w-full h-9 px-3 bg-white border border-slate-200 rounded-lg text-xs font-mono text-slate-900 focus:outline-none focus:border-blue-500"
+                    placeholder="+91 98000 00000"
+                  />
+                </div>
+              </div>
+
+              {/* Date & Time Slot */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-slate-700">Session Date</label>
+                  <input
+                    type="date"
+                    required
+                    value={editingBooking.appointmentDate || ''}
+                    onChange={(e) => setEditingBooking({ ...editingBooking, appointmentDate: e.target.value })}
+                    className="w-full h-9 px-3 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-900 focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-slate-700">Time Slot</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingBooking.timeSlot || ''}
+                    onChange={(e) => setEditingBooking({ ...editingBooking, timeSlot: e.target.value })}
+                    className="w-full h-9 px-3 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-900 focus:outline-none focus:border-blue-500"
+                    placeholder="e.g. 10:00 AM"
+                  />
+                </div>
+              </div>
+
+              {/* Status & Google Meet Link */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-slate-700">Booking Status</label>
+                  <select
+                    value={editingBooking.status || 'Confirmed'}
+                    onChange={(e) => setEditingBooking({ ...editingBooking, status: e.target.value })}
+                    className="w-full h-9 px-3 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-900 focus:outline-none focus:border-blue-500"
+                  >
+                    <option value="Confirmed">Confirmed</option>
+                    <option value="Completed">Completed</option>
+                    <option value="Rescheduled">Rescheduled</option>
+                    <option value="Cancelled">Cancelled</option>
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-slate-700">Google Meet URL</label>
+                  <input
+                    type="url"
+                    value={editingBooking.meetLink || ''}
+                    onChange={(e) => setEditingBooking({ ...editingBooking, meetLink: e.target.value })}
+                    className="w-full h-9 px-3 bg-white border border-slate-200 rounded-lg text-xs font-mono text-slate-900 focus:outline-none focus:border-blue-500"
+                    placeholder="https://meet.google.com/xxx-xxxx-xxx"
+                  />
+                </div>
+              </div>
+
+              {/* Notes */}
+              <div className="space-y-1">
+                <label className="text-[11px] font-bold text-slate-700">Booking Notes</label>
+                <textarea
+                  rows={2}
+                  value={editingBooking.notes || ''}
+                  onChange={(e) => setEditingBooking({ ...editingBooking, notes: e.target.value })}
+                  className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:border-blue-500 leading-relaxed"
+                  placeholder="Notes from consultation or prospect requirements..."
+                />
+              </div>
+
+              {/* Modal Bottom Actions */}
+              <div className="pt-3 border-t border-slate-200 flex items-center justify-between gap-3 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const idToDelete = editingBooking.id;
+                    const nameToDelete = editingBooking.customerName || editingBooking.businessName;
+                    setIsEditModalOpen(false);
+                    setEditingBooking(null);
+                    handleDeleteBooking(idToDelete, nameToDelete);
+                  }}
+                  className="px-3 py-2 text-xs font-bold text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer flex items-center gap-1.5"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Delete Booking</span>
+                </button>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsEditModalOpen(false);
+                      setEditingBooking(null);
+                    }}
+                    className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSavingEdit}
+                    className="px-5 py-2 text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white rounded-xl shadow-sm transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  >
+                    <Save className="w-3.5 h-3.5" />
+                    <span>{isSavingEdit ? 'Saving...' : 'Save Changes'}</span>
+                  </button>
+                </div>
+              </div>
+
+            </form>
+
+          </div>
+        </div>
+      )}
     </div>
   );
 };

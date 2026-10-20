@@ -36,6 +36,9 @@ const getDailySendingCeiling = (plan?: string) => {
 // Resilient in-memory fallback store for SMTP / Cloud Outbox settings
 export const memorySmtpStore = new Map<string, any>();
 
+// Resilient in-memory store for sent email dispatch history
+export const memorySentEmailStore: any[] = [];
+
 // Middleware to check auth and resolve user record with accurate tier & quota
 const requireAuth = async (req: any, res: any, next: any) => {
   let userId = (req.headers.userid as string) || '';
@@ -274,16 +277,29 @@ router.post('/dispatch-batch', requireAuth, async (req: any, res: any) => {
       );
 
       // Dispatch via configured SMTP mail transport
-      const result = await sendDirectEmail({
-        to: recipientEmail,
-        subject: compiled.subject,
-        html: compiled.html,
-        text: compiled.text,
-        fromName: fromName || req.user.name || 'Strovr Growth Director',
-        fromEmail: fromEmail || req.user.email,
-        userSmtp: userSmtpSettings,
-        attachments: processedAttachments
-      });
+      let result: any = null;
+      try {
+        result = await sendDirectEmail({
+          to: recipientEmail,
+          subject: compiled.subject,
+          html: compiled.html,
+          text: compiled.text,
+          fromName: fromName || req.user.name || 'Strovr Growth Director',
+          fromEmail: fromEmail || req.user.email,
+          userSmtp: userSmtpSettings,
+          attachments: processedAttachments
+        });
+      } catch (sendErr: any) {
+        console.warn(`[Dispatch Engine] Email send failed for ${recipientEmail}:`, sendErr.message);
+        result = {
+          success: false,
+          error: sendErr.message,
+          recipient: recipientEmail,
+          status: 'failed',
+          response: sendErr.message,
+          providerUsed: userSmtpSettings?.provider || 'SendGrid Web API'
+        };
+      }
 
       if (result.success) {
         deliveredCount++;
@@ -294,6 +310,38 @@ router.post('/dispatch-batch', requireAuth, async (req: any, res: any) => {
       const resolvedPreview = result.previewUrl
         ? (result.previewUrl.startsWith('http') ? result.previewUrl : `${req.headers['x-forwarded-proto'] || req.protocol || 'http'}://${req.headers['x-forwarded-host'] || req.headers.host || 'localhost:3001'}${result.previewUrl}`)
         : null;
+
+      const sentRecordId = `sent_${Date.now()}_${i}_${Math.random().toString(36).substring(2, 6)}`;
+      const sentEmailRecord = {
+        id: sentRecordId,
+        userId,
+        recipient: recipientEmail,
+        businessName: lead.businessName,
+        leadId: lead._id || 'unknown',
+        subject: compiled.subject,
+        html: compiled.html,
+        text: compiled.text,
+        fromName: fromName || req.user.name || 'Strovr Growth Director',
+        fromEmail: fromEmail || req.user.email,
+        templateId,
+        variant: variantTag,
+        status: result.success ? 'Delivered' : 'Failed',
+        error: result.error || null,
+        provider: result.providerUsed || 'SendGrid Web API',
+        messageId: result.messageId || null,
+        previewUrl: resolvedPreview,
+        attachments: processedAttachments.map((a: any) => ({ filename: a.filename, contentType: a.contentType })),
+        sentAt: new Date().toISOString()
+      };
+
+      memorySentEmailStore.unshift(sentEmailRecord);
+      if (memorySentEmailStore.length > 500) memorySentEmailStore.pop();
+
+      try {
+        await db.collection('sent_emails').doc(sentRecordId).set(sentEmailRecord);
+      } catch (seErr) {
+        // Non-blocking in-memory fallback
+      }
 
       deliveryLogs.push({
         ...result,
@@ -344,14 +392,22 @@ router.post('/dispatch-batch', requireAuth, async (req: any, res: any) => {
       await new Promise(r => setTimeout(r, 200));
     }
 
-    // Update user emails_sent and emails_sent_today in Firestore
+    // Update user emails_sent and emails_sent_today in UserStore & Firestore
+    const updatedEmailsSent = currentSent + deliveredCount;
+    const updatedSentToday = sentToday + deliveredCount;
+
     if (deliveredCount > 0) {
+      userStore.updateUser(userId, {
+        emails_sent: updatedEmailsSent,
+        emails_sent_today: updatedSentToday
+      });
+
       try {
-        await db.collection('users').doc(userId).update({
-          emails_sent: currentSent + deliveredCount,
-          emails_sent_today: sentToday + deliveredCount,
+        await db.collection('users').doc(userId).set({
+          emails_sent: updatedEmailsSent,
+          emails_sent_today: updatedSentToday,
           daily_reset_date: todayUtc
-        });
+        }, { merge: true });
       } catch (uErr) {
         console.warn('[Dispatch Engine] Could not update user emails_sent:', uErr);
       }
@@ -400,6 +456,9 @@ router.post('/dispatch-batch', requireAuth, async (req: any, res: any) => {
       totalDispatched: targetLeads.length,
       deliveredCount,
       failedCount,
+      emails_sent: updatedEmailsSent,
+      emails_sent_today: updatedSentToday,
+      emails_limit: emailLimit,
       logs: deliveryLogs,
       summary: `Dispatched ${deliveredCount} of ${targetLeads.length} emails directly to recipient inboxes via verified mail delivery transport.`
     });
@@ -498,20 +557,61 @@ router.post('/dispatch-single', requireAuth, async (req: any, res: any) => {
       attachments: processedAttachments
     });
 
-    if (result.success) {
-      try {
-        const todayUtc = new Date().toISOString().split('T')[0];
-        const lastResetDate = req.user?.daily_reset_date || '';
-        const sentToday = lastResetDate === todayUtc ? (req.user?.emails_sent_today || 0) : 0;
+    const resolvedPreview = result.previewUrl
+      ? (result.previewUrl.startsWith('http') ? result.previewUrl : `${req.headers['x-forwarded-proto'] || req.protocol || 'http'}://${req.headers['x-forwarded-host'] || req.headers.host || 'localhost:3001'}${result.previewUrl}`)
+      : null;
 
-        await db.collection('users').doc(req.user._id).update({
-          emails_sent: currentSent + 1,
-          emails_sent_today: sentToday + 1,
+    if (result.success) {
+      const todayUtc = new Date().toISOString().split('T')[0];
+      const lastResetDate = req.user?.daily_reset_date || '';
+      const sentToday = lastResetDate === todayUtc ? (req.user?.emails_sent_today || 0) : 0;
+      const updatedTotal = currentSent + 1;
+      const updatedToday = sentToday + 1;
+
+      userStore.updateUser(req.user._id, {
+        emails_sent: updatedTotal,
+        emails_sent_today: updatedToday
+      });
+
+      try {
+        await db.collection('users').doc(req.user._id).set({
+          emails_sent: updatedTotal,
+          emails_sent_today: updatedToday,
           daily_reset_date: todayUtc
-        });
+        }, { merge: true });
       } catch (uErr) {
         console.warn('[Dispatch Engine] Could not update user emails_sent on single send:', uErr);
       }
+
+      // Record in sent email history
+      const sentRecordId = `sent_${Date.now()}_single_${Math.random().toString(36).substring(2, 6)}`;
+      const sentEmailRecord = {
+        id: sentRecordId,
+        userId: req.user._id.toString(),
+        recipient,
+        businessName: lead.businessName,
+        leadId: targetLead?._id || 'unknown',
+        subject: compiled.subject,
+        html: compiled.html,
+        text: compiled.text,
+        fromName: fromName || req.user.name || 'Strovr Growth Director',
+        fromEmail: fromEmail || req.user.email,
+        templateId,
+        status: 'Delivered',
+        error: null,
+        provider: result.providerUsed || 'SendGrid Web API',
+        messageId: result.messageId || null,
+        previewUrl: resolvedPreview,
+        attachments: processedAttachments.map((a: any) => ({ filename: a.filename, contentType: a.contentType })),
+        sentAt: new Date().toISOString()
+      };
+
+      memorySentEmailStore.unshift(sentEmailRecord);
+      if (memorySentEmailStore.length > 500) memorySentEmailStore.pop();
+
+      try {
+        await db.collection('sent_emails').doc(sentRecordId).set(sentEmailRecord);
+      } catch (seErr) {}
 
       // Record verified interaction activity in target lead doc
       if (targetLead?._id && !targetLead._id.startsWith('default-') && !targetLead._id.startsWith('lead-')) {
@@ -534,7 +634,7 @@ router.post('/dispatch-single', requireAuth, async (req: any, res: any) => {
             recipient,
             subject: compiled.subject,
             messageId: result.messageId,
-            previewUrl: result.previewUrl || null,
+            previewUrl: resolvedPreview,
             status: 'Delivered',
             author: fromName || req.user.name || 'Strovr Operator'
           });
@@ -550,10 +650,6 @@ router.post('/dispatch-single', requireAuth, async (req: any, res: any) => {
       }
     }
 
-    const resolvedPreview = result.previewUrl
-      ? (result.previewUrl.startsWith('http') ? result.previewUrl : `${req.headers['x-forwarded-proto'] || req.protocol || 'http'}://${req.headers['x-forwarded-host'] || req.headers.host || 'localhost:3001'}${result.previewUrl}`)
-      : null;
-
     res.json({
       success: result.success,
       result: {
@@ -562,12 +658,87 @@ router.post('/dispatch-single', requireAuth, async (req: any, res: any) => {
       },
       recipient,
       subject: compiled.subject,
-      previewUrl: resolvedPreview
+      previewUrl: resolvedPreview,
+      emails_sent: currentSent + (result.success ? 1 : 0)
     });
   } catch (err: any) {
     console.error('[Dispatch Engine] Single email dispatch failure:', err);
     res.status(500).json({ error: err.message || 'Delivery error' });
   }
+});
+
+// ============================================================================
+// SENT EMAIL HISTORY ENDPOINTS
+// ============================================================================
+
+// GET /api/outreach/history - Retrieve all sent emails for current user
+router.get('/history', requireAuth, async (req: any, res: any) => {
+  const userId = req.user._id.toString();
+  const historyMap = new Map<string, any>();
+
+  // 1. Memory store
+  memorySentEmailStore
+    .filter(e => e.userId === userId || e.userId === 'default')
+    .forEach(e => historyMap.set(e.id, e));
+
+  // 2. Query Firestore collection
+  try {
+    const snapshot = await db.collection('sent_emails')
+      .where('userId', '==', userId)
+      .limit(100)
+      .get();
+
+    snapshot.docs.forEach(doc => {
+      if (!historyMap.has(doc.id)) {
+        historyMap.set(doc.id, { id: doc.id, ...doc.data() });
+      }
+    });
+  } catch (err: any) {
+    console.warn('[Outreach History] Firestore fetch warning:', err.message);
+  }
+
+  const list = Array.from(historyMap.values()).sort(
+    (a, b) => new Date(b.sentAt || 0).getTime() - new Date(a.sentAt || 0).getTime()
+  );
+
+  res.json({
+    success: true,
+    history: list,
+    total: list.length
+  });
+});
+
+// GET /api/outreach/history/:id - Retrieve specific sent email details
+router.get('/history/:id', requireAuth, async (req: any, res: any) => {
+  const { id } = req.params;
+  const memoryItem = memorySentEmailStore.find(e => e.id === id);
+  if (memoryItem) {
+    return res.json({ success: true, email: memoryItem });
+  }
+
+  try {
+    const doc = await db.collection('sent_emails').doc(id).get();
+    if (doc.exists) {
+      return res.json({ success: true, email: { id: doc.id, ...doc.data() } });
+    }
+  } catch (err: any) {
+    console.warn('[Outreach History] Doc fetch warning:', err.message);
+  }
+
+  res.status(404).json({ error: 'Sent email not found' });
+});
+
+// DELETE /api/outreach/history/:id - Delete a sent email from history
+router.delete('/history/:id', requireAuth, async (req: any, res: any) => {
+  const { id } = req.params;
+  const idx = memorySentEmailStore.findIndex(e => e.id === id);
+  if (idx !== -1) {
+    memorySentEmailStore.splice(idx, 1);
+  }
+  try {
+    await db.collection('sent_emails').doc(id).delete();
+  } catch {}
+  res.json({ success: true, message: 'Sent email record deleted' });
 });
 
 // ============================================================================

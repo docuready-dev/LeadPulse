@@ -532,6 +532,208 @@ router.get('/appointments', async (req: Request, res: Response) => {
   res.json(list);
 });
 
+// PUT /api/booking/appointments/:id - Edit / update confirmed booking details
+router.put('/appointments/:id', async (req: Request, res: Response) => {
+  const userId = req.headers.userid as string;
+  const id = (Array.isArray(req.params.id) ? req.params.id[0] : req.params.id) || '';
+  const {
+    customerName,
+    customerEmail,
+    customerPhone,
+    businessName,
+    appointmentDate,
+    timeSlot,
+    serviceName,
+    notes,
+    status = 'Confirmed',
+    meetLink
+  } = req.body;
+
+  let updatedApp: any = null;
+
+  // 1. Update in memory store
+  const memoryIndex = memoryAppointmentStore.findIndex(a => a.id === id);
+  if (memoryIndex !== -1) {
+    memoryAppointmentStore[memoryIndex] = {
+      ...memoryAppointmentStore[memoryIndex],
+      customerName: customerName || memoryAppointmentStore[memoryIndex].customerName,
+      customerEmail: customerEmail || memoryAppointmentStore[memoryIndex].customerEmail,
+      customerPhone: customerPhone !== undefined ? customerPhone : memoryAppointmentStore[memoryIndex].customerPhone,
+      businessName: businessName || memoryAppointmentStore[memoryIndex].businessName,
+      appointmentDate: appointmentDate || memoryAppointmentStore[memoryIndex].appointmentDate,
+      timeSlot: timeSlot || memoryAppointmentStore[memoryIndex].timeSlot,
+      serviceName: serviceName || memoryAppointmentStore[memoryIndex].serviceName,
+      notes: notes !== undefined ? notes : memoryAppointmentStore[memoryIndex].notes,
+      status: status || memoryAppointmentStore[memoryIndex].status,
+      meetLink: meetLink !== undefined ? meetLink : memoryAppointmentStore[memoryIndex].meetLink,
+      updatedAt: new Date().toISOString()
+    };
+    updatedApp = memoryAppointmentStore[memoryIndex];
+  }
+
+  // 2. Update corresponding Firestore lead record if applicable
+  try {
+    let leadDocId = updatedApp?.leadId;
+    if (!leadDocId && id.startsWith('lead-app-')) {
+      leadDocId = id.replace('lead-app-', '');
+    }
+
+    if (leadDocId) {
+      const leadRef = db.collection('leads').doc(leadDocId);
+      const doc = await leadRef.get();
+      if (doc.exists) {
+        const data = doc.data() || {};
+        const activities = Array.isArray(data.activities) ? [...data.activities] : [];
+        const actIndex = activities.findIndex((a: any) => a.id === id || a.type === 'Appointments');
+        if (actIndex !== -1) {
+          activities[actIndex] = {
+            ...activities[actIndex],
+            title: `Strovr Calendar: ${serviceName || activities[actIndex].title}`,
+            date: appointmentDate || activities[actIndex].date,
+            timeSlot: timeSlot || activities[actIndex].timeSlot,
+            meetLink: meetLink !== undefined ? meetLink : activities[actIndex].meetLink,
+            status: status || activities[actIndex].status
+          };
+        }
+
+        const leadUpdates: any = {
+          appointmentDate: appointmentDate || data.appointmentDate,
+          timeSlot: timeSlot || data.timeSlot,
+          activities
+        };
+        if (customerName) leadUpdates.firstName = customerName.split(' ')[0];
+        if (businessName) leadUpdates.businessName = businessName;
+        if (customerEmail) leadUpdates.email = customerEmail;
+        if (customerPhone !== undefined) leadUpdates.phone = customerPhone;
+        if (notes !== undefined) leadUpdates.notes = notes;
+
+        await leadRef.update(leadUpdates);
+      }
+    } else {
+      const snapshot = await db.collection('leads')
+        .where('userId', '==', userId)
+        .where('status', '==', 'Demo')
+        .get();
+
+      for (const doc of snapshot.docs) {
+        const data = doc.data();
+        const activities = Array.isArray(data.activities) ? [...data.activities] : [];
+        const actIndex = activities.findIndex((a: any) => a.id === id);
+        if (actIndex !== -1) {
+          activities[actIndex] = {
+            ...activities[actIndex],
+            title: `Strovr Calendar: ${serviceName || activities[actIndex].title}`,
+            date: appointmentDate || activities[actIndex].date,
+            timeSlot: timeSlot || activities[actIndex].timeSlot,
+            meetLink: meetLink !== undefined ? meetLink : activities[actIndex].meetLink,
+            status: status || activities[actIndex].status
+          };
+          await doc.ref.update({
+            appointmentDate: appointmentDate || data.appointmentDate,
+            timeSlot: timeSlot || data.timeSlot,
+            activities
+          });
+          break;
+        }
+      }
+    }
+  } catch (fsErr: any) {
+    console.warn('[Booking Route] Could not update appointment in Firestore:', fsErr.message);
+  }
+
+  if (!updatedApp) {
+    updatedApp = {
+      id,
+      customerName,
+      customerEmail,
+      customerPhone,
+      businessName,
+      appointmentDate,
+      timeSlot,
+      serviceName,
+      notes,
+      status,
+      meetLink,
+      updatedAt: new Date().toISOString()
+    };
+    memoryAppointmentStore.unshift(updatedApp);
+  }
+
+  res.json({
+    success: true,
+    message: 'Appointment updated successfully',
+    appointment: updatedApp
+  });
+});
+
+// DELETE /api/booking/appointments/:id - Delete confirmed booking
+router.delete('/appointments/:id', async (req: Request, res: Response) => {
+  const userId = req.headers.userid as string;
+  const id = (Array.isArray(req.params.id) ? req.params.id[0] : req.params.id) || '';
+
+  // 1. Remove from memory store
+  const memoryIndex = memoryAppointmentStore.findIndex(a => a.id === id);
+  let removedLeadId: string | null = null;
+  if (memoryIndex !== -1) {
+    removedLeadId = memoryAppointmentStore[memoryIndex].leadId;
+    memoryAppointmentStore.splice(memoryIndex, 1);
+  }
+
+  // 2. Remove / clear from Firestore
+  try {
+    let leadDocId = removedLeadId;
+    if (!leadDocId && id.startsWith('lead-app-')) {
+      leadDocId = id.replace('lead-app-', '');
+    }
+
+    if (leadDocId) {
+      const leadRef = db.collection('leads').doc(leadDocId);
+      const doc = await leadRef.get();
+      if (doc.exists) {
+        const data = doc.data() || {};
+        const activities = (Array.isArray(data.activities) ? data.activities : []).filter(
+          (a: any) => a.id !== id && a.type !== 'Appointments'
+        );
+        await leadRef.update({
+          appointmentDate: null,
+          timeSlot: null,
+          status: data.status === 'Demo' ? 'Contacted' : data.status,
+          activities
+        });
+      }
+    } else {
+      const snapshot = await db.collection('leads')
+        .where('userId', '==', userId)
+        .where('status', '==', 'Demo')
+        .get();
+
+      for (const doc of snapshot.docs) {
+        const data = doc.data();
+        const activities = Array.isArray(data.activities) ? data.activities : [];
+        const hasMatchingAct = activities.some((a: any) => a.id === id);
+        if (hasMatchingAct || `lead-app-${doc.id}` === id) {
+          const updatedActivities = activities.filter((a: any) => a.id !== id && a.type !== 'Appointments');
+          await doc.ref.update({
+            appointmentDate: null,
+            timeSlot: null,
+            status: 'Contacted',
+            activities: updatedActivities
+          });
+          break;
+        }
+      }
+    }
+  } catch (fsErr: any) {
+    console.warn('[Booking Route] Could not delete appointment from Firestore:', fsErr.message);
+  }
+
+  res.json({
+    success: true,
+    message: 'Appointment deleted successfully',
+    id
+  });
+});
+
 // GET /api/booking/feed/:userId.ics - RFC 5545 Live iCalendar Feed for Google Calendar Subscription
 router.get('/feed/:userId.ics', async (req: Request, res: Response) => {
   const { userId } = req.params;

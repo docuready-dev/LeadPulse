@@ -8,11 +8,12 @@ import {
   Smartphone, Sparkles, Sliders, Edit3, ArrowRight,
   ShieldCheck, Tag, Search, Check, Loader2, ExternalLink, Key,
   Plus, Trash2, Upload, Wand2, Calendar,
-  Image, FileText, Paperclip, Download, X, File, Eye, Copy, Lock
+  Image, FileText, Paperclip, Download, X, File, Eye, Copy, Lock, History
 } from 'lucide-react';
 import TemplateGalleryModal from '../components/TemplateGalleryModal';
 import DispatchTrackerModal from '../components/DispatchTrackerModal';
 import EmailProviderModal from '../components/EmailProviderModal';
+import SentEmailHistoryModal from '../components/SentEmailHistoryModal';
 import { EMAIL_TEMPLATES } from '../data/emailTemplates';
 import type { TemplateId } from '../data/emailTemplates';
 import { WHATSAPP_TEMPLATES, EMAIL_CAPTURE_BRIDGE_SCRIPT, WHATSAPP_MEDIA_PRESETS } from '../data/whatsappTemplates';
@@ -63,6 +64,7 @@ const OutreachCenter = () => {
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [isDispatchModalOpen, setIsDispatchModalOpen] = useState(false);
   const [isProviderModalOpen, setIsProviderModalOpen] = useState(false);
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [isSendingSingle, setIsSendingSingle] = useState(false);
   const [dispatchNotification, setDispatchNotification] = useState<{ message: string; previewUrl?: string } | null>(null);
   const [editorLayer, setEditorLayer] = useState<'content' | 'template'>('content');
@@ -1255,6 +1257,15 @@ const OutreachCenter = () => {
                   >
                     <span className={`w-1.5 h-1.5 rounded-full ${connectedMailbox ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
                     <span>Outbox: {connectedMailbox ? `${connectedMailbox.fromEmail || connectedMailbox.user}` : 'Disconnected (SendGrid Setup Required)'}</span>
+                  </button>
+
+                  <button
+                    onClick={() => setIsHistoryModalOpen(true)}
+                    className="border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 hover:text-indigo-700 hover:border-indigo-200 px-2.5 py-1.5 rounded-lg text-xs font-delight font-semibold transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                    title="View dispatch history and read sent emails"
+                  >
+                    <History className="w-3.5 h-3.5 text-indigo-600" />
+                    <span>Sent History</span>
                   </button>
                 </div>
 
@@ -3093,11 +3104,25 @@ const OutreachCenter = () => {
                       <span>{emailAttachments.filter(a => a.enabled).length} Deck{emailAttachments.filter(a => a.enabled).length > 1 ? 's' : ''} Attached</span>
                     </span>
                   )}
-                  <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 border border-indigo-200/80 text-[11px] font-delight text-indigo-700">
+                  <button 
+                    type="button"
+                    onClick={() => setIsHistoryModalOpen(true)}
+                    className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100/80 border border-indigo-200/80 text-[11px] font-delight text-indigo-700 transition-colors cursor-pointer"
+                    title="Click to view full history of dispatched emails"
+                  >
+                    <History className="w-3 h-3 text-indigo-600" />
                     <span className="font-bold text-indigo-900">{user?.emails_sent || 0}</span>
                     <span className="text-indigo-400">/</span>
                     <span className="font-semibold">{user?.emails_limit || 50} Emails</span>
-                  </div>
+                  </button>
+                  <button 
+                    onClick={() => setIsHistoryModalOpen(true)}
+                    className="bg-white border border-slate-200 hover:bg-slate-50 hover:border-slate-300 px-3.5 py-1.5 rounded-xl text-xs font-delight font-bold text-slate-700 shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer"
+                    title="View sent email history log and view individual dispatched messages"
+                  >
+                    <History className="w-3.5 h-3.5 text-indigo-600" />
+                    <span className="hidden md:inline">Sent History</span>
+                  </button>
                   <button 
                     onClick={() => handleOpenWebmail(previewLead)}
                     className="bg-white border border-slate-200 hover:bg-slate-50 hover:border-slate-300 px-3.5 py-1.5 rounded-xl text-xs font-delight font-bold text-slate-700 shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer"
@@ -4379,6 +4404,15 @@ const OutreachCenter = () => {
             message: 'Email dispatch gateway credentials successfully updated and active!'
           });
         }}
+      />
+
+      {/* ============================================================ */}
+      {/* SENT EMAIL DISPATCH HISTORY MODAL                            */}
+      {/* ============================================================ */}
+      <SentEmailHistoryModal
+        isOpen={isHistoryModalOpen}
+        onClose={() => setIsHistoryModalOpen(false)}
+        user={user}
       />
     </div>
   );

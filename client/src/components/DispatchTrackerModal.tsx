@@ -156,9 +156,23 @@ const DispatchTrackerModal = ({
       setDeliveryLogs(res.data.logs || []);
       setDispatchState('completed');
 
-      const delivered = res.data.deliveredCount || (res.data.logs ? res.data.logs.filter((l: any) => l.status === 'delivered').length : needed);
-      if (delivered > 0) {
+      const delivered = res.data.deliveredCount !== undefined 
+        ? res.data.deliveredCount 
+        : (res.data.logs ? res.data.logs.filter((l: any) => l.status === 'delivered' || l.success).length : needed);
+
+      const serverSentTotal = res.data.emails_sent;
+      if (serverSentTotal !== undefined) {
+        useStore.setState((state) => ({
+          user: state.user ? { ...state.user, emails_sent: serverSentTotal } : null
+        }));
+      } else if (delivered > 0) {
         recordEmailDispatch(delivered);
+      }
+
+      try {
+        await useStore.getState().refreshUserProfile(user?._id);
+      } catch {
+        // Non-blocking
       }
 
       if (onCampaignDispatched) {

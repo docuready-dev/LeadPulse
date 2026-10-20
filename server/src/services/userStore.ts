@@ -13,6 +13,8 @@ export interface UserRecord {
   pool_refreshed_at?: string;
   emails_limit: number;
   emails_sent: number;
+  emails_sent_today?: number;
+  daily_reset_date?: string;
   ai_pitches_limit: number;
   ai_pitches_used: number;
   onboarding_complete: boolean;
