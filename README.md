@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="https://raw.githubusercontent.com/docuready-dev/Strovr/main/assets/Strovr%20Logo.png" alt="Strovr Logo" width="130" height="130">
+<img src="https://raw.githubusercontent.com/docuready-dev/Strovr/main/assets/Strovr%20Logo.png" alt="Strovr Logo" width="400" height="400">
 
 # Strovr | Autonomous B2B Lead Harvester & Outreach Infrastructure
 
@@ -36,7 +36,7 @@
 
 ---
 
-## ⚡ Core Features
+##  Core Features
 
 ### 1. High-Velocity Lead Discovery & SerpApi Harvesting
 - **Geo-Targeted Extraction**: Harvest hyper-localized commercial leads using Google Maps, Google Local, and custom SerpApi queries without IP blocks or captcha halts.
@@ -56,7 +56,7 @@
 
 ---
 
-## 🎨 Interactive Email Frameworks (All 10 Blueprints)
+##  Interactive Email Frameworks (All 10 Blueprints)
 
 Strovr includes 10 production-tested, responsive email blueprints designed for cross-client inbox rendering:
 
@@ -73,7 +73,7 @@ Strovr includes 10 production-tested, responsive email blueprints designed for c
 
 ---
 
-## 📎 Universal Email Attachments Engine
+##  Universal Email Attachments Engine
 
 Available universally across **all 10 email layouts**:
 - **Collateral Presets**: 1-click addition of verified assets including `Executive Pitch Deck (PDF)`, `Strategic Growth Audit (PDF)`, `Client Case Study (PDF)`, and `Commercial Pricing Sheet (XLS/PDF)`.
@@ -85,7 +85,7 @@ Available universally across **all 10 email layouts**:
 
 ---
 
-## 🤖 Executive AI Co-Pilot
+##  Executive AI Co-Pilot
 
 Strovr replaces generic boilerplate strings with an intent-driven, high-converting B2B copywriting matrix:
 - **Zero Prompt Echoing**: Never repeats user instructions verbatim inside the letter body.
@@ -98,4 +98,4 @@ Strovr replaces generic boilerplate strings with an intent-driven, high-converti
 
 ---
 
-## 🚀 Multi-Channel Outbox Architecture
+##  Multi-Channel Outbox Architecture
