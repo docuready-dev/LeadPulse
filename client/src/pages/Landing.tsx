@@ -1150,16 +1150,16 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
           <div className="bg-white border border-[#E5E0D5] rounded-lg p-7 flex flex-col justify-between hover:border-[#D6CFC2] transition-all shadow-2xs">
             <div>
               <div className="flex items-center justify-between mb-3">
-                <span className="text-[11px] font-delight font-bold uppercase tracking-wider text-[#78716A]">
+                <span className="text-[11px] font-delight font-medium uppercase tracking-wider text-[#78716A]">
                   Free Explorer
                 </span>
-                <span className="text-[10px] font-delight font-bold px-2 py-0.5 rounded-[4px] bg-[#F5F2EB] text-[#191716] border border-[#E5E0D5]">
+                <span className="text-[10px] font-delight font-medium px-2 py-0.5 rounded-[4px] bg-[#F5F2EB] text-[#191716] border border-[#E5E0D5]">
                   Instant Check-In
                 </span>
               </div>
 
               <div className="flex items-baseline gap-2 mb-1">
-                <span className="text-3xl md:text-4xl font-extrabold font-delight text-[#191716]">₹0</span>
+                <span className="text-3xl md:text-4xl font-medium font-delight text-[#191716]">₹0</span>
                 <span className="text-xs font-delight text-[#78716A]">/ forever free</span>
               </div>
               <p className="text-xs text-[#57524B] mb-6 pb-5 border-b border-[#E5E0D5]">
@@ -1168,25 +1168,25 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
 
               {/* Bifurcation Breakdown */}
               <div className="space-y-3 mb-6">
-                <div className="text-[10px] font-delight font-bold uppercase tracking-wider text-[#78716A]">
+                <div className="text-[10px] font-delight font-medium uppercase tracking-wider text-[#78716A]">
                   Tier Allocation &amp; Bifurcation
                 </div>
                 <ul className="space-y-2.5 text-xs text-[#191716]">
                   <li className="flex items-start gap-2">
                     <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
-                    <span><strong>50 Test Emails / Month</strong> via verified direct mail transport</span>
+                    <span><strong className="font-medium">50 Test Emails / Month</strong> via verified direct mail transport</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
-                    <span><strong>2 Standard Templates</strong> (Plain Text &amp; Single-Column)</span>
+                    <span><strong className="font-medium">2 Standard Templates</strong> (Plain Text &amp; Single-Column)</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
-                    <span><strong>5 AI Pitch Generations / Mo</strong> with dynamic merge tags</span>
+                    <span><strong className="font-medium">5 AI Pitch Generations / Mo</strong> with dynamic merge tags</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
-                    <span><strong>Single One-Off Blast</strong> + 15 Bonus Leads (4-day pool)</span>
+                    <span><strong className="font-medium">Single One-Off Blast</strong> + 15 Bonus Leads (4-day pool)</span>
                   </li>
                 </ul>
               </div>
@@ -1195,7 +1195,7 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
             <div className="pt-4 border-t border-[#E5E0D5]">
               <button
                 onClick={onLogin}
-                className="w-full h-10 rounded-[5px] bg-[#F5F2EB] hover:bg-[#191716] text-[#191716] hover:text-white border border-[#D6CFC2] hover:border-[#191716] font-delight font-bold text-xs transition-all cursor-pointer"
+                className="w-full h-10 rounded-[5px] bg-[#F5F2EB] hover:bg-[#191716] text-[#191716] hover:text-white border border-[#D6CFC2] hover:border-[#191716] font-delight font-medium text-xs transition-all cursor-pointer"
               >
                 Check In Free (15 Tokens Ready) &rarr;
               </button>
@@ -1207,22 +1207,22 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
 
           {/* TIER 2: STROVR BASIC (HIGHLIGHTED SWEET SPOT) */}
           <div className="bg-white border-2 border-[#C85A32] rounded-lg p-7 flex flex-col justify-between relative shadow-md">
-            <div className="absolute -top-3 left-6 bg-[#C85A32] text-white text-[10px] font-delight font-bold px-3 py-0.5 rounded-[4px] uppercase tracking-wider">
+            <div className="absolute -top-3 left-6 bg-[#C85A32] text-white text-[10px] font-delight font-medium px-3 py-0.5 rounded-[4px] uppercase tracking-wider">
               Most Popular • Just ₹23 / Day
             </div>
 
             <div>
               <div className="flex items-center justify-between mb-3 pt-1">
-                <span className="text-[11px] font-delight font-bold uppercase tracking-wider text-[#C85A32]">
+                <span className="text-[11px] font-delight font-medium uppercase tracking-wider text-[#C85A32]">
                   Strovr Basic
                 </span>
-                <span className="text-[10px] font-delight font-bold px-2 py-0.5 rounded-[4px] bg-[#C85A32]/10 text-[#C85A32] border border-[#C85A32]/25">
+                <span className="text-[10px] font-delight font-medium px-2 py-0.5 rounded-[4px] bg-[#C85A32]/10 text-[#C85A32] border border-[#C85A32]/25">
                   1,500 Emails + 600 Leads
                 </span>
               </div>
 
               <div className="flex items-baseline gap-2 mb-1">
-                <span className="text-3xl md:text-4xl font-extrabold font-delight text-[#191716]">
+                <span className="text-3xl md:text-4xl font-medium font-delight text-[#191716]">
                   {billingInterval === 'annual' ? '₹8,999' : '₹999'}
                 </span>
                 <span className="text-xs font-delight text-[#78716A]">
@@ -1240,29 +1240,29 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
 
               {/* Bifurcation Breakdown */}
               <div className="space-y-3 mb-6">
-                <div className="text-[10px] font-delight font-bold uppercase tracking-wider text-[#C85A32]">
+                <div className="text-[10px] font-delight font-medium uppercase tracking-wider text-[#C85A32]">
                   Tier Allocation &amp; Bifurcation
                 </div>
                 <ul className="space-y-2.5 text-xs text-[#191716]">
                   <li className="flex items-start gap-2">
                     <Check className="w-3.5 h-3.5 text-[#C85A32] shrink-0 mt-0.5" />
-                    <span><strong>1,500 Emails / Month</strong> (Up to 2 connected inboxes)</span>
+                    <span><strong className="font-medium">1,500 Emails / Month</strong> (Up to 2 connected inboxes)</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <Check className="w-3.5 h-3.5 text-[#C85A32] shrink-0 mt-0.5" />
-                    <span><strong>All 8 Link Mobility Frameworks</strong> Unlocked</span>
+                    <span><strong className="font-medium">All 8 Link Mobility Frameworks</strong> Unlocked</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <Check className="w-3.5 h-3.5 text-[#C85A32] shrink-0 mt-0.5" />
-                    <span><strong>50/50 A/B Split Testing Enabled</strong> for subject &amp; copy</span>
+                    <span><strong className="font-medium">50/50 A/B Split Testing Enabled</strong> for subject &amp; copy</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <Check className="w-3.5 h-3.5 text-[#C85A32] shrink-0 mt-0.5" />
-                    <span><strong>250 AI Pitch Generations / Mo</strong> + 2-Step Sequences</span>
+                    <span><strong className="font-medium">250 AI Pitch Generations / Mo</strong> + 2-Step Sequences</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <Check className="w-3.5 h-3.5 text-[#C85A32] shrink-0 mt-0.5" />
-                    <span><strong>600 Bonus Lead Tokens</strong> + Unlimited CSV &amp; Excel Exports</span>
+                    <span><strong className="font-medium">600 Bonus Lead Tokens</strong> + Unlimited CSV &amp; Excel Exports</span>
                   </li>
                 </ul>
               </div>
@@ -1271,7 +1271,7 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
             <div className="pt-4 border-t border-[#E5E0D5]">
               <button
                 onClick={onLogin}
-                className="w-full h-10 rounded-[5px] bg-[#C85A32] hover:bg-[#B04B25] text-white border border-[#B04B25] font-delight font-bold text-xs transition-all shadow-xs cursor-pointer"
+                className="w-full h-10 rounded-[5px] bg-[#C85A32] hover:bg-[#B04B25] text-white border border-[#B04B25] font-delight font-medium text-xs transition-all shadow-xs cursor-pointer"
               >
                 Start Basic Workspace ({billingInterval === 'annual' ? '₹8,999/yr' : '₹999/mo'}) &rarr;
               </button>
@@ -1285,16 +1285,16 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
           <div className="bg-[#191716] text-[#FAF8F5] border border-[#2E2A27] rounded-lg p-7 flex flex-col justify-between relative shadow-2xs">
             <div>
               <div className="flex items-center justify-between mb-3">
-                <span className="text-[11px] font-delight font-bold uppercase tracking-wider text-[#E07A5F]">
+                <span className="text-[11px] font-delight font-medium uppercase tracking-wider text-[#E07A5F]">
                   Strovr Pro
                 </span>
-                <span className="text-[10px] font-delight font-bold px-2 py-0.5 rounded-[4px] bg-white/10 text-[#FAF8F5] border border-white/15">
+                <span className="text-[10px] font-delight font-medium px-2 py-0.5 rounded-[4px] bg-white/10 text-[#FAF8F5] border border-white/15">
                   5,000+ Emails / mo
                 </span>
               </div>
 
               <div className="flex items-baseline gap-2 mb-1">
-                <span className="text-3xl md:text-4xl font-extrabold font-delight text-white">
+                <span className="text-3xl md:text-4xl font-medium font-delight text-white">
                   {billingInterval === 'annual' ? '₹17,999' : '₹1,999'}
                 </span>
                 <span className="text-xs font-delight text-[#A8A096]">
@@ -1312,29 +1312,29 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
 
               {/* Bifurcation Breakdown */}
               <div className="space-y-3 mb-6">
-                <div className="text-[10px] font-delight font-bold uppercase tracking-wider text-[#E07A5F]">
+                <div className="text-[10px] font-delight font-medium uppercase tracking-wider text-[#E07A5F]">
                   Tier Allocation &amp; Bifurcation
                 </div>
                 <ul className="space-y-2.5 text-xs text-[#FAF8F5]">
                   <li className="flex items-start gap-2">
                     <Check className="w-3.5 h-3.5 text-[#E07A5F] shrink-0 mt-0.5" />
-                    <span><strong>5,000+ Emails / Month</strong> (Unlimited inboxes &amp; custom SMTPs)</span>
+                    <span><strong className="font-medium">5,000+ Emails / Month</strong> (Unlimited inboxes &amp; custom SMTPs)</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <Check className="w-3.5 h-3.5 text-[#E07A5F] shrink-0 mt-0.5" />
-                    <span><strong>8 Frameworks + Custom Reusable Template Library</strong></span>
+                    <span><strong className="font-medium">8 Frameworks + Custom Reusable Template Library</strong></span>
                   </li>
                   <li className="flex items-start gap-2">
                     <Check className="w-3.5 h-3.5 text-[#E07A5F] shrink-0 mt-0.5" />
-                    <span><strong>Multi-Variant A/B/C Testing</strong> + Unlimited AI Pitch Copilot</span>
+                    <span><strong className="font-medium">Multi-Variant A/B/C Testing</strong> + Unlimited AI Pitch Copilot</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <Check className="w-3.5 h-3.5 text-[#E07A5F] shrink-0 mt-0.5" />
-                    <span><strong>Multi-Step Behavioral Journeys</strong> (Email + WhatsApp bridge)</span>
+                    <span><strong className="font-medium">Multi-Step Behavioral Journeys</strong> (Email + WhatsApp bridge)</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <Check className="w-3.5 h-3.5 text-[#E07A5F] shrink-0 mt-0.5" />
-                    <span><strong>1,500 Bonus Lead Tokens / Mo</strong> + Dedicated Worker Node</span>
+                    <span><strong className="font-medium">1,500 Bonus Lead Tokens / Mo</strong> + Dedicated Worker Node</span>
                   </li>
                 </ul>
               </div>
@@ -1343,7 +1343,7 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
             <div className="pt-4 border-t border-white/10">
               <button
                 onClick={onLogin}
-                className="w-full h-10 rounded-[5px] bg-white hover:bg-[#C85A32] text-[#191716] hover:text-white font-delight font-bold text-xs transition-all cursor-pointer"
+                className="w-full h-10 rounded-[5px] bg-white hover:bg-[#C85A32] text-[#191716] hover:text-white font-delight font-medium text-xs transition-all cursor-pointer"
               >
                 Launch Pro Console ({billingInterval === 'annual' ? '₹17,999/yr' : '₹1,999/mo'}) &rarr;
               </button>
@@ -1359,14 +1359,14 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
         <div className="bg-[#F5F2EB] border border-[#E5E0D5] rounded-lg p-6 mb-8">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
             <div className="max-w-md">
-              <span className="text-[10px] font-delight font-bold uppercase tracking-wider text-[#C85A32] block mb-1">
+              <span className="text-[10px] font-delight font-medium uppercase tracking-wider text-[#C85A32] block mb-1">
                 ON-DEMAND ELASTICITY // ZERO MONTHLY COMMITMENT
               </span>
-              <h3 className="text-lg font-extrabold text-[#191716] tracking-tight">
+              <h3 className="text-lg font-medium text-[#191716] tracking-tight">
                 Just need a quick batch of leads? Use Instant Top-Up Packs.
               </h3>
               <p className="text-xs text-[#57524B] mt-1 leading-relaxed">
-                Even on the <strong>₹0 Free Tier</strong>, you can purchase non-expiring credit bundles via PhonePe / UPI whenever a campaign spikes.
+                Even on the <strong className="font-medium">₹0 Free Tier</strong>, you can purchase non-expiring credit bundles via PhonePe / UPI whenever a campaign spikes.
               </p>
             </div>
 
@@ -1375,19 +1375,19 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
               <div className="bg-white border border-[#E5E0D5] rounded-[6px] p-4 flex items-center justify-between gap-3">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-delight font-bold text-[#191716]">Micro Pack</span>
-                    <span className="text-[9.5px] font-delight font-bold px-1.5 py-0.5 rounded bg-[#F5F2EB] text-[#57524B] border border-[#E5E0D5]">
+                    <span className="text-xs font-delight font-medium text-[#191716]">Micro Pack</span>
+                    <span className="text-[9.5px] font-delight font-medium px-1.5 py-0.5 rounded bg-[#F5F2EB] text-[#57524B] border border-[#E5E0D5]">
                       ₹2.50 / lead
                     </span>
                   </div>
-                  <div className="text-lg font-extrabold font-delight text-[#191716] mt-1">
-                    ₹50 <span className="text-xs font-semibold text-[#C85A32]">&rarr; +20 Extra Leads</span>
+                  <div className="text-lg font-medium font-delight text-[#191716] mt-1">
+                    ₹50 <span className="text-xs font-medium text-[#C85A32]">&rarr; +20 Extra Leads</span>
                   </div>
                   <div className="text-[10.5px] font-delight text-[#78716A]">Never expires • Instant UPI activation</div>
                 </div>
                 <button
                   onClick={onLogin}
-                  className="px-3 py-1.5 rounded-[4px] bg-[#191716] hover:bg-[#C85A32] text-white text-[11px] font-delight font-bold transition-colors shrink-0 cursor-pointer"
+                  className="px-3 py-1.5 rounded-[4px] bg-[#191716] hover:bg-[#C85A32] text-white text-[11px] font-delight font-medium transition-colors shrink-0 cursor-pointer"
                 >
                   Try ₹50 Pack
                 </button>
@@ -1397,19 +1397,19 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
               <div className="bg-white border border-[#C85A32]/40 rounded-[6px] p-4 flex items-center justify-between gap-3">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-delight font-bold text-[#191716]">Mega Pack</span>
-                    <span className="text-[9.5px] font-delight font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    <span className="text-xs font-delight font-medium text-[#191716]">Mega Pack</span>
+                    <span className="text-[9.5px] font-delight font-medium px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
                       Best Value • ₹1 / lead
                     </span>
                   </div>
-                  <div className="text-lg font-extrabold font-delight text-[#191716] mt-1">
-                    ₹1,000 <span className="text-xs font-semibold text-[#C85A32]">&rarr; +1,000 Extra Leads</span>
+                  <div className="text-lg font-medium font-delight text-[#191716] mt-1">
+                    ₹1,000 <span className="text-xs font-medium text-[#C85A32]">&rarr; +1,000 Extra Leads</span>
                   </div>
                   <div className="text-[10.5px] font-delight text-[#78716A]">Never expires • Priority queue access</div>
                 </div>
                 <button
                   onClick={onLogin}
-                  className="px-3 py-1.5 rounded-[4px] bg-[#C85A32] hover:bg-[#B04B25] text-white text-[11px] font-delight font-bold transition-colors shrink-0 cursor-pointer"
+                  className="px-3 py-1.5 rounded-[4px] bg-[#C85A32] hover:bg-[#B04B25] text-white text-[11px] font-delight font-medium transition-colors shrink-0 cursor-pointer"
                 >
                   Get 1,000 Leads
                 </button>
@@ -1422,7 +1422,7 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
         <div className="bg-white border border-[#E5E0D5] rounded-lg overflow-hidden shadow-2xs">
           <div className="px-6 py-4 bg-[#F5F2EB] border-b border-[#E5E0D5] flex flex-wrap items-center justify-between gap-2">
             <div>
-              <h4 className="text-xs font-delight font-bold uppercase tracking-wider text-[#191716]">
+              <h4 className="text-xs font-delight font-medium uppercase tracking-wider text-[#191716]">
                 Detailed Capability &amp; Unit-Economics Bifurcation Matrix
               </h4>
               <p className="text-[11px] font-delight text-[#78716A]">
@@ -1431,7 +1431,7 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
             </div>
             <button
               onClick={onLogin}
-              className="text-xs font-delight font-bold text-[#C85A32] hover:underline cursor-pointer"
+              className="text-xs font-delight font-medium text-[#C85A32] hover:underline cursor-pointer"
             >
               Inspect inside live console &rarr;
             </button>

@@ -647,18 +647,18 @@ const TopUpModal = () => {
               <div className="p-5 rounded-md border border-slate-200 hover:border-slate-400 bg-white transition-all flex flex-col justify-between">
                 <div>
                   <div className="flex justify-between items-center mb-2">
-                    <span className="text-[11px] font-delight uppercase tracking-wider text-blue-600 font-bold">Micro Pack</span>
-                    <span className="text-[10px] font-delight font-semibold bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-sm">Instant UPI</span>
+                    <span className="text-[11px] font-delight uppercase tracking-wider text-blue-600 font-medium">Micro Pack</span>
+                    <span className="text-[10px] font-delight font-medium bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-sm">Instant UPI</span>
                   </div>
-                  <div className="text-2xl sm:text-3xl font-bold font-delight text-slate-900 mb-0.5">₹50</div>
-                  <p className="text-xs text-slate-400 mb-5">Micro-transaction top-up</p>
+                  <div className="text-2xl sm:text-3xl font-medium font-delight text-slate-900 mb-0.5">₹50</div>
+                  <p className="text-xs text-slate-400 mb-5 font-delight font-normal">Micro-transaction top-up</p>
 
                   <div className="p-3 bg-slate-50 rounded-sm border border-slate-200 mb-5">
-                    <div className="text-lg font-bold font-delight text-slate-900 mb-0.5">+20 Extra Leads</div>
-                    <p className="text-[11px] text-slate-500">Perfect for a quick local niche query (₹2.5 / lead)</p>
+                    <div className="text-lg font-medium font-delight text-slate-900 mb-0.5">+20 Extra Leads</div>
+                    <p className="text-[11px] text-slate-500 font-delight font-normal">Perfect for a quick local niche query (₹2.5 / lead)</p>
                   </div>
 
-                  <ul className="space-y-2 text-xs text-slate-600 mb-5">
+                  <ul className="space-y-2 text-xs text-slate-600 mb-5 font-delight font-normal">
                     <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-600" /> Never expires • Consumed first</li>
                     <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-600" /> Usable on Quick or Deep harvest</li>
                     <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-600" /> Instant PhonePe activation</li>
@@ -666,9 +666,9 @@ const TopUpModal = () => {
                 </div>
 
                 <button 
-                  onClick={() => handlePhonePeCheckout('micro', 'Micro Pack (20 Leads)')}
+                  onClick={() => handleCheckoutClick('micro', 'Micro Pack (20 Leads)')}
                   disabled={loadingItem === 'micro'}
-                  className="w-full h-8 rounded-md bg-slate-900 hover:bg-slate-800 text-white text-xs font-delight font-bold transition-all flex items-center justify-center gap-1.5 border border-slate-900 cursor-pointer"
+                  className="w-full h-8 rounded-md bg-slate-900 hover:bg-slate-800 text-white text-xs font-delight font-medium transition-all flex items-center justify-center gap-1.5 border border-slate-900 cursor-pointer"
                 >
                   <span>Pay ₹50 via PhonePe</span>
                   <ChevronRight className="w-3.5 h-3.5" />
@@ -677,24 +677,24 @@ const TopUpModal = () => {
 
               {/* MEGA PACK */}
               <div className="p-5 rounded-md border-2 border-emerald-600 bg-white transition-all flex flex-col justify-between relative">
-                <div className="absolute -top-2.5 right-4 bg-emerald-600 text-white text-[9px] font-delight font-semibold px-2 py-0.5 rounded-sm uppercase tracking-wider">
+                <div className="absolute -top-2.5 right-4 bg-emerald-600 text-white text-[9px] font-delight font-medium px-2 py-0.5 rounded-sm uppercase tracking-wider">
                   Best Value (₹1 / Lead)
                 </div>
 
                 <div>
                   <div className="flex justify-between items-center mb-2">
-                    <span className="text-[11px] font-delight uppercase tracking-wider text-emerald-600 font-bold">Mega Pack</span>
-                    <span className="text-[10px] font-delight font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-sm">Power Bundle</span>
+                    <span className="text-[11px] font-delight uppercase tracking-wider text-emerald-600 font-medium">Mega Pack</span>
+                    <span className="text-[10px] font-delight font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-sm">Power Bundle</span>
                   </div>
-                  <div className="text-2xl sm:text-3xl font-bold font-delight text-slate-900 mb-0.5">₹1,000</div>
-                  <p className="text-xs text-slate-400 mb-5">Volume lead acquisition bundle</p>
+                  <div className="text-2xl sm:text-3xl font-medium font-delight text-slate-900 mb-0.5">₹1,000</div>
+                  <p className="text-xs text-slate-400 mb-5 font-delight font-normal">Volume lead acquisition bundle</p>
 
                   <div className="p-3 bg-emerald-50/50 rounded-sm border border-emerald-200 mb-5">
-                    <div className="text-lg font-bold font-delight text-emerald-950 mb-0.5">+1,000 Extra Leads</div>
-                    <p className="text-[11px] text-emerald-700">Highest discount rate available across Strovr</p>
+                    <div className="text-lg font-medium font-delight text-emerald-950 mb-0.5">+1,000 Extra Leads</div>
+                    <p className="text-[11px] text-emerald-700 font-delight font-normal">Highest discount rate available across Strovr</p>
                   </div>
 
-                  <ul className="space-y-2 text-xs text-slate-600 mb-5">
+                  <ul className="space-y-2 text-xs text-slate-600 mb-5 font-delight font-normal">
                     <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-600" /> 1,000 Verified Lead Credits (Consumed first)</li>
                     <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-600" /> Continuous extraction without cap</li>
                     <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-600" /> Priority headless browser queue</li>
@@ -703,9 +703,9 @@ const TopUpModal = () => {
                 </div>
 
                 <button 
-                  onClick={() => handlePhonePeCheckout('mega', 'Mega Pack (1,000 Leads)')}
+                  onClick={() => handleCheckoutClick('mega', 'Mega Pack (1,000 Leads)')}
                   disabled={loadingItem === 'mega'}
-                  className="w-full h-8 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-delight font-bold transition-all flex items-center justify-center gap-1.5 border border-emerald-600 cursor-pointer"
+                  className="w-full h-8 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-delight font-medium transition-all flex items-center justify-center gap-1.5 border border-emerald-600 cursor-pointer"
                 >
                   <span>Pay ₹1,000 via PhonePe</span>
                   <ChevronRight className="w-3.5 h-3.5" />
