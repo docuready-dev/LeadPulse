@@ -25,7 +25,7 @@ interface LoginProps {
   onBack?: () => void;
 }
 
-type ViewMode = 'signin' | 'signup' | 'forgot' | '2fa' | 'reset_otp';
+type ViewMode = 'signin' | 'signup' | 'forgot' | 'reset_otp';
 
 const Login = ({ onBack }: LoginProps) => {
   const { token, setToken, setUser } = useStore();
@@ -53,11 +53,9 @@ const Login = ({ onBack }: LoginProps) => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   
-  // 2FA & OTP verification states
-  const [tempToken, setTempToken] = useState('');
+  // Account Recovery OTP states (Password Reset)
   const [phoneMasked, setPhoneMasked] = useState('');
   const [devOtp, setDevOtp] = useState('');
-  const [isOtpSent, setIsOtpSent] = useState(false);
   const [resendTimer, setResendTimer] = useState(0);
   
   // Visibility toggles
@@ -68,7 +66,6 @@ const Login = ({ onBack }: LoginProps) => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [isSendingOtp, setIsSendingOtp] = useState(false);
 
   const completeLoginRedirect = () => {
     try {
@@ -111,32 +108,7 @@ const Login = ({ onBack }: LoginProps) => {
     setOtp('');
   };
 
-  // 1. Send OTP for Registration
-  const handleSendRegisterOtp = async () => {
-    if (!phone || phone.trim().length < 8) {
-      setError('Please enter a valid mobile number (e.g. +91 98765 43210).');
-      return;
-    }
-    setIsSendingOtp(true);
-    setError('');
-    try {
-      const res = await axios.post(`${API_URL}/api/auth/send-register-otp`, {
-        phone: phone.trim(),
-        email: email.trim() || undefined
-      });
-      setIsOtpSent(true);
-      setPhoneMasked(res.data.phoneMasked || phone);
-      if (res.data.devOtp) setDevOtp(res.data.devOtp);
-      setResendTimer(45);
-      setSuccess(res.data.message || `Verification code sent to ${res.data.phoneMasked}`);
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to dispatch verification code. Please check your mobile number.');
-    } finally {
-      setIsSendingOtp(false);
-    }
-  };
-
-  // 2. Handle Primary Email / Password Submit (Sign In or Sign Up)
+  // Handle Primary Email / Password Submit (Sign In or Direct Sign Up)
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -145,13 +117,18 @@ const Login = ({ onBack }: LoginProps) => {
 
     try {
       if (viewMode === 'signup') {
-        if (!phone || !phone.trim()) {
-          setError('Mobile number is mandatory for workspace creation.');
+        if (!name || !name.trim()) {
+          setError('Please provide your full name.');
           setIsLoading(false);
           return;
         }
-        if (!otp || !otp.trim()) {
-          setError('Please verify your mobile number with the 6-digit OTP code.');
+        if (!email || !email.trim()) {
+          setError('Please provide your work email address.');
+          setIsLoading(false);
+          return;
+        }
+        if (!password || password.length < 6) {
+          setError('Password must be at least 6 characters long.');
           setIsLoading(false);
           return;
         }
@@ -160,81 +137,27 @@ const Login = ({ onBack }: LoginProps) => {
           email: email.trim(),
           password,
           name: name.trim(),
-          phone: phone.trim(),
-          otp: otp.trim()
+          phone: phone.trim() || undefined
         });
         
         setToken(res.data.token);
         setUser(res.data.user);
         completeLoginRedirect();
       } else {
-        // Sign In
+        // Sign In - Direct Session Authentication (No 2FA)
         const res = await axios.post(`${API_URL}/api/auth/login`, {
           email: email.trim(),
           password
         });
 
-        // Check if 2FA is required
-        if (res.data.require2fa) {
-          setTempToken(res.data.tempToken);
-          setPhoneMasked(res.data.phoneMasked || '');
-          if (res.data.devOtp) setDevOtp(res.data.devOtp);
-          setOtp('');
-          setResendTimer(45);
-          setViewMode('2fa');
-        } else {
-          setToken(res.data.token);
-          setUser(res.data.user);
-          completeLoginRedirect();
-        }
+        setToken(res.data.token);
+        setUser(res.data.user);
+        completeLoginRedirect();
       }
     } catch (err: any) {
       setError(err.response?.data?.error || 'Authentication failed. Please verify your credentials.');
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  // 3. Handle 2FA Verification Submit
-  const handleVerify2Fa = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!otp || otp.trim().length !== 6) {
-      setError('Please enter the complete 6-digit verification code.');
-      return;
-    }
-
-    setIsLoading(true);
-    setError('');
-    try {
-      const res = await axios.post(`${API_URL}/api/auth/verify-2fa`, {
-        tempToken,
-        otp: otp.trim()
-      });
-
-      setToken(res.data.token);
-      setUser(res.data.user);
-      completeLoginRedirect();
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Invalid or expired 2FA code. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // 4. Handle 2FA Resend Code
-  const handleResend2Fa = async () => {
-    if (resendTimer > 0 || isSendingOtp) return;
-    setIsSendingOtp(true);
-    setError('');
-    try {
-      const res = await axios.post(`${API_URL}/api/auth/resend-2fa-otp`, { tempToken });
-      setResendTimer(45);
-      if (res.data.devOtp) setDevOtp(res.data.devOtp);
-      setSuccess(`A fresh verification code has been dispatched to ${res.data.phoneMasked}.`);
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to resend code. Please sign in again.');
-    } finally {
-      setIsSendingOtp(false);
     }
   };
 
@@ -373,34 +296,28 @@ const Login = ({ onBack }: LoginProps) => {
 
               {/* View Mode Badge */}
               <div>
-                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-slate-100 border border-slate-200 rounded-sm text-[10px] font-delight font-semibold uppercase tracking-wider text-slate-600">
-                  {viewMode === '2fa'
-                    ? 'Security Verification'
-                    : viewMode === 'forgot' || viewMode === 'reset_otp'
+                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-slate-100 border border-slate-200 rounded-sm text-[10px] font-delight font-medium uppercase tracking-wider text-slate-600">
+                  {viewMode === 'forgot' || viewMode === 'reset_otp'
                     ? 'Account Recovery'
                     : 'Access Gateway'}
                 </span>
               </div>
 
               {/* Title & Subtitle */}
-              <h2 className="text-xl font-bold font-delight tracking-tight text-slate-900 mt-2">
+              <h2 className="text-xl font-medium font-delight tracking-tight text-slate-900 mt-2">
                 {viewMode === 'signup'
                   ? 'Create Workspace Account'
-                  : viewMode === '2fa'
-                  ? 'Two-Factor Verification'
                   : viewMode === 'forgot'
                   ? 'Recover with Mobile OTP'
                   : viewMode === 'reset_otp'
                   ? 'Set New Password'
                   : 'Authenticate Session'}
               </h2>
-              <p className="text-slate-500 text-xs mt-1">
+              <p className="text-slate-500 text-xs mt-1 font-delight font-normal">
                 {viewMode === 'signup'
-                  ? 'Provide your details and verified mobile number to initialize.'
-                  : viewMode === '2fa'
-                  ? `Enter the 6-digit OTP dispatched to ${phoneMasked || 'your mobile'}.`
+                  ? 'Provide your details to initialize your Strovr workspace.'
                   : viewMode === 'forgot'
-                  ? 'Enter your registered mobile number to receive a reset code.'
+                  ? 'Enter your registered mobile number or email to receive a reset code.'
                   : viewMode === 'reset_otp'
                   ? `Enter code sent to ${phoneMasked} and choose a new password.`
                   : 'Enter your credentials to access your Strovr workspace.'}
@@ -423,97 +340,21 @@ const Login = ({ onBack }: LoginProps) => {
               </div>
             )}
 
-            {/* DEV OTP Helper Pill */}
-            {devOtp && (
+            {/* DEV OTP Helper Pill (Only for password reset recovery) */}
+            {devOtp && (viewMode === 'forgot' || viewMode === 'reset_otp') && (
               <div className="mb-4 p-2.5 bg-amber-50 border border-amber-200 rounded-sm flex items-center justify-between text-xs">
-                <div className="text-amber-900 font-medium flex items-center gap-1.5">
+                <div className="text-amber-900 font-medium flex items-center gap-1.5 font-delight">
                   <Smartphone className="w-3.5 h-3.5 text-amber-600" />
-                  <span>Dev OTP: <strong className="font-mono text-amber-950 font-bold">{devOtp}</strong></span>
+                  <span>Dev OTP: <strong className="font-mono text-amber-950 font-medium">{devOtp}</strong></span>
                 </div>
                 <button
                   type="button"
                   onClick={() => setOtp(devOtp)}
-                  className="px-2 py-0.5 bg-amber-200 hover:bg-amber-300 text-amber-900 rounded text-[11px] font-semibold cursor-pointer transition-colors"
+                  className="px-2 py-0.5 bg-amber-200 hover:bg-amber-300 text-amber-900 rounded text-[11px] font-medium cursor-pointer transition-colors font-delight"
                 >
                   Auto-fill
                 </button>
               </div>
-            )}
-
-            {/* ========================================================
-                VIEW MODE: 2FA (Two-Factor Authentication during Login)
-               ======================================================== */}
-            {viewMode === '2fa' && (
-              <form onSubmit={handleVerify2Fa} className="space-y-4">
-                <div className="bg-slate-50 border border-slate-200 p-3 rounded-sm text-center">
-                  <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-2 border border-blue-100">
-                    <ShieldCheck className="w-5 h-5" />
-                  </div>
-                  <div className="text-xs font-medium text-slate-700">
-                    2FA Code Sent to Mobile
-                  </div>
-                  <div className="text-xs font-mono font-bold text-slate-900 mt-0.5">
-                    {phoneMasked}
-                  </div>
-                </div>
-
-                <div>
-                  <label htmlFor="twofa-otp" className="block text-[11px] font-delight font-semibold text-slate-600 mb-1 uppercase tracking-wider text-center">
-                    Enter 6-Digit OTP Code
-                  </label>
-                  <input
-                    id="twofa-otp"
-                    type="text"
-                    inputMode="numeric"
-                    maxLength={6}
-                    autoFocus
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                    className="w-full text-center tracking-[0.35em] font-mono text-base font-bold py-2.5 border border-slate-300 rounded-sm focus:ring-1 focus:ring-blue-600 focus:border-blue-600 outline-none transition-colors"
-                    placeholder="••••••"
-                    required
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={isLoading || otp.length !== 6}
-                  className="w-full bg-[#C85A32] hover:bg-[#B34D28] text-white font-delight font-semibold text-xs py-2.5 rounded-sm transition-colors border border-[#B34D28] shadow-xs cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
-                >
-                  {isLoading ? (
-                    <>
-                      <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      Verifying Code...
-                    </>
-                  ) : (
-                    <>
-                      <ShieldCheck className="w-3.5 h-3.5" />
-                      Verify & Continue
-                    </>
-                  )}
-                </button>
-
-                <div className="flex items-center justify-between pt-1 text-xs">
-                  <button
-                    type="button"
-                    onClick={() => switchViewMode('signin')}
-                    className="text-slate-500 hover:text-slate-800 font-delight inline-flex items-center gap-1 cursor-pointer hover:underline"
-                  >
-                    <ArrowLeft className="w-3 h-3" />
-                    Back to Sign In
-                  </button>
-
-                  <button
-                    type="button"
-                    disabled={resendTimer > 0 || isSendingOtp}
-                    onClick={handleResend2Fa}
-                    className="text-blue-600 hover:text-blue-800 font-delight inline-flex items-center gap-1 cursor-pointer disabled:opacity-50 hover:underline"
-                  >
-                    <RefreshCw className={`w-3 h-3 ${isSendingOtp ? 'animate-spin' : ''}`} />
-                    {resendTimer > 0 ? `Resend in ${resendTimer}s` : 'Resend Code'}
-                  </button>
-                </div>
-              </form>
             )}
 
             {/* ========================================================
@@ -769,68 +610,28 @@ const Login = ({ onBack }: LoginProps) => {
                     </div>
                   </div>
 
-                  {/* MANDATORY MOBILE NUMBER & OTP VERIFICATION (Sign Up only) */}
+                  {/* Optional Mobile Number (Sign Up only) */}
                   {viewMode === 'signup' && (
-                    <div className="pt-1 border-t border-slate-100 space-y-3">
-                      <div>
-                        <div className="flex items-center justify-between mb-1">
-                          <label htmlFor="phone" className="block text-[11px] font-delight font-semibold text-slate-700 uppercase tracking-wider">
-                            Mobile Number <span className="text-red-500">*</span>
-                          </label>
-                          <span className="text-[10px] text-slate-400">Mandatory</span>
-                        </div>
-                        <div className="flex gap-2">
-                          <div className="relative flex-1">
-                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                              <Phone className="w-4 h-4" />
-                            </div>
-                            <input
-                              id="phone"
-                              name="phone"
-                              type="tel"
-                              value={phone}
-                              onChange={(e) => setPhone(e.target.value)}
-                              className="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-sm text-xs font-delight font-normal focus:ring-1 focus:ring-blue-600 focus:border-blue-600 outline-none transition-colors"
-                              placeholder="+91 98765 43210"
-                              required
-                            />
-                          </div>
-                          <button
-                            type="button"
-                            disabled={isSendingOtp || resendTimer > 0 || !phone.trim()}
-                            onClick={handleSendRegisterOtp}
-                            className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-sm border border-slate-300 cursor-pointer disabled:opacity-50 shrink-0 transition-colors"
-                          >
-                            {isSendingOtp
-                              ? 'Sending...'
-                              : resendTimer > 0
-                              ? `${resendTimer}s`
-                              : isOtpSent
-                              ? 'Resend OTP'
-                              : 'Send OTP'}
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* 6-Digit OTP Input */}
-                      <div>
-                        <label htmlFor="reg-otp" className="block text-[11px] font-delight font-semibold text-slate-700 mb-1 uppercase tracking-wider">
-                          Mobile OTP Verification Code <span className="text-red-500">*</span>
+                    <div className="pt-1 border-t border-slate-100">
+                      <div className="flex items-center justify-between mb-1">
+                        <label htmlFor="phone" className="block text-[11px] font-delight font-medium text-slate-700 uppercase tracking-wider">
+                          Mobile Number
                         </label>
+                        <span className="text-[10px] text-slate-400 font-delight font-normal">Optional</span>
+                      </div>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                          <Phone className="w-4 h-4" />
+                        </div>
                         <input
-                          id="reg-otp"
-                          type="text"
-                          inputMode="numeric"
-                          maxLength={6}
-                          value={otp}
-                          onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                          className="w-full text-center tracking-[0.3em] font-mono text-sm font-bold py-2 border border-slate-300 rounded-sm focus:ring-1 focus:ring-blue-600 focus:border-blue-600 outline-none transition-colors"
-                          placeholder="••••••"
-                          required
+                          id="phone"
+                          name="phone"
+                          type="tel"
+                          value={phone}
+                          onChange={(e) => setPhone(e.target.value)}
+                          className="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-sm text-xs font-delight font-normal focus:ring-1 focus:ring-blue-600 focus:border-blue-600 outline-none transition-colors"
+                          placeholder="+91 98765 43210 (Optional)"
                         />
-                        <p className="text-[10px] text-slate-400 mt-1">
-                          A 6-digit verification code will be sent to your mobile.
-                        </p>
                       </div>
                     </div>
                   )}
@@ -838,16 +639,16 @@ const Login = ({ onBack }: LoginProps) => {
                   {/* Primary Submit Button */}
                   <button
                     type="submit"
-                    disabled={isLoading || (viewMode === 'signup' && (!phone.trim() || otp.length !== 6))}
-                    className="w-full bg-slate-900 hover:bg-slate-950 text-white font-delight font-semibold text-xs py-2.5 rounded-sm transition-colors border border-slate-800 shadow-xs cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2 mt-4"
+                    disabled={isLoading || (viewMode === 'signup' && (!name.trim() || !email.trim() || password.length < 6))}
+                    className="w-full bg-slate-900 hover:bg-slate-950 text-white font-delight font-medium text-xs py-2.5 rounded-sm transition-colors border border-slate-800 shadow-xs cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2 mt-4"
                   >
                     {isLoading ? (
                       <>
                         <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        Authenticating...
+                        {viewMode === 'signup' ? 'Creating Account...' : 'Authenticating...'}
                       </>
                     ) : viewMode === 'signup' ? (
-                      'Verify & Create Workspace'
+                      'Create Free Workspace'
                     ) : (
                       'Sign In with Email'
                     )}

@@ -382,81 +382,35 @@ router.post('/onboarding', async (req, res) => {
   }
 });
 
-// POST /api/auth/send-register-otp - Dispatches OTP to mobile number during registration
+// POST /api/auth/send-register-otp - Optional/Deprecated (Mobile OTP no longer required for signup)
 router.post('/send-register-otp', async (req, res) => {
-  const { phone, email } = req.body;
-  if (!phone || typeof phone !== 'string') {
-    return res.status(400).json({ error: 'Valid mobile number is required.' });
-  }
-
-  const normalizedPhone = otpService.normalizePhone(phone);
-  const digitsOnly = normalizedPhone.replace(/\D/g, '');
-  if (digitsOnly.length < 10) {
-    return res.status(400).json({ error: 'Please enter a valid 10+ digit mobile number with country code.' });
-  }
-
-  try {
-    // Check if mobile number is already in use
-    const existingByPhone = userStore.getUserByPhone(normalizedPhone);
-    if (existingByPhone) {
-      return res.status(400).json({ error: 'This mobile number is already registered. Please sign in.' });
-    }
-
-    if (email && typeof email === 'string') {
-      const cleanEmail = email.toLowerCase().trim();
-      const existingByEmail = userStore.getUserByEmail(cleanEmail);
-      if (existingByEmail) {
-        return res.status(400).json({ error: 'An account with this email address already exists. Please sign in.' });
-      }
-    }
-
-    const otpRes = await otpService.generateAndSendOtp(normalizedPhone, 'register', email);
-    return res.json({
-      success: true,
-      phone: otpRes.phone,
-      phoneMasked: otpRes.phoneMasked,
-      devOtp: otpRes.devOtp,
-      message: `Verification code sent to ${otpRes.phoneMasked}`
-    });
-  } catch (err: any) {
-    console.error('[Auth] send-register-otp error:', err);
-    return res.status(500).json({ error: err.message || 'Failed to dispatch verification code.' });
-  }
+  return res.json({
+    success: true,
+    message: 'Mobile OTP is no longer required for registration.'
+  });
 });
 
 router.post('/register', async (req, res) => {
-  const { email, password, name, phone, otp } = req.body;
+  const { email, password, name, phone } = req.body;
   if (!email || !password || !name) {
     return res.status(400).json({ error: 'Email, password, and full name are required.' });
   }
 
-  if (!phone || typeof phone !== 'string') {
-    return res.status(400).json({ error: 'Mobile number is mandatory. Please provide your mobile number.' });
-  }
-
-  if (!otp || typeof otp !== 'string') {
-    return res.status(400).json({ error: 'Mobile verification code (OTP) is required. Please verify your mobile number.' });
-  }
-
   const cleanEmail = email.toLowerCase().trim();
-  const normalizedPhone = otpService.normalizePhone(phone);
+  const normalizedPhone = phone ? otpService.normalizePhone(phone) : '';
 
   try {
-    // Verify mobile OTP
-    const otpVerification = otpService.verifyOtp(normalizedPhone, otp, 'register');
-    if (!otpVerification.valid) {
-      return res.status(400).json({ error: otpVerification.error || 'Invalid or expired verification code.' });
-    }
-
-    // Check local store for duplicate email or phone
+    // Check local store for duplicate email
     const localExistingEmail = userStore.getUserByEmail(cleanEmail);
     if (localExistingEmail) {
       return res.status(400).json({ error: 'An account with this email already exists. Please sign in.' });
     }
 
-    const localExistingPhone = userStore.getUserByPhone(normalizedPhone);
-    if (localExistingPhone) {
-      return res.status(400).json({ error: 'This mobile number is already registered to another account.' });
+    if (normalizedPhone) {
+      const localExistingPhone = userStore.getUserByPhone(normalizedPhone);
+      if (localExistingPhone) {
+        return res.status(400).json({ error: 'This mobile number is already registered to another account.' });
+      }
     }
 
     // Check Firestore
@@ -477,10 +431,10 @@ router.post('/register', async (req, res) => {
       _id: userId,
       email: cleanEmail,
       password: hashedPassword,
-      name,
-      phone: normalizedPhone,
-      phone_verified: true,
-      two_factor_enabled: true,
+      name: name.trim(),
+      phone: normalizedPhone || '',
+      phone_verified: !!normalizedPhone,
+      two_factor_enabled: false,
       role,
       lead_credits: isSuperAdmin ? 1500 : 15,
       base_daily_credits: isSuperAdmin ? 1500 : 15,
