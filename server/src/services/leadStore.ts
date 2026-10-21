@@ -33,7 +33,7 @@ class LeadStore {
   private isLoaded = false;
 
   constructor() {
-    this.dataDir = path.resolve(__dirname, '../../data');
+    this.dataDir = process.env.STROVR_DATA_DIR || path.resolve(__dirname, '../../data');
     this.filePath = path.join(this.dataDir, 'leads.json');
     this.loadFromDisk();
   }

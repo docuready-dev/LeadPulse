@@ -763,11 +763,20 @@ router.delete('/all', async (req, res) => {
     try {
       const leadsRef = db.collection('leads');
       const snapshot = await leadsRef.where('userId', '==', userId).get();
+      const docsToDelete = [...snapshot.docs];
+
+      if (userEmail && userEmail !== userId) {
+        const emailSnap = await leadsRef.where('userEmail', '==', userEmail).get();
+        const existingIds = new Set(docsToDelete.map(d => d.id));
+        emailSnap.docs.forEach(d => {
+          if (!existingIds.has(d.id)) docsToDelete.push(d);
+        });
+      }
       
-      if (snapshot.docs.length > 0) {
+      if (docsToDelete.length > 0) {
         const chunkSize = 400;
-        for (let i = 0; i < snapshot.docs.length; i += chunkSize) {
-          const chunk = snapshot.docs.slice(i, i + chunkSize);
+        for (let i = 0; i < docsToDelete.length; i += chunkSize) {
+          const chunk = docsToDelete.slice(i, i + chunkSize);
           const batch = db.batch();
           chunk.forEach(doc => {
             batch.delete(doc.ref);

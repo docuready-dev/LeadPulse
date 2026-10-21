@@ -118,10 +118,17 @@ app.get('/health', (_req, res) => {
 
 // Unified Full-Stack Static Serving: Serve compiled client/dist if present in production
 const clientDistPath = path.resolve(__dirname, '../../client/dist');
-if (fs.existsSync(path.join(clientDistPath, 'index.html'))) {
+const indexHtmlPath = path.join(clientDistPath, 'index.html');
+if (fs.existsSync(indexHtmlPath)) {
   app.use(express.static(clientDistPath, { dotfiles: 'deny' }));
   app.get(/^(?!\/api|\/health).*/, (_req, res) => {
-    res.sendFile(path.join(clientDistPath, 'index.html'));
+    try {
+      const html = fs.readFileSync(indexHtmlPath, 'utf8');
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.send(html);
+    } catch {
+      res.sendFile(indexHtmlPath);
+    }
   });
 }
 

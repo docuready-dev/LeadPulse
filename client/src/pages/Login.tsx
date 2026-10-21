@@ -30,6 +30,7 @@ type ViewMode = 'signin' | 'signup' | 'forgot' | '2fa' | 'reset_otp';
 const Login = ({ onBack }: LoginProps) => {
   const { token, setToken, setUser } = useStore();
   const navigate = useNavigate();
+  const isDesktop = typeof navigator !== 'undefined' && /Electron|StrovrDesktop/i.test(navigator.userAgent);
   
   // View mode
   const [viewMode, setViewMode] = useState<ViewMode>('signin');
@@ -79,6 +80,10 @@ const Login = ({ onBack }: LoginProps) => {
 
   // Reset errors and transients when switching view modes
   const switchViewMode = (mode: ViewMode) => {
+    if (isDesktop && mode === 'signup') {
+      window.open('https://strovr.space/', '_blank');
+      return;
+    }
     setViewMode(mode);
     setError('');
     setSuccess('');
@@ -798,10 +803,16 @@ const Login = ({ onBack }: LoginProps) => {
                   {viewMode === 'signup' ? 'Already have an account?' : 'Need a workspace?'}{' '}
                   <button 
                     type="button"
-                    onClick={() => switchViewMode(viewMode === 'signup' ? 'signin' : 'signup')}
+                    onClick={() => {
+                      if (isDesktop && viewMode !== 'signup') {
+                        window.open('https://strovr.space/', '_blank');
+                        return;
+                      }
+                      switchViewMode(viewMode === 'signup' ? 'signin' : 'signup');
+                    }}
                     className="text-blue-600 font-medium hover:underline ml-1 cursor-pointer"
                   >
-                    {viewMode === 'signup' ? 'Sign In' : 'Sign Up'}
+                    {isDesktop ? 'Sign Up at strovr.space' : (viewMode === 'signup' ? 'Sign In' : 'Sign Up')}
                   </button>
                 </p>
               </>

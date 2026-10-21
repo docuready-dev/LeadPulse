@@ -50,7 +50,7 @@ class AutomationWorkerService {
   private intervalTimer: NodeJS.Timeout | null = null;
 
   constructor() {
-    this.dataDir = path.resolve(__dirname, '../../data');
+    this.dataDir = process.env.STROVR_DATA_DIR || path.resolve(__dirname, '../../data');
     this.filePath = path.join(this.dataDir, 'automation_enrollments.json');
     this.loadFromDisk();
   }

@@ -56,6 +56,7 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
 const App = () => {
   const { user, token, refreshUserProfile } = useStore();
   const [showLogin, setShowLogin] = useState(false);
+  const isDesktop = typeof navigator !== 'undefined' && /Electron|StrovrDesktop/i.test(navigator.userAgent);
 
   useEffect(() => {
     if (token) {
@@ -95,14 +96,20 @@ const App = () => {
         
         <ErrorBoundary>
           <Routes>
-            {/* Landing is always the root. */}
-            <Route path="/" element={<Landing onLogin={() => {
-              if (token) {
-                window.location.href = '/dashboard';
-              } else {
-                setShowLogin(true);
-              }
-            }} />} />
+            {/* Landing is root on web; on Desktop, pull up Login or Dashboard directly */}
+            <Route path="/" element={
+              isDesktop ? (
+                <Navigate to={token ? "/dashboard" : "/login"} replace />
+              ) : (
+                <Landing onLogin={() => {
+                  if (token) {
+                    window.location.href = '/dashboard';
+                  } else {
+                    setShowLogin(true);
+                  }
+                }} />
+              )
+            } />
             
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/finder" element={<ProtectedRoute><LeadFinder /></ProtectedRoute>} />
@@ -120,8 +127,8 @@ const App = () => {
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             <Route path="/admin" element={<AdminRoute><AdminPanel /></AdminRoute>} />
             <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/login" element={<Login onBack={() => window.location.href = '/'} />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
+            <Route path="/login" element={<Login onBack={isDesktop ? undefined : () => window.location.href = '/'} />} />
+            <Route path="*" element={<Navigate to={isDesktop ? (token ? "/dashboard" : "/login") : "/"} replace />} />
           </Routes>
         </ErrorBoundary>
       </div>

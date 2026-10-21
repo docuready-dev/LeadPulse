@@ -88,32 +88,48 @@ const LeadFinder = () => {
   const [editingLead, setEditingLead] = useState<any | null>(null);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
 
-  // Helper deduplication merge
+  // Helper deduplication merge - strictly 1 entry per lead
   const mergeLeads = (localList: any[], serverList: any[]) => {
-    const map = new Map<string, any>();
-    for (const l of localList) {
-      if (l._id) map.set(l._id, l);
-      const nameKey = (l.businessName || '').toLowerCase().trim();
-      if (nameKey && l.email) map.set(`${nameKey}__${l.email.toLowerCase().trim()}`, l);
-      if (nameKey && l.phone) map.set(`${nameKey}__${l.phone.replace(/[^0-9]/g, '')}`, l);
-    }
-    for (const s of serverList) {
-      if (s._id && map.has(s._id)) {
-        map.set(s._id, { ...map.get(s._id), ...s });
-      } else {
-        const nameKey = (s.businessName || '').toLowerCase().trim();
-        const emailKey = s.email ? `${nameKey}__${s.email.toLowerCase().trim()}` : '';
-        const phoneKey = s.phone ? `${nameKey}__${s.phone.replace(/[^0-9]/g, '')}` : '';
-        if (emailKey && map.has(emailKey)) {
-          map.set(emailKey, { ...map.get(emailKey), ...s });
-        } else if (phoneKey && map.has(phoneKey)) {
-          map.set(phoneKey, { ...map.get(phoneKey), ...s });
-        } else {
-          map.set(s._id || `lead_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`, s);
-        }
+    const byId = new Map<string, any>();
+    const byKey = new Map<string, string>(); // maps composite key -> canonical _id
+
+    const getKey = (item: any): string => {
+      const name = (item.businessName || '').toLowerCase().trim();
+      const email = (item.email || '').toLowerCase().trim();
+      const phone = (item.phone || '').replace(/[^0-9]/g, '');
+      if (name && email) return `${name}__email_${email}`;
+      if (name && phone) return `${name}__phone_${phone}`;
+      return '';
+    };
+
+    const processItem = (item: any) => {
+      if (!item || !item.businessName) return;
+      const id = item._id ? String(item._id) : '';
+      const key = getKey(item);
+
+      let existingId: string | null = null;
+      if (id && byId.has(id)) {
+        existingId = id;
+      } else if (key && byKey.has(key)) {
+        existingId = byKey.get(key) || null;
       }
-    }
-    return Array.from(map.values()).sort((a, b) => {
+
+      if (existingId && byId.has(existingId)) {
+        const existing = byId.get(existingId);
+        const merged = { ...existing, ...item, _id: existingId };
+        byId.set(existingId, merged);
+      } else {
+        const canonicalId = id || `lead_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+        const record = { ...item, _id: canonicalId };
+        byId.set(canonicalId, record);
+        if (key) byKey.set(key, canonicalId);
+      }
+    };
+
+    if (Array.isArray(serverList)) serverList.forEach(processItem);
+    if (Array.isArray(localList)) localList.forEach(processItem);
+
+    return Array.from(byId.values()).sort((a, b) => {
       const timeB = new Date(b.harvestedAt || b.createdAt || 0).getTime();
       const timeA = new Date(a.harvestedAt || a.createdAt || 0).getTime();
       return timeB - timeA;
@@ -140,46 +156,9 @@ const LeadFinder = () => {
       });
       const serverLeads = Array.isArray(res.data) ? res.data : [];
 
-      let localCached: any[] = [];
-      try {
-        const raw = (user?.email && localStorage.getItem(`strovr_leads_cache_${user.email}`)) ||
-                    (user?._id && localStorage.getItem(`strovr_leads_cache_${user._id}`));
-        if (raw) localCached = JSON.parse(raw);
-      } catch {}
-
-      if (serverLeads.length === 0 && localCached.length > 0) {
-        // Auto-rehydrate Render server
-        try {
-          const syncRes = await axios.post(`${API_URL}/api/leads/sync-vault`, {
-            leads: localCached
-          }, {
-            headers: { 
-              userid: user._id || '',
-              useremail: user.email || ''
-            }
-          });
-          if (syncRes.data?.leads) {
-            updateCache(syncRes.data.leads);
-            return;
-          }
-        } catch {}
-        updateCache(localCached);
-        return;
-      }
-
-      const merged = mergeLeads(localCached, serverLeads);
-      updateCache(merged);
-
-      if (localCached.length > serverLeads.length) {
-        axios.post(`${API_URL}/api/leads/sync-vault`, {
-          leads: merged
-        }, {
-          headers: { 
-            userid: user._id || '',
-            useremail: user.email || ''
-          }
-        }).catch(() => {});
-      }
+      // Server is authoritative source of truth. Deduplicate server leads and update local memory & cache.
+      const deduplicated = mergeLeads([], serverLeads);
+      updateCache(deduplicated);
     } catch (err) {
       console.error('Failed to fetch harvested leads:', err);
     } finally {

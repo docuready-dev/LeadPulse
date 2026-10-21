@@ -55,3 +55,11 @@ Thumbs.db
 # Local persistent data storage
 server/data/*.json
 !server/data/.gitkeep
+
+# Electron Desktop Packaging
+release/
+desktop-app/
+electron-builder.env
+.electron-build/
+
+
