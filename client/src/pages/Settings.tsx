@@ -7,7 +7,7 @@ import {
   CreditCard, Download, Check, Send,
   Sparkles, Save, CheckCircle2, AlertCircle,
   MessageCircle, Zap, Lock, BookOpen,
-  KeyRound, Eye, EyeOff, Trash2, RefreshCw
+  KeyRound, Eye, EyeOff, Trash2, RefreshCw, Laptop, Wifi, Globe, ArrowRight
 } from 'lucide-react';
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
@@ -58,6 +58,92 @@ const Settings = () => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+
+  // Desktop In-App Update Engine State
+  const [isDesktop] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    if (/Electron|StrovrDesktop/i.test(navigator.userAgent)) return true;
+    if (window.location.search.includes('desktop=true')) return true;
+    if (sessionStorage.getItem('strovr_desktop_mode') === 'true') return true;
+    return false;
+  });
+
+  const [updateStatus, setUpdateStatus] = useState<'idle' | 'checking' | 'available' | 'up-to-date' | 'downloading' | 'ready' | 'error'>('idle');
+  const [updateServerUrl, setUpdateServerUrl] = useState('');
+  const [latestManifest, setLatestManifest] = useState<any>(null);
+  const [downloadProgress, setDownloadProgress] = useState({ percent: 0, receivedMB: 0, totalMB: 0 });
+  const [updateError, setUpdateError] = useState<string | null>(null);
+  const [isRestarting, setIsRestarting] = useState(false);
+
+  const handleCheckForUpdates = async () => {
+    setUpdateStatus('checking');
+    setUpdateError(null);
+    try {
+      const res = await axios.post(`${API_URL}/api/desktop/check-for-updates`, {
+        currentVersion: '3.0.0',
+        serverUrl: updateServerUrl.trim() || undefined
+      });
+      setLatestManifest(res.data);
+      if (res.data?.hasUpdate) {
+        setUpdateStatus('available');
+      } else {
+        setUpdateStatus('up-to-date');
+      }
+    } catch (err: any) {
+      setUpdateStatus('error');
+      setUpdateError(err.response?.data?.error || err.message || 'Failed to connect to update server.');
+    }
+  };
+
+  const handleDownloadUpdate = async () => {
+    if (!latestManifest?.downloadUrl) return;
+    setUpdateStatus('downloading');
+    setUpdateError(null);
+    setDownloadProgress({ percent: 0, receivedMB: 0, totalMB: 0 });
+
+    try {
+      await axios.post(`${API_URL}/api/desktop/download-update`, {
+        downloadUrl: latestManifest.downloadUrl,
+        targetVersion: latestManifest.latestVersion
+      });
+
+      const pollTimer = setInterval(async () => {
+        try {
+          const statusRes = await axios.get(`${API_URL}/api/desktop/download-status`);
+          const data = statusRes.data;
+          setDownloadProgress({
+            percent: data.percent || 0,
+            receivedMB: data.receivedMB || 0,
+            totalMB: data.totalMB || 0
+          });
+          if (data.status === 'ready') {
+            clearInterval(pollTimer);
+            setUpdateStatus('ready');
+          } else if (data.status === 'error') {
+            clearInterval(pollTimer);
+            setUpdateStatus('error');
+            setUpdateError(data.error || 'Download failed');
+          }
+        } catch (_) {}
+      }, 400);
+    } catch (err: any) {
+      setUpdateStatus('error');
+      setUpdateError(err.response?.data?.error || err.message || 'Failed to start update download.');
+    }
+  };
+
+  const handleApplyUpdate = async () => {
+    setIsRestarting(true);
+    try {
+      await axios.post(`${API_URL}/api/desktop/apply-update`);
+    } catch (err: any) {
+      setIsRestarting(false);
+      await alertDialog({
+        title: 'Update Swap Notice',
+        message: err.response?.data?.error || 'Update helper spawned. Please wait while Strovr restarts.'
+      });
+    }
+  };
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordUpdating, setPasswordUpdating] = useState(false);
@@ -1182,6 +1268,150 @@ const Settings = () => {
                     <Download className="w-3.5 h-3.5 text-white" />
                     <span>Download for Desktop</span>
                   </a>
+                </div>
+
+                {/* Desktop In-App Updates Card */}
+                <div className="p-4 rounded-md bg-[#FAF8F5] border border-[#E5E0D5] flex flex-col gap-3.5">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="space-y-0.5">
+                      <div className="flex items-center gap-2">
+                        <strong className="text-xs font-semibold text-[#191716] block">Desktop Software Updates</strong>
+                        <span className="text-[9.5px] font-bold font-delight px-1.5 py-0.5 rounded bg-[#C85A32]/10 text-[#C85A32] border border-[#C85A32]/30 uppercase tracking-wider">
+                          v3.0.0
+                        </span>
+                        {isDesktop ? (
+                          <span className="text-[9px] font-bold font-delight px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200 uppercase tracking-wider">
+                            Active Desktop Instance
+                          </span>
+                        ) : (
+                          <span className="text-[9px] font-bold font-delight px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200 uppercase tracking-wider">
+                            Web Console
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-[#78716A] font-sans">
+                        Push or fetch updates over your local Wi-Fi/LAN network or the cloud without losing local database records.
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={handleCheckForUpdates}
+                        disabled={updateStatus === 'checking' || updateStatus === 'downloading'}
+                        className="h-8 px-3.5 rounded-md text-xs font-delight font-semibold bg-[#191716] hover:bg-[#332E2A] text-white transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer disabled:opacity-60"
+                      >
+                        <RefreshCw className={`w-3.5 h-3.5 ${updateStatus === 'checking' ? 'animate-spin' : ''}`} />
+                        <span>{updateStatus === 'checking' ? 'Checking...' : 'Check for Updates'}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Optional Custom Local Server IP input for local network pushes */}
+                  <div className="p-3 bg-white rounded border border-[#E5E0D5] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs">
+                    <div className="flex items-center gap-2 text-[#57514B]">
+                      <Wifi className="w-3.5 h-3.5 text-[#C85A32] shrink-0" />
+                      <span>Update Server Source (Cloud / Local LAN IP):</span>
+                    </div>
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                      <input
+                        type="text"
+                        value={updateServerUrl}
+                        onChange={(e) => setUpdateServerUrl(e.target.value)}
+                        placeholder="https://strovr.space (or http://192.168.X.X:3001)"
+                        className="bg-[#F5F2EB] border border-[#E5E0D5] rounded px-2.5 py-1 text-xs text-[#191716] outline-none focus:bg-white w-full sm:w-64 font-mono text-[11px]"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Feedback: Up-to-date */}
+                  {updateStatus === 'up-to-date' && (
+                    <div className="p-3 rounded bg-emerald-50 border border-emerald-200 flex items-center gap-2 text-xs text-emerald-900 font-delight font-medium">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>You are running the latest version of Strovr Desktop (v3.0.0). All local features are up to date.</span>
+                    </div>
+                  )}
+
+                  {/* Feedback: Update Available */}
+                  {updateStatus === 'available' && latestManifest && (
+                    <div className="p-3.5 rounded bg-amber-50/80 border border-amber-200 flex flex-col gap-2.5 text-xs text-amber-950">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 font-bold font-delight text-amber-900">
+                          <Sparkles className="w-4 h-4 text-[#C85A32]" />
+                          <span>New Update Available: v{latestManifest.latestVersion}</span>
+                        </div>
+                        <button
+                          onClick={handleDownloadUpdate}
+                          className="h-7 px-3 bg-[#C85A32] hover:bg-[#B04B25] text-white font-delight font-semibold text-xs rounded transition-all shadow-xs flex items-center gap-1 cursor-pointer"
+                        >
+                          <Download className="w-3.5 h-3.5 text-white" />
+                          <span>Download Update</span>
+                        </button>
+                      </div>
+
+                      {latestManifest.changelog?.length > 0 && (
+                        <div className="pt-1.5 border-t border-amber-200/60">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 block mb-1">What's New:</span>
+                          <ul className="list-disc list-inside space-y-0.5 text-[11.5px] text-amber-900/90 font-sans">
+                            {latestManifest.changelog.map((item: string, i: number) => (
+                              <li key={i}>{item}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Feedback: Downloading Progress */}
+                  {updateStatus === 'downloading' && (
+                    <div className="p-3.5 rounded bg-white border border-[#E5E0D5] flex flex-col gap-2 text-xs">
+                      <div className="flex items-center justify-between text-[#57514B] font-delight text-xs">
+                        <span className="font-semibold text-[#191716] flex items-center gap-1.5">
+                          <Download className="w-3.5 h-3.5 text-[#C85A32] animate-bounce" />
+                          Downloading Strovr update...
+                        </span>
+                        <span className="font-mono text-[11px] font-bold text-[#C85A32]">
+                          {downloadProgress.percent}% ({downloadProgress.receivedMB} MB / {downloadProgress.totalMB || '...'} MB)
+                        </span>
+                      </div>
+                      <div className="w-full bg-[#F5F2EB] h-2 rounded-full overflow-hidden border border-[#E5E0D5]">
+                        <div
+                          className="bg-[#C85A32] h-full transition-all duration-300"
+                          style={{ width: `${downloadProgress.percent}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Feedback: Ready to Apply */}
+                  {updateStatus === 'ready' && (
+                    <div className="p-3.5 rounded bg-emerald-50 border border-emerald-200 flex flex-wrap items-center justify-between gap-3 text-xs text-emerald-950">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                        <div>
+                          <strong className="block text-emerald-900">Update Downloaded &amp; Verified</strong>
+                          <span className="text-[11px] text-emerald-800">
+                            Click below to apply. Strovr will close, swap the executable, and restart automatically.
+                          </span>
+                        </div>
+                      </div>
+                      <button
+                        onClick={handleApplyUpdate}
+                        disabled={isRestarting}
+                        className="h-8 px-4 bg-emerald-700 hover:bg-emerald-800 text-white font-delight font-semibold text-xs rounded transition-all shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-60"
+                      >
+                        <RefreshCw className={`w-3.5 h-3.5 ${isRestarting ? 'animate-spin' : ''}`} />
+                        <span>{isRestarting ? 'Restarting...' : 'Restart & Apply Update'}</span>
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Feedback: Error */}
+                  {updateStatus === 'error' && updateError && (
+                    <div className="p-3 rounded bg-red-50 border border-red-200 flex items-center gap-2 text-xs text-red-900 font-delight">
+                      <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+                      <span>{updateError}</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Cloud Firestore Sync Status */}
