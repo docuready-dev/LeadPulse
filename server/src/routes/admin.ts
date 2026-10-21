@@ -6,6 +6,7 @@ import { leadStore } from '../services/leadStore';
 import { transactionStore } from '../services/transactionStore';
 import { adminSecurity } from '../middleware/adminSecurity';
 import { applyDailyTokenReset, getTodayDateString, PLAN_DAILY_TOKENS } from '../services/tokenManager';
+import { releaseStore } from '../services/releaseStore';
 
 const router = express.Router();
 
@@ -459,6 +460,122 @@ router.delete('/leads/purge', async (req, res) => {
     res.json({ success: true, deletedCount });
   } catch (err) {
     res.status(500).json({ error: 'Failed to purge leads' });
+  }
+});
+
+// 7. Desktop Releases Container & Device Telemetry
+router.get('/releases', async (_req, res) => {
+  try {
+    const releases = releaseStore.getAllReleases();
+    const latest = releaseStore.getLatestRelease();
+    const allUsers = userStore.getAllUsers();
+    
+    const desktopUsers = allUsers.filter(u => u.active_devices?.desktop?.installed);
+    const webUsers = allUsers.filter(u => u.active_devices?.web && !u.active_devices?.desktop?.installed);
+    const hybridUsers = allUsers.filter(u => u.active_devices?.web && u.active_devices?.desktop?.installed);
+
+    res.json({
+      releases,
+      latest,
+      containerPath: releaseStore.getReleasesDirectory(),
+      telemetry: {
+        totalUsers: allUsers.length,
+        desktopUsersCount: desktopUsers.length,
+        webUsersCount: webUsers.length,
+        hybridUsersCount: hybridUsers.length,
+        upToDateDesktopUsers: desktopUsers.filter(u => (u.active_devices?.desktop?.installed_version || '').replace(/^v/, '') === (latest.version || '').replace(/^v/, '')).length
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to retrieve desktop releases container data' });
+  }
+});
+
+router.post('/releases', async (req, res) => {
+  try {
+    const { version, title, changelog, fileName, downloadUrl, portableZipUrl, isMandatory } = req.body || {};
+    if (!version || !title) {
+      return res.status(400).json({ error: 'Version and title are required for a release' });
+    }
+
+    const adminEmail = (req as any).user?.email || 'ashleyghose64@gmail.com';
+    const release = releaseStore.createRelease({
+      version,
+      title,
+      changelog: Array.isArray(changelog) ? changelog : (typeof changelog === 'string' ? changelog.split('\n').filter(Boolean) : []),
+      fileName: fileName || `Strovr-${version.replace(/^v/, '')}.exe`,
+      downloadUrl: downloadUrl || '/api/desktop/download-latest',
+      portableZipUrl: portableZipUrl || '/downloads/Strovr-Desktop-Portable.zip',
+      isMandatory: Boolean(isMandatory),
+      publishedBy: adminEmail
+    });
+
+    res.json({ success: true, release });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Failed to create release' });
+  }
+});
+
+router.put('/releases/:id/activate', async (req, res) => {
+  try {
+    const release = releaseStore.setActiveRelease(req.params.id);
+    if (!release) {
+      return res.status(404).json({ error: 'Release not found' });
+    }
+    res.json({ success: true, release });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Failed to activate release' });
+  }
+});
+
+router.delete('/releases/:id', async (req, res) => {
+  try {
+    const deleted = releaseStore.deleteRelease(req.params.id);
+    if (!deleted) {
+      return res.status(404).json({ error: 'Release not found or cannot be deleted' });
+    }
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Failed to delete release' });
+  }
+});
+
+router.get('/releases/desktop-users', async (_req, res) => {
+  try {
+    const allUsers = userStore.getAllUsers();
+    const latest = releaseStore.getLatestRelease();
+
+    const usersWithTelemetry = allUsers.map(u => {
+      const desktop = u.active_devices?.desktop;
+      const web = u.active_devices?.web;
+      const isDesktopInstalled = Boolean(desktop?.installed);
+      const installedVer = desktop?.installed_version || 'None';
+      const isUpToDate = isDesktopInstalled && installedVer.replace(/^v/, '') === (latest.version || '').replace(/^v/, '');
+
+      return {
+        _id: u._id,
+        email: u.email,
+        name: u.name,
+        role: u.role,
+        plan: u.plan,
+        platformType: isDesktopInstalled && web ? 'Hybrid (PC + Web)' : isDesktopInstalled ? 'Desktop PC' : 'Web Only',
+        desktop: {
+          installed: isDesktopInstalled,
+          machineId: desktop?.machine_id || 'N/A',
+          installedVersion: installedVer,
+          os: desktop?.os || 'Windows',
+          lastSeen: desktop?.last_seen || null,
+          isUpToDate
+        },
+        web: {
+          lastSeen: web?.last_seen || null
+        }
+      };
+    });
+
+    res.json(usersWithTelemetry);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to retrieve desktop user telemetry' });
   }
 });
 

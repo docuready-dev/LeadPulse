@@ -10,11 +10,11 @@ import {
   Trash2, CheckCircle2, AlertTriangle, Download, Search, 
   Zap, Server, Database, ShieldCheck, Shield,
   CreditCard, RotateCcw, ArrowUpDown, ChevronDown, Check,
-  X, Lock, Mail, ExternalLink, Filter
+  X, Lock, Mail, ExternalLink, Filter, Layers, Monitor, Package, Upload
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-type AdminTab = 'overview' | 'users' | 'payments' | 'scraper' | 'credits' | 'leads';
+type AdminTab = 'overview' | 'users' | 'payments' | 'scraper' | 'credits' | 'leads' | 'releases';
 
 interface StatsState {
   totalUsers: number;
@@ -94,6 +94,29 @@ const AdminPanel = () => {
   const [globalLeads, setGlobalLeads] = useState<any[]>([]);
   const [leadSearch, setLeadSearch] = useState('');
 
+  // 6. Desktop Releases Container & Telemetry State
+  const [releases, setReleases] = useState<any[]>([]);
+  const [activeRelease, setActiveRelease] = useState<any>(null);
+  const [releaseTelemetry, setReleaseTelemetry] = useState<any>({
+    totalUsers: 0,
+    desktopUsersCount: 0,
+    webUsersCount: 0,
+    hybridUsersCount: 0,
+    upToDateDesktopUsers: 0
+  });
+  const [desktopUsersList, setDesktopUsersList] = useState<any[]>([]);
+  const [isReleaseModalOpen, setIsReleaseModalOpen] = useState(false);
+  const [releaseForm, setReleaseForm] = useState({
+    version: '',
+    title: '',
+    changelog: '',
+    fileName: 'Strovr.exe',
+    downloadUrl: '/api/desktop/download-latest',
+    portableZipUrl: '/downloads/Strovr-Desktop-Portable.zip',
+    isMandatory: false
+  });
+  const [publishingRelease, setPublishingRelease] = useState(false);
+
   // Modals state
   const [creditModalUser, setCreditModalUser] = useState<any | null>(null);
   const [creditAdjustmentAmount, setCreditAdjustmentAmount] = useState('100');
@@ -160,10 +183,83 @@ const AdminPanel = () => {
       if (Array.isArray(txRes.data)) setTransactions(txRes.data);
       if (settingsRes.data) setSettings(settingsRes.data);
       if (Array.isArray(leadsRes.data)) setGlobalLeads(leadsRes.data);
+
+      await fetchReleases();
     } catch (err: any) {
       showNotification(err.response?.data?.error || 'Failed to sync admin telemetry', true);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchReleases = async () => {
+    try {
+      const headers = getHeaders();
+      const [releasesRes, usersRes] = await Promise.all([
+        axios.get(`${API_URL}/api/admin/releases`, { headers }).catch(() => ({ data: null })),
+        axios.get(`${API_URL}/api/admin/releases/desktop-users`, { headers }).catch(() => ({ data: [] }))
+      ]);
+      if (releasesRes.data) {
+        setReleases(releasesRes.data.releases || []);
+        setActiveRelease(releasesRes.data.latest || null);
+        if (releasesRes.data.telemetry) {
+          setReleaseTelemetry(releasesRes.data.telemetry);
+        }
+      }
+      if (Array.isArray(usersRes.data)) {
+        setDesktopUsersList(usersRes.data);
+      }
+    } catch (err: any) {
+      console.warn('[Admin] Failed to fetch releases telemetry:', err.message);
+    }
+  };
+
+  const handlePublishRelease = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!releaseForm.version || !releaseForm.title) {
+      showNotification('Version and title are required.', true);
+      return;
+    }
+    setPublishingRelease(true);
+    try {
+      await axios.post(`${API_URL}/api/admin/releases`, releaseForm, { headers: getHeaders() });
+      showNotification(`Release v${releaseForm.version} published! Active update broadcasted to all desktop apps.`);
+      setIsReleaseModalOpen(false);
+      setReleaseForm({
+        version: '',
+        title: '',
+        changelog: '',
+        fileName: 'Strovr.exe',
+        downloadUrl: '/api/desktop/download-latest',
+        portableZipUrl: '/downloads/Strovr-Desktop-Portable.zip',
+        isMandatory: false
+      });
+      await fetchReleases();
+    } catch (err: any) {
+      showNotification(err.response?.data?.error || 'Failed to publish release', true);
+    } finally {
+      setPublishingRelease(false);
+    }
+  };
+
+  const handleActivateRelease = async (releaseId: string) => {
+    try {
+      await axios.put(`${API_URL}/api/admin/releases/${releaseId}/activate`, {}, { headers: getHeaders() });
+      showNotification('Release activated as current desktop version.');
+      await fetchReleases();
+    } catch (err: any) {
+      showNotification(err.response?.data?.error || 'Failed to activate release', true);
+    }
+  };
+
+  const handleDeleteRelease = async (releaseId: string) => {
+    if (!window.confirm('Are you sure you want to delete this release from the container?')) return;
+    try {
+      await axios.delete(`${API_URL}/api/admin/releases/${releaseId}`, { headers: getHeaders() });
+      showNotification('Release removed from container.');
+      await fetchReleases();
+    } catch (err: any) {
+      showNotification(err.response?.data?.error || 'Failed to delete release', true);
     }
   };
 
@@ -560,6 +656,23 @@ const AdminPanel = () => {
                 >
                   <Database className="w-3.5 h-3.5 text-[#E07A5F]" />
                   <span>Global Leads ({globalLeads.length})</span>
+                </button>
+
+                <button 
+                  onClick={() => setActiveTab('releases')}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold font-delight transition-all cursor-pointer ${
+                    activeTab === 'releases' 
+                      ? 'bg-[#191716] text-white shadow-2xs' 
+                      : 'text-[#6E675F] hover:bg-[#F5F2EB] hover:text-[#191716]'
+                  }`}
+                >
+                  <Layers className="w-3.5 h-3.5 text-[#E07A5F]" />
+                  <span>Releases &amp; PC Users ({releases.length})</span>
+                  {releaseTelemetry.desktopUsersCount > 0 && (
+                    <span className="px-1.5 py-0.2 rounded-full bg-[#E07A5F]/20 text-[#C85A32] text-[10px] font-bold">
+                      {releaseTelemetry.desktopUsersCount} PC
+                    </span>
+                  )}
                 </button>
               </div>
             </div>
@@ -1331,6 +1444,283 @@ const AdminPanel = () => {
               </div>
             )}
 
+            {/* ======================================================== */}
+            {/* TAB 7: DESKTOP RELEASES CONTAINER & DEVICE TELEMETRY     */}
+            {/* ======================================================== */}
+            {activeTab === 'releases' && (
+              <div className="space-y-6 animate-in fade-in duration-150 font-delight">
+                
+                {/* 1. Telemetry Overview Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                  
+                  {/* Card 1: Active Version */}
+                  <div className="bg-white p-5 rounded-2xl border border-[#E5E0D5] shadow-2xs space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-bold text-[#6E675F] uppercase tracking-wider">Active Version</span>
+                      <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-bold border border-emerald-200">
+                        LIVE ACTIVE
+                      </span>
+                    </div>
+                    <div className="text-2xl font-extrabold text-[#191716] font-mono">
+                      v{activeRelease?.version || '3.0.0'}
+                    </div>
+                    <p className="text-xs text-[#6E675F] truncate">
+                      {activeRelease?.title || 'Base Production Build'}
+                    </p>
+                  </div>
+
+                  {/* Card 2: Desktop PC Users */}
+                  <div className="bg-white p-5 rounded-2xl border border-[#E5E0D5] shadow-2xs space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-bold text-[#6E675F] uppercase tracking-wider">Desktop PC Installs</span>
+                      <Monitor className="w-4 h-4 text-[#C85A32]" />
+                    </div>
+                    <div className="text-2xl font-extrabold text-[#191716]">
+                      {releaseTelemetry.desktopUsersCount}
+                    </div>
+                    <p className="text-xs text-[#6E675F]">
+                      {releaseTelemetry.upToDateDesktopUsers} of {releaseTelemetry.desktopUsersCount} up to date
+                    </p>
+                  </div>
+
+                  {/* Card 3: Web App Users */}
+                  <div className="bg-white p-5 rounded-2xl border border-[#E5E0D5] shadow-2xs space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-bold text-[#6E675F] uppercase tracking-wider">Web Console Users</span>
+                      <span className="text-xs font-bold text-slate-500 font-mono">Cloud</span>
+                    </div>
+                    <div className="text-2xl font-extrabold text-[#191716]">
+                      {releaseTelemetry.webUsersCount}
+                    </div>
+                    <p className="text-xs text-[#6E675F]">
+                      {releaseTelemetry.hybridUsersCount} users use both PC &amp; Web
+                    </p>
+                  </div>
+
+                  {/* Card 4: Container Storage */}
+                  <div className="bg-white p-5 rounded-2xl border border-[#E5E0D5] shadow-2xs space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-bold text-[#6E675F] uppercase tracking-wider">Container Storage</span>
+                      <Package className="w-4 h-4 text-emerald-600" />
+                    </div>
+                    <div className="text-2xl font-extrabold text-[#191716]">
+                      {releases.length} <span className="text-xs font-normal text-[#6E675F]">Releases</span>
+                    </div>
+                    <p className="text-xs text-[#6E675F] font-mono truncate" title="server/data/releases/">
+                      server/data/releases/
+                    </p>
+                  </div>
+
+                </div>
+
+                {/* 2. Releases Container History & Management */}
+                <div className="bg-white rounded-2xl border border-[#E5E0D5] p-5 shadow-2xs space-y-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <h3 className="text-base font-bold text-[#191716] flex items-center gap-2">
+                        <Layers className="w-4 h-4 text-[#C85A32]" />
+                        <span>Desktop Releases Container</span>
+                      </h3>
+                      <p className="text-xs text-[#6E675F] mt-0.5">
+                        Manage desktop application builds, deploy new versions, and broadcast update notifications.
+                      </p>
+                    </div>
+
+                    <button
+                      onClick={() => setIsReleaseModalOpen(true)}
+                      className="px-4 py-2 bg-[#C85A32] hover:bg-[#B04B25] text-white text-xs font-semibold rounded-xl flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer"
+                    >
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>Publish New Release</span>
+                    </button>
+                  </div>
+
+                  <div className="border border-[#E5E0D5] rounded-xl overflow-hidden">
+                    <table className="w-full text-left border-collapse text-xs">
+                      <thead className="bg-[#FAF8F5] border-b border-[#E5E0D5] text-[#6E675F] font-bold uppercase text-[10px] tracking-wider font-delight">
+                        <tr>
+                          <th className="p-3.5">Version &amp; Title</th>
+                          <th className="p-3.5">Binary File</th>
+                          <th className="p-3.5 text-center">Downloads</th>
+                          <th className="p-3.5">Status</th>
+                          <th className="p-3.5">Type</th>
+                          <th className="p-3.5">Published Date</th>
+                          <th className="p-3.5 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[#E5E0D5]">
+                        {releases.map((rel) => (
+                          <tr key={rel.id} className="hover:bg-[#FAF8F5] transition-colors">
+                            <td className="p-3.5">
+                              <div className="font-bold text-[#191716] flex items-center gap-1.5">
+                                <span className="font-mono bg-[#191716] text-white px-1.5 py-0.5 rounded text-[10px]">
+                                  v{rel.version}
+                                </span>
+                                <span>{rel.title}</span>
+                              </div>
+                              {rel.changelog && rel.changelog.length > 0 && (
+                                <p className="text-[11px] text-[#6E675F] mt-0.5 truncate max-w-xs">
+                                  {rel.changelog[0]}
+                                </p>
+                              )}
+                            </td>
+                            <td className="p-3.5 font-mono text-[11px] text-[#57514B]">
+                              {rel.fileName || 'Strovr.exe'}
+                              {rel.fileSize ? ` (${Math.round(rel.fileSize / 1024 / 1024)} MB)` : ''}
+                            </td>
+                            <td className="p-3.5 text-center font-bold text-[#191716]">
+                              {rel.downloadCount || 0}
+                            </td>
+                            <td className="p-3.5">
+                              {rel.isLatest ? (
+                                <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 text-[10px] font-bold border border-emerald-200">
+                                  Active Latest
+                                </span>
+                              ) : (
+                                <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-semibold border border-slate-200">
+                                  Archived
+                                </span>
+                              )}
+                            </td>
+                            <td className="p-3.5">
+                              {rel.isMandatory ? (
+                                <span className="px-1.5 py-0.5 rounded bg-rose-50 text-rose-700 text-[9.5px] font-bold border border-rose-200">
+                                  MANDATORY
+                                </span>
+                              ) : (
+                                <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 text-[9.5px] font-semibold border border-slate-200">
+                                  OPTIONAL
+                                </span>
+                              )}
+                            </td>
+                            <td className="p-3.5 text-[#6E675F] text-[11px]">
+                              {rel.publishedAt ? new Date(rel.publishedAt).toLocaleDateString() : 'N/A'}
+                            </td>
+                            <td className="p-3.5 text-right">
+                              <div className="flex items-center justify-end gap-1.5">
+                                {!rel.isLatest && (
+                                  <button
+                                    onClick={() => handleActivateRelease(rel.id)}
+                                    className="px-2.5 py-1 bg-white hover:bg-[#F5F2EB] border border-[#E5E0D5] text-[#191716] rounded text-[11px] font-semibold transition-colors cursor-pointer"
+                                    title="Set this version as active release"
+                                  >
+                                    Activate
+                                  </button>
+                                )}
+                                <a
+                                  href={`${API_URL}${rel.downloadUrl || '/api/desktop/download-latest'}`}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="px-2.5 py-1 bg-[#191716] hover:bg-[#332E2A] text-white rounded text-[11px] font-semibold transition-colors inline-flex items-center gap-1"
+                                  title="Download binary"
+                                >
+                                  <Download className="w-3 h-3" />
+                                  <span>Download</span>
+                                </a>
+                                {releases.length > 1 && !rel.isLatest && (
+                                  <button
+                                    onClick={() => handleDeleteRelease(rel.id)}
+                                    className="p-1 hover:bg-rose-50 text-[#6E675F] hover:text-rose-600 rounded transition-colors cursor-pointer"
+                                    title="Delete release"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* 3. Desktop PC User Registry & Telemetry Table */}
+                <div className="bg-white rounded-2xl border border-[#E5E0D5] p-5 shadow-2xs space-y-4">
+                  <div>
+                    <h3 className="text-base font-bold text-[#191716] flex items-center gap-2">
+                      <Monitor className="w-4 h-4 text-emerald-600" />
+                      <span>Desktop Client Device Registry &amp; Update Status</span>
+                    </h3>
+                    <p className="text-xs text-[#6E675F] mt-0.5">
+                      Live identification of users currently running the desktop application versus web browsers.
+                    </p>
+                  </div>
+
+                  <div className="border border-[#E5E0D5] rounded-xl overflow-hidden">
+                    <table className="w-full text-left border-collapse text-xs">
+                      <thead className="bg-[#FAF8F5] border-b border-[#E5E0D5] text-[#6E675F] font-bold uppercase text-[10px] tracking-wider font-delight">
+                        <tr>
+                          <th className="p-3.5">User &amp; Email</th>
+                          <th className="p-3.5">Platform Type</th>
+                          <th className="p-3.5">Installed PC Version</th>
+                          <th className="p-3.5">Update Status</th>
+                          <th className="p-3.5">Machine Fingerprint</th>
+                          <th className="p-3.5">OS Runtime</th>
+                          <th className="p-3.5 text-right">Last Heartbeat</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[#E5E0D5]">
+                        {desktopUsersList.map((du) => (
+                          <tr key={du._id} className="hover:bg-[#FAF8F5] transition-colors">
+                            <td className="p-3.5">
+                              <span className="font-bold text-[#191716] block">{du.name || 'User'}</span>
+                              <span className="text-[11px] text-[#6E675F]">{du.email}</span>
+                            </td>
+                            <td className="p-3.5">
+                              {du.platformType.includes('Hybrid') ? (
+                                <span className="px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 text-[10px] font-bold border border-purple-200">
+                                  Hybrid (PC + Web)
+                                </span>
+                              ) : du.platformType.includes('Desktop') ? (
+                                <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 text-[10px] font-bold border border-blue-200">
+                                  Desktop PC
+                                </span>
+                              ) : (
+                                <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-semibold border border-slate-200">
+                                  Web Only
+                                </span>
+                              )}
+                            </td>
+                            <td className="p-3.5 font-mono text-[11px] text-[#191716] font-bold">
+                              {du.desktop?.installed ? `v${du.desktop.installedVersion}` : 'Not Installed'}
+                            </td>
+                            <td className="p-3.5">
+                              {du.desktop?.installed ? (
+                                du.desktop.isUpToDate ? (
+                                  <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                                    <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                    <span>Up to Date</span>
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                                    <AlertTriangle className="w-3 h-3 text-amber-600" />
+                                    <span>Update Available (v{activeRelease?.version})</span>
+                                  </span>
+                                )
+                              ) : (
+                                <span className="text-[#9C9488] text-[11px]">No PC action required</span>
+                              )}
+                            </td>
+                            <td className="p-3.5 font-mono text-[10.5px] text-[#6E675F]">
+                              {du.desktop?.machineId || 'N/A'}
+                            </td>
+                            <td className="p-3.5 text-[#57514B] text-[11px]">
+                              {du.desktop?.installed ? du.desktop.os : 'Web Browser'}
+                            </td>
+                            <td className="p-3.5 text-right text-[#6E675F] text-[11px]">
+                              {du.desktop?.lastSeen ? new Date(du.desktop.lastSeen).toLocaleString() : du.web?.lastSeen ? new Date(du.web.lastSeen).toLocaleString() : 'Never'}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+              </div>
+            )}
+
           </div>
         </main>
       </div>
@@ -1513,6 +1903,133 @@ const AdminPanel = () => {
                 Update Tier
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================ */}
+      {/* MODAL 3: PUBLISH NEW DESKTOP RELEASE CONTAINER MODAL         */}
+      {/* ============================================================ */}
+      {isReleaseModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50 p-4 font-delight">
+          <div className="bg-white rounded-2xl border border-[#E5E0D5] p-6 max-w-lg w-full shadow-xl space-y-4 animate-in zoom-in-95 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-[#E5E0D5] pb-3">
+              <div>
+                <h3 className="text-base font-bold text-[#191716] flex items-center gap-2">
+                  <Package className="w-4 h-4 text-[#C85A32]" />
+                  <span>Publish New Desktop Release</span>
+                </h3>
+                <p className="text-xs text-[#6E675F] mt-0.5">
+                  Creates a new release entry in the container and triggers update notifications to all desktop apps.
+                </p>
+              </div>
+              <button onClick={() => setIsReleaseModalOpen(false)} className="text-[#6E675F] hover:text-[#191716] cursor-pointer">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handlePublishRelease} className="space-y-3.5 text-xs">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="block font-bold text-[#191716]">Semantic Version *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. 3.1.0"
+                    value={releaseForm.version}
+                    onChange={(e) => setReleaseForm({ ...releaseForm, version: e.target.value })}
+                    className="w-full bg-[#FAF8F5] border border-[#E5E0D5] rounded-xl p-2.5 text-xs font-mono font-bold text-[#191716] outline-none focus:bg-white"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block font-bold text-[#191716]">Binary File Name</label>
+                  <input
+                    type="text"
+                    placeholder="Strovr.exe"
+                    value={releaseForm.fileName}
+                    onChange={(e) => setReleaseForm({ ...releaseForm, fileName: e.target.value })}
+                    className="w-full bg-[#FAF8F5] border border-[#E5E0D5] rounded-xl p-2.5 text-xs font-mono text-[#57514B] outline-none focus:bg-white"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="block font-bold text-[#191716]">Release Title / Headline *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Performance, Auto-Zoom & Cell Spacing"
+                  value={releaseForm.title}
+                  onChange={(e) => setReleaseForm({ ...releaseForm, title: e.target.value })}
+                  className="w-full bg-[#FAF8F5] border border-[#E5E0D5] rounded-xl p-2.5 text-xs font-medium text-[#191716] outline-none focus:bg-white"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="block font-bold text-[#191716]">Changelog Notes (One bullet per line)</label>
+                <textarea
+                  rows={4}
+                  placeholder={`- Added 50% to 200% zoom scaling controller\n- Enhanced cell padding for harvested leads table\n- Accelerated Google Maps scraper worker`}
+                  value={releaseForm.changelog}
+                  onChange={(e) => setReleaseForm({ ...releaseForm, changelog: e.target.value })}
+                  className="w-full bg-[#FAF8F5] border border-[#E5E0D5] rounded-xl p-2.5 text-xs text-[#191716] outline-none focus:bg-white font-sans"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="block font-bold text-[#191716]">Binary Download Path / URL</label>
+                  <input
+                    type="text"
+                    value={releaseForm.downloadUrl}
+                    onChange={(e) => setReleaseForm({ ...releaseForm, downloadUrl: e.target.value })}
+                    className="w-full bg-[#FAF8F5] border border-[#E5E0D5] rounded-xl p-2 text-xs font-mono text-[11px] text-[#57514B] outline-none focus:bg-white"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block font-bold text-[#191716]">Portable Zip URL</label>
+                  <input
+                    type="text"
+                    value={releaseForm.portableZipUrl}
+                    onChange={(e) => setReleaseForm({ ...releaseForm, portableZipUrl: e.target.value })}
+                    className="w-full bg-[#FAF8F5] border border-[#E5E0D5] rounded-xl p-2 text-xs font-mono text-[11px] text-[#57514B] outline-none focus:bg-white"
+                  />
+                </div>
+              </div>
+
+              <div className="p-3 bg-[#FAF8F5] rounded-xl border border-[#E5E0D5] flex items-center justify-between">
+                <div>
+                  <span className="font-bold text-[#191716] block">Mandatory Critical Release</span>
+                  <span className="text-[11px] text-[#6E675F]">Enforces desktop clients to update before continuing</span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={releaseForm.isMandatory}
+                  onChange={(e) => setReleaseForm({ ...releaseForm, isMandatory: e.target.checked })}
+                  className="w-4 h-4 accent-[#C85A32] cursor-pointer"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#E5E0D5]">
+                <button
+                  type="button"
+                  onClick={() => setIsReleaseModalOpen(false)}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold border border-[#E5E0D5] text-[#6E675F] hover:bg-[#FAF8F5] cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={publishingRelease}
+                  className="px-5 py-2 rounded-xl text-xs font-semibold bg-[#C85A32] hover:bg-[#B04B25] text-white shadow-2xs cursor-pointer flex items-center gap-1.5 disabled:opacity-60"
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>{publishingRelease ? 'Publishing...' : 'Publish & Broadcast'}</span>
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

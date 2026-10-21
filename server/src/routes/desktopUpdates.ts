@@ -5,10 +5,12 @@ import http from 'http';
 import https from 'https';
 import { spawn } from 'child_process';
 import os from 'os';
+import { releaseStore, compareSemanticVersions } from '../services/releaseStore';
+import { userStore } from '../services/userStore';
 
 const router = Router();
 
-// Current application version
+// Current baseline application version
 export const CURRENT_DESKTOP_VERSION = '3.0.0';
 
 // Global state for in-flight download progress
@@ -31,49 +33,59 @@ let downloadState: DownloadState = {
 
 // Helper: compare semantic versions (returns 1 if v1 > v2, -1 if v1 < v2, 0 if equal)
 function compareVersions(v1: string, v2: string): number {
-  const p1 = (v1 || '0').replace(/^v/, '').split('.').map(Number);
-  const p2 = (v2 || '0').replace(/^v/, '').split('.').map(Number);
-  for (let i = 0; i < Math.max(p1.length, p2.length); i++) {
-    const num1 = p1[i] || 0;
-    const num2 = p2[i] || 0;
-    if (num1 > num2) return 1;
-    if (num1 < num2) return -1;
-  }
-  return 0;
+  return compareSemanticVersions(v1, v2);
 }
 
 /**
  * GET /api/desktop/version
- * Public version manifest defining latest desktop release
+ * Public version manifest defining latest desktop release from Superadmin Releases container
  */
 router.get('/version', (req: Request, res: Response) => {
   const host = req.get('host') || 'localhost:3001';
   const protocol = req.protocol || 'http';
   const baseUrl = `${protocol}://${host}`;
+  const latest = releaseStore.getLatestRelease();
 
   res.json({
-    latestVersion: CURRENT_DESKTOP_VERSION,
+    latestVersion: latest.version || CURRENT_DESKTOP_VERSION,
     currentVersion: CURRENT_DESKTOP_VERSION,
-    releaseDate: '2026-10-21T11:30:00Z',
+    releaseTitle: latest.title,
+    releaseDate: latest.publishedAt,
     minSupportedVersion: '3.0.0',
-    changelog: [
-      'New brand logo and typography across all screens',
-      'Desktop Edition badge and local DB status banner',
-      'Automatic Excel CSV exports (all_leads, saved_leads, harvested_leads)',
-      'Direct data persistence in Documents\\Strovr',
-      'In-app update engine with local network and cloud discovery'
-    ],
-    downloadUrl: `${baseUrl}/api/desktop/download-latest`,
-    portableZipUrl: `${baseUrl}/downloads/Strovr-Desktop-Portable.zip`,
-    fileName: 'Strovr.exe'
+    changelog: latest.changelog || [],
+    downloadUrl: latest.downloadUrl?.startsWith('http') ? latest.downloadUrl : `${baseUrl}${latest.downloadUrl}`,
+    portableZipUrl: latest.portableZipUrl?.startsWith('http') ? latest.portableZipUrl : `${baseUrl}${latest.portableZipUrl || '/downloads/Strovr-Desktop-Portable.zip'}`,
+    fileName: latest.fileName || 'Strovr.exe',
+    fileSize: latest.fileSize || 0,
+    isMandatory: latest.isMandatory || false
   });
 });
 
 /**
  * GET /api/desktop/download-latest
- * Binary stream of latest Strovr.exe
+ * Binary stream of latest Strovr.exe from releases container or local build candidate
  */
 router.get('/download-latest', (_req: Request, res: Response) => {
+  const latest = releaseStore.getLatestRelease();
+
+  // If latest release points to an absolute or stored file path
+  if (latest.filePath && fs.existsSync(latest.filePath)) {
+    releaseStore.incrementDownloadCount(latest.id);
+    res.setHeader('Content-Disposition', `attachment; filename="${latest.fileName || 'Strovr.exe'}"`);
+    res.setHeader('Content-Type', 'application/octet-stream');
+    return res.sendFile(latest.filePath);
+  }
+
+  // Look in release container directory
+  const containerDir = releaseStore.getReleasesDirectory();
+  const containerFile = path.join(containerDir, latest.fileName || 'Strovr.exe');
+  if (fs.existsSync(containerFile)) {
+    releaseStore.incrementDownloadCount(latest.id);
+    res.setHeader('Content-Disposition', `attachment; filename="${latest.fileName || 'Strovr.exe'}"`);
+    res.setHeader('Content-Type', 'application/octet-stream');
+    return res.sendFile(containerFile);
+  }
+
   const candidatePaths = [
     path.resolve(__dirname, '../../../desktop-app/Strovr.exe'),
     path.resolve(__dirname, '../../../desktop-app/Strovr 3.0.0.exe'),
@@ -82,6 +94,7 @@ router.get('/download-latest', (_req: Request, res: Response) => {
 
   for (const candidate of candidatePaths) {
     if (fs.existsSync(candidate)) {
+      releaseStore.incrementDownloadCount(latest.id);
       res.setHeader('Content-Disposition', 'attachment; filename="Strovr.exe"');
       res.setHeader('Content-Type', 'application/octet-stream');
       return res.sendFile(candidate);
@@ -89,6 +102,42 @@ router.get('/download-latest', (_req: Request, res: Response) => {
   }
 
   res.status(404).json({ error: 'Latest desktop binary not found on this server' });
+});
+
+/**
+ * POST /api/desktop/heartbeat
+ * Telemetry registration for desktop instances to track active PC users in Superadmin
+ */
+router.post('/heartbeat', (req: Request, res: Response) => {
+  try {
+    const { machineId, currentVersion, os: clientOs, userId, userEmail } = req.body || {};
+    const latest = releaseStore.getLatestRelease();
+    const activeVer = currentVersion || req.headers['x-app-version'] || CURRENT_DESKTOP_VERSION;
+    const hasUpdate = compareSemanticVersions(latest.version, String(activeVer)) > 0;
+
+    const targetUserId = userId || (userEmail ? userStore.getUserByEmail(userEmail)?._id : null);
+    if (targetUserId) {
+      userStore.recordDevicePing(targetUserId, 'desktop', {
+        machine_id: machineId || req.headers['x-machine-id'],
+        installed_version: activeVer,
+        os: clientOs || 'Windows',
+        ip: req.ip || req.socket.remoteAddress,
+        userAgent: req.headers['user-agent'],
+        update_pending: hasUpdate
+      });
+    }
+
+    res.json({
+      success: true,
+      hasUpdate,
+      latestVersion: latest.version,
+      releaseTitle: latest.title,
+      isMandatory: latest.isMandatory || false,
+      publishedAt: latest.publishedAt
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Heartbeat processing failed' });
+  }
 });
 
 /**

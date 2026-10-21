@@ -1,6 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { ExternalLink } from 'lucide-react';
+import { ExternalLink, Sparkles, Download } from 'lucide-react';
+import axios from 'axios';
+import API_URL from './config/api';
 import { useStore } from './store/useStore';
 import Login from './pages/Login';
 import ResetPassword from './pages/ResetPassword';
@@ -99,9 +101,35 @@ const App = () => {
     } catch (_) {}
   }, [token, setUpgradeTab, setUpgradeModalOpen]);
 
+  const [desktopUpdate, setDesktopUpdate] = useState<{
+    hasUpdate: boolean;
+    latestVersion: string;
+    releaseTitle?: string;
+    isMandatory?: boolean;
+  } | null>(null);
+
   useEffect(() => {
     zoomManager.init();
-  }, []);
+
+    // Check for desktop software updates when running in desktop app
+    if (isDesktop) {
+      axios.post(`${API_URL}/api/desktop/heartbeat`, {
+        currentVersion: '3.0.0',
+        userId: user?._id,
+        userEmail: user?.email,
+        os: 'Windows'
+      }).then((res) => {
+        if (res.data?.hasUpdate) {
+          setDesktopUpdate({
+            hasUpdate: true,
+            latestVersion: res.data.latestVersion,
+            releaseTitle: res.data.releaseTitle,
+            isMandatory: res.data.isMandatory
+          });
+        }
+      }).catch((_) => {});
+    }
+  }, [user?._id, user?.email]);
 
   useEffect(() => {
     if (token) {
@@ -138,6 +166,16 @@ const App = () => {
             </p>
           </div>
           <div className="flex items-center gap-2.5">
+            {desktopUpdate?.hasUpdate && (
+              <a 
+                href="/settings" 
+                className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-400/40 rounded text-[11px] font-medium transition-all animate-pulse"
+                title={`New Strovr Desktop v${desktopUpdate.latestVersion} available - click to install update`}
+              >
+                <Sparkles className="w-3 h-3 text-amber-400" />
+                <span>Update v{desktopUpdate.latestVersion} Available</span>
+              </a>
+            )}
             <ZoomController variant="banner" />
             <a 
               href="https://strovr.space/" 

@@ -1,6 +1,25 @@
 import fs from 'fs';
 import path from 'path';
 
+export interface DevicePlatformInfo {
+  last_seen?: string;
+  ip?: string;
+  userAgent?: string;
+}
+
+export interface DesktopDeviceInfo extends DevicePlatformInfo {
+  installed?: boolean;
+  machine_id?: string;
+  installed_version?: string;
+  os?: string;
+  update_pending?: boolean;
+}
+
+export interface UserActiveDevices {
+  web?: DevicePlatformInfo;
+  desktop?: DesktopDeviceInfo;
+}
+
 export interface UserRecord {
   _id: string;
   email: string;
@@ -48,6 +67,7 @@ export interface UserRecord {
   has_topup?: boolean;
   integrations?: any;
   integrationLogs?: any;
+  active_devices?: UserActiveDevices;
   createdAt: string;
   updatedAt?: string;
 }
@@ -220,6 +240,7 @@ class UserStore {
       serpapi_this_month_usage: user.serpapi_this_month_usage !== undefined ? user.serpapi_this_month_usage : existing?.serpapi_this_month_usage,
       serpapi_updated_at: user.serpapi_updated_at !== undefined ? user.serpapi_updated_at : existing?.serpapi_updated_at,
       has_topup: user.has_topup !== undefined ? user.has_topup : existing?.has_topup,
+      active_devices: user.active_devices !== undefined ? user.active_devices : existing?.active_devices,
       createdAt: user.createdAt || existing?.createdAt || nowIso,
       updatedAt: nowIso
     };
@@ -230,6 +251,34 @@ class UserStore {
     }
     this.saveToDisk();
     return record;
+  }
+
+  recordDevicePing(userId: string, platform: 'web' | 'desktop', metadata: any = {}): UserRecord | null {
+    const existing = this.getUserById(userId);
+    if (!existing) return null;
+    const nowIso = new Date().toISOString();
+    const currentDevices: UserActiveDevices = existing.active_devices || {};
+
+    if (platform === 'desktop') {
+      currentDevices.desktop = {
+        installed: true,
+        machine_id: metadata.machine_id || currentDevices.desktop?.machine_id,
+        installed_version: metadata.installed_version || currentDevices.desktop?.installed_version || '3.0.0',
+        os: metadata.os || currentDevices.desktop?.os || 'Windows',
+        last_seen: nowIso,
+        ip: metadata.ip || currentDevices.desktop?.ip,
+        userAgent: metadata.userAgent || currentDevices.desktop?.userAgent,
+        update_pending: metadata.update_pending !== undefined ? metadata.update_pending : currentDevices.desktop?.update_pending
+      };
+    } else {
+      currentDevices.web = {
+        last_seen: nowIso,
+        ip: metadata.ip || currentDevices.web?.ip,
+        userAgent: metadata.userAgent || currentDevices.web?.userAgent
+      };
+    }
+
+    return this.updateUser(existing._id, { active_devices: currentDevices });
   }
 
   updateUser(id: string, updates: Partial<UserRecord>): UserRecord | null {

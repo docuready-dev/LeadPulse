@@ -53,6 +53,8 @@ import teamRoutes from './routes/team';
 import bookingRoutes from './routes/booking';
 import desktopUpdateRoutes from './routes/desktopUpdates';
 import { automationWorker } from './services/automationWorker';
+import { userStore } from './services/userStore';
+import jwt from 'jsonwebtoken';
 
 const app = express();
 
@@ -92,6 +94,32 @@ app.use((req, res, next) => {
   ) {
     return res.status(404).json({ error: 'Not Found' });
   }
+  next();
+});
+
+// Platform & Device Telemetry Middleware (Tracks Web vs PC / Desktop users)
+app.use((req, _res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.split(' ')[1];
+      const decoded: any = jwt.decode(token);
+      if (decoded && (decoded.id || decoded._id || decoded.email)) {
+        const userId = decoded.id || decoded._id || (decoded.email ? userStore.getUserByEmail(decoded.email)?._id : null);
+        if (userId) {
+          const platformHeader = (req.headers['x-client-platform'] as string) || '';
+          const isDesktop = platformHeader.includes('desktop');
+          userStore.recordDevicePing(userId, isDesktop ? 'desktop' : 'web', {
+            machine_id: req.headers['x-machine-id'],
+            installed_version: req.headers['x-app-version'],
+            os: req.headers['x-client-os'] || (isDesktop ? 'Windows' : undefined),
+            ip: req.ip || req.socket.remoteAddress,
+            userAgent: req.headers['user-agent']
+          });
+        }
+      }
+    }
+  } catch (_) {}
   next();
 });
 
