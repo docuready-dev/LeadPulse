@@ -71,9 +71,52 @@ class LeadStore {
       }
       const allLeads = Array.from(this.leads.values());
       fs.writeFileSync(this.filePath, JSON.stringify(allLeads, null, 2), 'utf8');
+
+      // Also generate categorized views and Excel-compatible CSVs for user visibility
+      this.exportCategoryViews(allLeads);
     } catch (err: any) {
       console.warn('[LeadStore] Failed to write leads to disk:', err.message);
     }
+  }
+
+  private exportCategoryViews(allLeads: LeadRecord[]) {
+    try {
+      // 1. Saved Leads (saved !== false)
+      const savedLeads = allLeads.filter(l => l.saved !== false);
+      fs.writeFileSync(path.join(this.dataDir, 'saved_leads.json'), JSON.stringify(savedLeads, null, 2), 'utf8');
+
+      // 2. Harvested Leads (from Scraper / Harvest Pipeline)
+      const harvestedLeads = allLeads.filter(l => l.source && (l.source.includes('Harvest') || l.source.includes('Scraper') || l.source.includes('Google Places')));
+      fs.writeFileSync(path.join(this.dataDir, 'harvested_leads.json'), JSON.stringify(harvestedLeads, null, 2), 'utf8');
+
+      // 3. User-friendly CSV files (can be opened in Excel directly)
+      this.writeCsvFile(path.join(this.dataDir, 'all_leads.csv'), allLeads);
+      this.writeCsvFile(path.join(this.dataDir, 'saved_leads.csv'), savedLeads);
+      this.writeCsvFile(path.join(this.dataDir, 'harvested_leads.csv'), harvestedLeads);
+    } catch (err: any) {
+      console.warn('[LeadStore] Category views export note:', err.message);
+    }
+  }
+
+  private writeCsvFile(targetPath: string, leads: LeadRecord[]) {
+    const headers = ['Business Name', 'Category', 'Phone', 'Email', 'Email Status', 'Website', 'Rating', 'Location', 'City', 'Status', 'Tags', 'Source', 'Harvested At'];
+    const rows = leads.map(l => [
+      `"${(l.businessName || '').replace(/"/g, '""')}"`,
+      `"${(l.category || '').replace(/"/g, '""')}"`,
+      `"${(l.phone || '').replace(/"/g, '""')}"`,
+      `"${(l.email || '').replace(/"/g, '""')}"`,
+      `"${(l.emailStatus || '').replace(/"/g, '""')}"`,
+      `"${(l.website || '').replace(/"/g, '""')}"`,
+      `"${l.rating || ''}"`,
+      `"${(l.location || '').replace(/"/g, '""')}"`,
+      `"${(l.city || '').replace(/"/g, '""')}"`,
+      `"${(l.status || 'New').replace(/"/g, '""')}"`,
+      `"${(Array.isArray(l.tags) ? l.tags.join('; ') : '').replace(/"/g, '""')}"`,
+      `"${(l.source || '').replace(/"/g, '""')}"`,
+      `"${(l.harvestedAt || l.createdAt || '').replace(/"/g, '""')}"`
+    ].join(','));
+    const csvContent = '\uFEFF' + [headers.join(','), ...rows].join('\r\n');
+    fs.writeFileSync(targetPath, csvContent, 'utf8');
   }
 
   getLeads(userId?: string, userEmail?: string): LeadRecord[] {
