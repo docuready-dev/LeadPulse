@@ -114,7 +114,7 @@ const ResetPassword = () => {
             className="inline-flex items-center gap-2 group cursor-pointer hover:opacity-85 transition-all mb-3 select-none"
             title="Return to Landing Page"
           >
-            <img src={strovrLogo} alt="Strovr Logo" className="h-9 w-auto object-contain" />
+            <img src={strovrLogo} alt="Strovr Logo" className="h-12 w-auto object-contain" />
             <span className="text-[9px] font-delight font-bold uppercase bg-slate-100 text-[#C85A32] border border-slate-200 px-1.5 py-0.5 rounded tracking-wider">
               Security
             </span>

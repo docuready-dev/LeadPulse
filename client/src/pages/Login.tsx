@@ -341,7 +341,7 @@ const Login = ({ onBack }: LoginProps) => {
                     className="inline-flex items-center gap-2 group cursor-pointer hover:opacity-85 transition-all select-none"
                     title={isDesktop ? "Strovr Desktop" : "Return to Landing Page"}
                   >
-                    <img src={strovrLogo} alt="Strovr Logo" className="h-9 md:h-10 w-auto object-contain" />
+                    <img src={strovrLogo} alt="Strovr Logo" className="h-12 md:h-14 w-auto object-contain" />
                   </a>
                   {isDesktop ? (
                     <span className="text-[10px] font-delight font-extrabold uppercase bg-[#C85A32]/10 text-[#C85A32] border border-[#C85A32]/30 px-2 py-0.5 rounded tracking-wider">

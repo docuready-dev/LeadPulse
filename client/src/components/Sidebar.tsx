@@ -159,7 +159,7 @@ const Sidebar = () => {
     <aside className="w-[244px] flex flex-col h-screen border-r border-[#E5E0D5] bg-[#F5F2EB] text-[#191716] shrink-0 select-none">
       
       {/* Brand & Workspace Header */}
-      <div className={`${isDesktop ? 'h-18' : 'h-15'} px-4 flex items-center justify-between border-b border-[#E5E0D5] bg-[#F5F2EB]`}>
+      <div className={`${isDesktop ? 'h-20' : 'h-18'} px-4 flex items-center justify-between border-b border-[#E5E0D5] bg-[#F5F2EB]`}>
         <div className="flex flex-col select-none">
           <div className="flex items-center gap-2">
             <Link 
@@ -170,7 +170,7 @@ const Sidebar = () => {
               <img 
                 src={strovrLogo} 
                 alt="Strovr Logo" 
-                className="h-8.5 md:h-9 w-auto object-contain shrink-0 group-hover:scale-102 transition-transform" 
+                className="h-10 md:h-11 w-auto object-contain shrink-0 group-hover:scale-102 transition-transform" 
               />
             </Link>
             {isDesktop && (
@@ -185,11 +185,11 @@ const Sidebar = () => {
             </span>
           )}
         </div>
-        <div className="w-7 h-7 rounded-md overflow-hidden border border-[#D6CFC2] bg-white shrink-0">
+        <div className="w-8 h-8 rounded-md overflow-hidden border border-[#D6CFC2] bg-white shrink-0">
            {user?.profile_picture ? (
              <img src={user?.profile_picture} className="w-full h-full object-cover" alt="Profile" />
            ) : (
-             <div className="w-full h-full flex items-center justify-center text-[10.5px] font-bold text-[#191716] font-delight">
+             <div className="w-full h-full flex items-center justify-center text-[11px] font-bold text-[#191716] font-delight">
                {user?.name?.charAt(0) || 'U'}
              </div>
            )}
