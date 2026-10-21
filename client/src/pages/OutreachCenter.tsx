@@ -538,7 +538,7 @@ const OutreachCenter = () => {
           {
             name: 'Starter Pipeline',
             category: 'Lead Discovery',
-            price: '₹699 / mo',
+            price: '₹999 / mo',
             badge: 'Starter',
             imageUrl: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600&auto=format&fit=crop&q=80',
             description: `Get started with verified local prospects in {{location}}.`,
@@ -1138,7 +1138,7 @@ const OutreachCenter = () => {
                         if (isAbTestingLocked) {
                           await alertDialog({
                             title: 'A/B Split Testing Locked on Free Tier',
-                            message: '50/50 A/B Split Testing is available on Basic (₹699/mo) and Pro (₹1,999/mo) tiers. Upgrade to test subject lines, layouts, and copy variants side-by-side.',
+                            message: '50/50 A/B Split Testing is available on Basic (₹999/mo) and Pro (₹1,999/mo) tiers. Upgrade to test subject lines, layouts, and copy variants side-by-side.',
                             variant: 'info'
                           });
                           setUpgradeTab('plans');
@@ -2412,7 +2412,7 @@ const OutreachCenter = () => {
                               <div className="grid grid-cols-2 gap-2">
                                 <input 
                                   type="text"
-                                  placeholder="Cost (e.g. ₹699 / mo)"
+                                  placeholder="Cost (e.g. ₹999 / mo)"
                                   value={templateData.comparisonPulse?.monthlyCost || ''}
                                   onChange={(e) => setTemplateData({ 
                                     ...templateData, 
@@ -3822,7 +3822,7 @@ const OutreachCenter = () => {
                             {templateData.comparisonPulse?.title || 'Strovr Autonomous Engine'}
                           </h4>
                           <div className="text-xl font-extrabold text-emerald-900">
-                            {templateData.comparisonPulse?.monthlyCost || '₹699 / mo'}
+                            {templateData.comparisonPulse?.monthlyCost || '₹999 / mo'}
                           </div>
                           <div className="text-[11px] text-emerald-800 space-y-0.5 font-sans">
                             <div>&bull; Time: <strong>{templateData.comparisonPulse?.timeSpent || '15 mins/week'}</strong></div>

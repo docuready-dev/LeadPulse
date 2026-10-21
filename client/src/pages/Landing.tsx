@@ -26,7 +26,7 @@ const benchmarkProfiles = {
     marketTotal: '₹9,200',
     marketAnnual: '₹1,10,400',
     strovrPlan: 'Basic Plan',
-    strovrTotal: '₹699',
+    strovrTotal: '₹999',
     strovrAnnual: '₹8,388',
     annualSavings: '₹1,02,012',
     savingsPct: '92%',
@@ -40,7 +40,7 @@ const benchmarkProfiles = {
         marketPrice: '₹4,100 / mo',
         marketSub: '$49/mo static database credits',
         marketFlaw: 'Stale recycled lists & credit lock-in',
-        ourPrice: '₹699 / mo',
+        ourPrice: '₹999 / mo',
         ourBadge: 'Or ₹1/lead Mega Pack',
         ourSub: '600 tokens/mo • Live Google Maps extraction',
         ourAdvantage: 'Real-time Quick & Deep multi-page scraping',
@@ -86,7 +86,7 @@ const benchmarkProfiles = {
     marketTotal: '₹24,500',
     marketAnnual: '₹2,94,000',
     strovrPlan: 'Basic / Pro Shared Pool',
-    strovrTotal: '₹699 to ₹1,999',
+    strovrTotal: '₹999 to ₹1,999',
     strovrAnnual: '₹8,388',
     annualSavings: '₹2,70,000+',
     savingsPct: '94%',
@@ -100,7 +100,7 @@ const benchmarkProfiles = {
         marketPrice: '₹8,500 / mo',
         marketSub: '$99/mo multi-user scraping & export credits',
         marketFlaw: 'Strict export caps & per-credit overages',
-        ourPrice: '₹699 / mo',
+        ourPrice: '₹999 / mo',
         ourBadge: 'Or ₹1/lead Mega Pack',
         ourSub: 'Live Quick (20) & Deep (60) spatial extraction',
         ourAdvantage: '100% public verified phones, ratings & domains',
@@ -132,7 +132,7 @@ const benchmarkProfiles = {
         marketFlaw: 'Penalizes agency growth with per-seat fees',
         ourPrice: 'Universal Pool',
         ourBadge: 'Zero Per-Seat Tax',
-        ourSub: '5 Seats on Basic (₹699) • 10 Seats on Pro (₹1,999)',
+        ourSub: '5 Seats on Basic (₹999) • 10 Seats on Pro (₹1,999)',
         ourAdvantage: 'Share workspace tokens across registered seats',
         savingsTag: 'Save ~₹10,000/mo',
         barPct: 7,
@@ -226,6 +226,7 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
   const [isContactOpen, setIsContactOpen] = useState(false);
   const [contactSubmitted, setContactSubmitted] = useState(false);
   const [benchmarkScale, setBenchmarkScale] = useState<'solo' | 'agency' | 'scale'>('agency');
+  const [billingInterval, setBillingInterval] = useState<'monthly' | 'annual'>('monthly');
   const activeBenchmark = benchmarkProfiles[benchmarkScale];
 
   const containerVars = {
@@ -1112,6 +1113,30 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
           </div>
         </motion.div>
 
+        {/* Billing Switcher (Monthly vs Annual - 25% Off) */}
+        <div className="flex items-center justify-center gap-3 mb-8 select-none">
+          <span className={`text-xs font-delight transition-colors ${billingInterval === 'monthly' ? 'text-[#191716] font-medium' : 'text-[#78716A] font-normal'}`}>
+            Monthly Billing
+          </span>
+          <button
+            type="button"
+            onClick={() => setBillingInterval(billingInterval === 'monthly' ? 'annual' : 'monthly')}
+            className={`relative inline-flex h-6.5 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${billingInterval === 'annual' ? 'bg-[#C85A32]' : 'bg-[#D6CFC2]'}`}
+            role="switch"
+            aria-checked={billingInterval === 'annual'}
+          >
+            <span
+              className={`pointer-events-none inline-block h-5.5 w-5.5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${billingInterval === 'annual' ? 'translate-x-5.5' : 'translate-x-0'}`}
+            />
+          </button>
+          <span className={`text-xs font-delight flex items-center gap-1.5 transition-colors ${billingInterval === 'annual' ? 'text-[#C85A32] font-medium' : 'text-[#78716A] font-normal'}`}>
+            <span>Annual Billing</span>
+            <span className="text-[10px] font-delight font-medium uppercase bg-[#C85A32]/10 text-[#C85A32] border border-[#C85A32]/30 px-1.5 py-0.5 rounded tracking-wide">
+              Save 25%
+            </span>
+          </span>
+        </div>
+
         {/* 3 Subscription Tier Cards */}
         <motion.div
           initial={{ opacity: 0, y: 28 }}
@@ -1197,12 +1222,20 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
               </div>
 
               <div className="flex items-baseline gap-2 mb-1">
-                <span className="text-3xl md:text-4xl font-extrabold font-delight text-[#191716]">₹699</span>
-                <span className="text-xs font-delight text-[#78716A]">/ month</span>
-                <span className="text-xs font-delight text-slate-400 line-through ml-1">₹4,100+ market</span>
+                <span className="text-3xl md:text-4xl font-extrabold font-delight text-[#191716]">
+                  {billingInterval === 'annual' ? '₹8,999' : '₹999'}
+                </span>
+                <span className="text-xs font-delight text-[#78716A]">
+                  {billingInterval === 'annual' ? '/ year' : '/ month'}
+                </span>
+                <span className="text-xs font-delight text-slate-400 line-through ml-1">
+                  {billingInterval === 'annual' ? '₹49,000+ market' : '₹4,100+ market'}
+                </span>
               </div>
               <p className="text-xs text-[#57524B] mb-6 pb-5 border-b border-[#E5E0D5]">
-                Built for solo operators and growing agencies running daily email campaigns with all 8 Link Mobility frameworks.
+                {billingInterval === 'annual'
+                  ? 'Save 25% with annual billing (₹750/mo). Built for solo operators and growing agencies.'
+                  : 'Built for solo operators and growing agencies running daily email campaigns with all 8 Link Mobility frameworks.'}
               </p>
 
               {/* Bifurcation Breakdown */}
@@ -1240,7 +1273,7 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
                 onClick={onLogin}
                 className="w-full h-10 rounded-[5px] bg-[#C85A32] hover:bg-[#B04B25] text-white border border-[#B04B25] font-delight font-bold text-xs transition-all shadow-xs cursor-pointer"
               >
-                Start Basic Workspace (₹699/mo) &rarr;
+                Start Basic Workspace ({billingInterval === 'annual' ? '₹8,999/yr' : '₹999/mo'}) &rarr;
               </button>
               <p className="text-[10.5px] font-delight text-center text-[#78716A] mt-2">
                 Start free first, upgrade inside console anytime
@@ -1261,12 +1294,20 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
               </div>
 
               <div className="flex items-baseline gap-2 mb-1">
-                <span className="text-3xl md:text-4xl font-extrabold font-delight text-white">₹1,999</span>
-                <span className="text-xs font-delight text-[#A8A096]">/ month</span>
-                <span className="text-xs font-delight text-[#78716A] line-through ml-1">₹16,500+ market</span>
+                <span className="text-3xl md:text-4xl font-extrabold font-delight text-white">
+                  {billingInterval === 'annual' ? '₹17,999' : '₹1,999'}
+                </span>
+                <span className="text-xs font-delight text-[#A8A096]">
+                  {billingInterval === 'annual' ? '/ year' : '/ month'}
+                </span>
+                <span className="text-xs font-delight text-[#78716A] line-through ml-1">
+                  {billingInterval === 'annual' ? '₹1,98,000+ market' : '₹16,500+ market'}
+                </span>
               </div>
               <p className="text-xs text-[#B8B0A4] mb-6 pb-5 border-b border-white/10">
-                Unrestricted commercial email infrastructure for high-velocity teams running multi-variant campaigns and behavioral workflows.
+                {billingInterval === 'annual'
+                  ? 'Save 25% with annual billing (₹1,500/mo). Unrestricted commercial email infrastructure for high-velocity teams.'
+                  : 'Unrestricted commercial email infrastructure for high-velocity teams running multi-variant campaigns and behavioral workflows.'}
               </p>
 
               {/* Bifurcation Breakdown */}
@@ -1304,7 +1345,7 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
                 onClick={onLogin}
                 className="w-full h-10 rounded-[5px] bg-white hover:bg-[#C85A32] text-[#191716] hover:text-white font-delight font-bold text-xs transition-all cursor-pointer"
               >
-                Launch Pro Console (₹1,999/mo) &rarr;
+                Launch Pro Console ({billingInterval === 'annual' ? '₹17,999/yr' : '₹1,999/mo'}) &rarr;
               </button>
               <p className="text-[10.5px] font-delight text-center text-[#A8A096] mt-2">
                 Replaces ₹16,500+/mo of fragmented SaaS tools
@@ -1397,65 +1438,83 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
+            <table className="w-full text-left border-collapse text-xs font-delight">
               <thead>
-                <tr className="border-b border-[#E5E0D5] bg-[#FAF8F5] font-delight text-[11px] text-[#78716A] uppercase">
-                  <th className="py-3.5 px-5 font-bold text-[#191716]">Architecture &amp; Cost Dimension</th>
-                  <th className="py-3.5 px-4 text-center font-bold">Free Explorer (₹0)</th>
-                  <th className="py-3.5 px-4 text-center font-bold text-[#C85A32] bg-[#C85A32]/5">Basic (₹699/mo)</th>
-                  <th className="py-3.5 px-4 text-center font-bold text-[#191716]">Pro (₹1,999/mo)</th>
-                  <th className="py-3.5 px-4 text-center font-semibold text-slate-400">Market Avg.</th>
+                <tr className="border-b border-[#E5E0D5] bg-[#FAF8F5] text-[11px] text-[#78716A] uppercase font-medium">
+                  <th className="py-3.5 px-5 font-medium text-[#191716]">Architecture &amp; Cost Dimension</th>
+                  <th className="py-3.5 px-4 text-center font-medium">Free Explorer (₹0)</th>
+                  <th className="py-3.5 px-4 text-center font-medium text-[#C85A32] bg-[#C85A32]/5">
+                    Basic ({billingInterval === 'annual' ? '₹8,999/yr • ₹750/mo' : '₹999/mo'})
+                  </th>
+                  <th className="py-3.5 px-4 text-center font-medium text-[#191716]">
+                    Pro ({billingInterval === 'annual' ? '₹17,999/yr • ₹1,500/mo' : '₹1,999/mo'})
+                  </th>
+                  <th className="py-3.5 px-4 text-center font-normal text-slate-400">Market Avg.</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#E5E0D5] font-delight">
-                <tr>
-                  <td className="py-3 px-5 font-bold text-[#191716]">Monthly Email Dispatch Volume</td>
-                  <td className="py-3 px-4 text-center text-[#57524B]">50 test emails / mo</td>
-                  <td className="py-3 px-4 text-center font-bold text-[#C85A32] bg-[#C85A32]/5">1,500 emails / mo (2 inboxes)</td>
-                  <td className="py-3 px-4 text-center font-bold text-[#191716]">5,000+ emails / mo (unlimited inboxes)</td>
-                  <td className="py-3 px-4 text-center text-slate-400 line-through">₹3,200+/mo</td>
+              <tbody className="divide-y divide-[#E5E0D5] font-delight text-xs">
+                <tr className="hover:bg-[#FAF8F5]/80 transition-colors">
+                  <td className="py-3 px-5 font-medium text-[#191716]">Monthly Email Dispatch Volume</td>
+                  <td className="py-3 px-4 text-center text-[#57524B] font-normal">50 test emails / mo</td>
+                  <td className="py-3 px-4 text-center font-medium text-[#C85A32] bg-[#C85A32]/5">1,500 emails / mo (2 inboxes)</td>
+                  <td className="py-3 px-4 text-center font-medium text-[#191716]">5,000+ emails / mo (unlimited inboxes)</td>
+                  <td className="py-3 px-4 text-center text-slate-400 font-normal line-through">₹3,200+/mo</td>
                 </tr>
-                <tr>
-                  <td className="py-3 px-5 font-bold text-[#191716]">Outreach Templates Suite</td>
-                  <td className="py-3 px-4 text-center text-[#57524B]">2 Standard Templates</td>
-                  <td className="py-3 px-4 text-center font-bold text-[#C85A32] bg-[#C85A32]/5">All 8 Link Mobility Frameworks</td>
-                  <td className="py-3 px-4 text-center font-bold text-[#191716]">8 Frameworks + Custom Reusable Library</td>
-                  <td className="py-3 px-4 text-center text-slate-400 line-through">₹4,900+/mo</td>
+                <tr className="hover:bg-[#FAF8F5]/80 transition-colors">
+                  <td className="py-3 px-5 font-medium text-[#191716]">Outreach Templates Suite</td>
+                  <td className="py-3 px-4 text-center text-[#57524B] font-normal">2 Standard Templates</td>
+                  <td className="py-3 px-4 text-center font-medium text-[#C85A32] bg-[#C85A32]/5">All 8 Link Mobility Frameworks</td>
+                  <td className="py-3 px-4 text-center font-medium text-[#191716]">8 Frameworks + Custom Reusable Library</td>
+                  <td className="py-3 px-4 text-center text-slate-400 font-normal line-through">₹4,900+/mo</td>
                 </tr>
-                <tr>
-                  <td className="py-3 px-5 font-bold text-[#191716]">A/B Split Testing Capabilities</td>
-                  <td className="py-3 px-4 text-center text-red-500 font-bold">Locked</td>
-                  <td className="py-3 px-4 text-center font-bold text-emerald-700 bg-[#C85A32]/5">50/50 Split Testing Enabled</td>
-                  <td className="py-3 px-4 text-center font-bold text-emerald-700">Multi-Variant A/B/C Testing</td>
-                  <td className="py-3 px-4 text-center text-slate-400">Locked / Add-on</td>
+                <tr className="hover:bg-[#FAF8F5]/80 transition-colors">
+                  <td className="py-3 px-5 font-medium text-[#191716]">A/B Split Testing Capabilities</td>
+                  <td className="py-3 px-4 text-center">
+                    <span className="inline-flex items-center text-[10.5px] font-normal text-slate-400 bg-[#F5F2EB] px-2 py-0.5 rounded">
+                      Locked
+                    </span>
+                  </td>
+                  <td className="py-3 px-4 text-center bg-[#C85A32]/5">
+                    <span className="inline-flex items-center gap-1 text-[10.5px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200/60 px-2 py-0.5 rounded">
+                      <Check className="w-3 h-3 text-emerald-600" />
+                      <span>50/50 Split Enabled</span>
+                    </span>
+                  </td>
+                  <td className="py-3 px-4 text-center">
+                    <span className="inline-flex items-center gap-1 text-[10.5px] font-medium text-purple-700 bg-purple-50 border border-purple-200/60 px-2 py-0.5 rounded">
+                      <Sparkles className="w-3 h-3 text-purple-600" />
+                      <span>Multi-Variant A/B/C</span>
+                    </span>
+                  </td>
+                  <td className="py-3 px-4 text-center text-slate-400 font-normal">Locked / Add-on</td>
                 </tr>
-                <tr>
-                  <td className="py-3 px-5 font-bold text-[#191716]">AI Copilot Pitch Synthesis</td>
-                  <td className="py-3 px-4 text-center text-[#57524B]">5 pitches / mo</td>
-                  <td className="py-3 px-4 text-center font-bold text-[#C85A32] bg-[#C85A32]/5">250 pitches / mo</td>
-                  <td className="py-3 px-4 text-center font-bold text-[#191716]">Unlimited AI Generations</td>
-                  <td className="py-3 px-4 text-center text-slate-400 line-through">₹3,800+/mo</td>
+                <tr className="hover:bg-[#FAF8F5]/80 transition-colors">
+                  <td className="py-3 px-5 font-medium text-[#191716]">AI Copilot Pitch Synthesis</td>
+                  <td className="py-3 px-4 text-center text-[#57524B] font-normal">5 pitches / mo</td>
+                  <td className="py-3 px-4 text-center font-medium text-[#C85A32] bg-[#C85A32]/5">250 pitches / mo</td>
+                  <td className="py-3 px-4 text-center font-medium text-[#191716]">Unlimited AI Generations</td>
+                  <td className="py-3 px-4 text-center text-slate-400 font-normal line-through">₹3,800+/mo</td>
                 </tr>
-                <tr>
-                  <td className="py-3 px-5 font-bold text-[#191716]">Automated Sequence Depth</td>
-                  <td className="py-3 px-4 text-center text-[#57524B]">Single one-off blast</td>
-                  <td className="py-3 px-4 text-center font-bold text-[#C85A32] bg-[#C85A32]/5">2-Step Sequence (Initial + Follow-up)</td>
-                  <td className="py-3 px-4 text-center font-bold text-[#191716]">Multi-Step Journeys + WhatsApp Bridge</td>
-                  <td className="py-3 px-4 text-center text-slate-400 line-through">₹3,500+/mo</td>
+                <tr className="hover:bg-[#FAF8F5]/80 transition-colors">
+                  <td className="py-3 px-5 font-medium text-[#191716]">Automated Sequence Depth</td>
+                  <td className="py-3 px-4 text-center text-[#57524B] font-normal">Single one-off blast</td>
+                  <td className="py-3 px-4 text-center font-medium text-[#C85A32] bg-[#C85A32]/5">2-Step Sequence (Initial + Follow-up)</td>
+                  <td className="py-3 px-4 text-center font-medium text-[#191716]">Multi-Step Journeys + WhatsApp Bridge</td>
+                  <td className="py-3 px-4 text-center text-slate-400 font-normal line-through">₹3,500+/mo</td>
                 </tr>
-                <tr>
-                  <td className="py-3 px-5 font-bold text-[#191716]">Bonus Lead Token Pool</td>
-                  <td className="py-3 px-4 text-center text-[#57524B]">15 Tokens (4-day refresh)</td>
-                  <td className="py-3 px-4 text-center font-bold text-[#C85A32] bg-[#C85A32]/5">600 Bonus Tokens</td>
-                  <td className="py-3 px-4 text-center font-bold text-[#191716]">1,500 Bonus Tokens</td>
-                  <td className="py-3 px-4 text-center text-slate-400 line-through">₹4,000+/mo</td>
+                <tr className="hover:bg-[#FAF8F5]/80 transition-colors">
+                  <td className="py-3 px-5 font-medium text-[#191716]">Bonus Lead Token Pool</td>
+                  <td className="py-3 px-4 text-center text-[#57524B] font-normal">15 Tokens (4-day refresh)</td>
+                  <td className="py-3 px-4 text-center font-medium text-[#C85A32] bg-[#C85A32]/5">600 Bonus Tokens</td>
+                  <td className="py-3 px-4 text-center font-medium text-[#191716]">1,500 Bonus Tokens</td>
+                  <td className="py-3 px-4 text-center text-slate-400 font-normal line-through">₹4,000+/mo</td>
                 </tr>
-                <tr>
-                  <td className="py-3 px-5 font-bold text-[#191716]">Registered Team Seats &amp; Token Sharing</td>
-                  <td className="py-3 px-4 text-center text-[#57524B]">2 Fixed Seats</td>
-                  <td className="py-3 px-4 text-center font-bold text-[#C85A32] bg-[#C85A32]/5">5 Seats Included</td>
-                  <td className="py-3 px-4 text-center font-bold text-[#191716]">10 Seats Included</td>
-                  <td className="py-3 px-4 text-center text-slate-400 line-through">₹2,000/seat</td>
+                <tr className="hover:bg-[#FAF8F5]/80 transition-colors">
+                  <td className="py-3 px-5 font-medium text-[#191716]">Registered Team Seats &amp; Token Sharing</td>
+                  <td className="py-3 px-4 text-center text-[#57524B] font-normal">2 Fixed Seats</td>
+                  <td className="py-3 px-4 text-center font-medium text-[#C85A32] bg-[#C85A32]/5">5 Seats Included</td>
+                  <td className="py-3 px-4 text-center font-medium text-[#191716]">10 Seats Included</td>
+                  <td className="py-3 px-4 text-center text-slate-400 font-normal line-through">₹2,000/seat</td>
                 </tr>
               </tbody>
             </table>
@@ -1499,7 +1558,7 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
             Check In &amp; Launch Free Workspace &rarr;
           </motion.button>
           <p className="mt-4 text-xs font-delight text-[#8C8479]">
-            15 Free Tokens • ₹50 Instant Micro Top-Ups • ₹699/mo Basic Tier
+            15 Free Tokens • ₹50 Instant Micro Top-Ups • ₹999/mo Basic Tier
           </p>
         </motion.div>
       </section>

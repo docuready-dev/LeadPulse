@@ -70,10 +70,21 @@ const Login = ({ onBack }: LoginProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSendingOtp, setIsSendingOtp] = useState(false);
 
+  const completeLoginRedirect = () => {
+    try {
+      const pendingCheckout = sessionStorage.getItem('strovr_pending_checkout');
+      if (pendingCheckout) {
+        useStore.getState().setUpgradeTab('plans');
+        useStore.getState().setUpgradeModalOpen(true);
+      }
+    } catch (_) {}
+    navigate('/dashboard');
+  };
+
   // If already logged in via browser memory, automatically route to dashboard
   useEffect(() => {
     if (token) {
-      navigate('/dashboard');
+      completeLoginRedirect();
     }
   }, [token, navigate]);
 
@@ -155,7 +166,7 @@ const Login = ({ onBack }: LoginProps) => {
         
         setToken(res.data.token);
         setUser(res.data.user);
-        navigate('/dashboard');
+        completeLoginRedirect();
       } else {
         // Sign In
         const res = await axios.post(`${API_URL}/api/auth/login`, {
@@ -174,7 +185,7 @@ const Login = ({ onBack }: LoginProps) => {
         } else {
           setToken(res.data.token);
           setUser(res.data.user);
-          navigate('/dashboard');
+          completeLoginRedirect();
         }
       }
     } catch (err: any) {
@@ -202,7 +213,7 @@ const Login = ({ onBack }: LoginProps) => {
 
       setToken(res.data.token);
       setUser(res.data.user);
-      navigate('/dashboard');
+      completeLoginRedirect();
     } catch (err: any) {
       setError(err.response?.data?.error || 'Invalid or expired 2FA code. Please try again.');
     } finally {
@@ -284,7 +295,7 @@ const Login = ({ onBack }: LoginProps) => {
       setToken(res.data.token);
       setUser(res.data.user);
       setTimeout(() => {
-        navigate('/dashboard');
+        completeLoginRedirect();
       }, 1400);
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to reset password. Please verify the code.');

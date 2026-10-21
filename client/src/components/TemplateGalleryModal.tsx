@@ -179,7 +179,7 @@ const TemplateGalleryModal = ({
               {/* Strovr card */}
               <div className="bg-emerald-50 border border-emerald-300 p-1 rounded-xs flex flex-col space-y-0.5 shadow-2xs">
                 <span className="text-[6.5px] font-bold text-emerald-700 uppercase">Strovr</span>
-                <span className="text-[9px] font-extrabold text-emerald-800">₹699/mo</span>
+                <span className="text-[9px] font-extrabold text-emerald-800">₹999/mo</span>
                 <span className="text-[6.5px] font-semibold text-emerald-600">8.4x Lower CAC</span>
               </div>
             </div>
@@ -309,7 +309,7 @@ const TemplateGalleryModal = ({
                     if (isLocked) {
                       await alertDialog({
                         title: `${template.name} is Locked on Free Tier`,
-                        message: `The "${template.name}" framework is an advanced Link Mobility layout available on Basic (₹699/mo) and Pro (₹1,999/mo) tiers. Upgrade to unlock all 8 frameworks!`,
+                        message: `The "${template.name}" framework is an advanced Link Mobility layout available on Basic (₹999/mo) and Pro (₹1,999/mo) tiers. Upgrade to unlock all 8 frameworks!`,
                         variant: 'info'
                       });
                       onClose();
@@ -339,7 +339,7 @@ const TemplateGalleryModal = ({
                             <Lock className="w-4 h-4 text-amber-400" />
                           </div>
                           <span className="text-[10px] font-delight font-bold uppercase tracking-wider bg-slate-900/90 px-2 py-0.5 rounded-full text-amber-300 border border-amber-400/30">
-                            Basic Plan (₹699)
+                            Basic Plan (₹999)
                           </span>
                         </div>
                       )}

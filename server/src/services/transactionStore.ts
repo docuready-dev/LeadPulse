@@ -102,7 +102,7 @@ class TransactionStore {
             userName: 'NextGen AI Labs',
             itemKey: 'basic',
             itemName: 'Strovr Basic Subscription (600 Leads/mo)',
-            amount: 699,
+            amount: 999,
             currency: 'INR',
             type: 'subscription',
             status: 'SUCCESS',
@@ -140,6 +140,26 @@ class TransactionStore {
     this.transactions.set(record.transactionId, record);
     this.saveToDisk();
     return record;
+  }
+
+  updateStatus(transactionId: string, status: string): TransactionRecord | null {
+    const tx = this.transactions.get(transactionId);
+    if (!tx) return null;
+    tx.status = status;
+    this.saveToDisk();
+    return tx;
+  }
+
+  getByUser(userId?: string, email?: string): TransactionRecord[] {
+    const all = this.getAll();
+    if (!userId && !email) return all;
+    const cleanId = (userId || '').trim().toLowerCase();
+    const cleanEmail = (email || '').trim().toLowerCase();
+    return all.filter(t => {
+      const matchId = cleanId && (t.userId || '').toLowerCase().includes(cleanId);
+      const matchEmail = cleanEmail && (t.userEmail || '').toLowerCase() === cleanEmail;
+      return matchId || matchEmail;
+    });
   }
 
   getAll(): TransactionRecord[] {

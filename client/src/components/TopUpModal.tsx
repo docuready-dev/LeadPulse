@@ -5,7 +5,7 @@ import axios from 'axios';
 import API_URL from '../config/api';
 import { 
   X, Check, Lock, Zap, Sparkles, 
-  ArrowRight, CreditCard, ChevronRight, CheckCircle2 
+  ArrowRight, CreditCard, ChevronRight, CheckCircle2, ExternalLink
 } from 'lucide-react';
 
 const TopUpModal = () => {
@@ -23,8 +23,31 @@ const TopUpModal = () => {
   const [loadingItem, setLoadingItem] = useState<string | null>(null);
   const [phonePeStep, setPhonePeStep] = useState<'idle' | 'processing' | 'success'>('idle');
   const [successItemName, setSuccessItemName] = useState('');
+  const [billingInterval, setBillingInterval] = useState<'monthly' | 'annual'>('monthly');
+
+  const isDesktop = (() => {
+    if (typeof window === 'undefined') return false;
+    if (/Electron|StrovrDesktop/i.test(navigator.userAgent)) return true;
+    if (sessionStorage.getItem('strovr_desktop_mode') === 'true') return true;
+    return false;
+  })();
 
   const isOpen = Boolean(isUpgradeModalOpen || isTopUpOpen);
+
+  // Check for preselected checkout plan or billing cycle from session or store
+  useEffect(() => {
+    if (isOpen) {
+      try {
+        const pending = sessionStorage.getItem('strovr_pending_checkout');
+        if (pending) {
+          const parsed = JSON.parse(pending);
+          if (parsed.billing === 'annual' || parsed.plan?.includes('annual')) {
+            setBillingInterval('annual');
+          }
+        }
+      } catch (_) {}
+    }
+  }, [isOpen]);
 
   const handleClose = () => {
     setPhonePeStep('idle');
@@ -49,8 +72,20 @@ const TopUpModal = () => {
 
   const currentPlan = user?.plan || 'free';
 
-  // Process PhonePe Payment
-  const handlePhonePeCheckout = async (itemKey: 'micro' | 'mega' | 'basic' | 'pro', itemName: string) => {
+  // Process PhonePe Payment or redirect to web if running in EXE
+  const handleCheckoutClick = async (itemKey: 'micro' | 'mega' | 'basic' | 'pro' | 'basic_annual' | 'pro_annual', itemName: string) => {
+    if (isDesktop) {
+      const checkoutUrl = `https://strovr.space/?action=upgrade&plan=${itemKey}&billing=${billingInterval}`;
+      window.open(checkoutUrl, '_blank');
+      await alertDialog({
+        title: 'Opening Web Checkout',
+        message: 'Strovr Desktop runs locally on your PC. Payment transactions and cloud account upgrades are processed securely at https://strovr.space. Your browser has opened to complete checkout.',
+        variant: 'info'
+      });
+      handleClose();
+      return;
+    }
+
     if (!user?._id) return;
     setLoadingItem(itemKey);
     setPhonePeStep('processing');
@@ -131,33 +166,58 @@ const TopUpModal = () => {
           </button>
 
           <div className="max-w-2xl pr-10">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-sm bg-blue-500/10 border border-blue-500/20 text-blue-400 font-delight text-[11px] font-semibold mb-2">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-sm bg-blue-500/10 border border-blue-500/20 text-blue-400 font-delight text-[11px] font-medium mb-2">
               <Zap className="w-3.5 h-3.5 fill-current" />
               <span>Email Marketing Suite & Tier Matrix</span>
             </div>
-            <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-white leading-tight">
+            <h2 className="text-xl sm:text-2xl font-delight font-medium tracking-tight text-white leading-tight">
               Scale Your Email Marketing & Outreach Engine
             </h2>
-            <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+            <p className="text-xs text-slate-400 mt-1 leading-relaxed font-delight font-normal">
               Unlock all 8 Link Mobility frameworks, 50/50 A/B split testing, multi-step sequences, high-volume inbox dispatch, and bonus lead tokens.
             </p>
           </div>
 
           {/* Nav Tabs */}
-          <div className="flex flex-wrap gap-2 mt-4 font-delight font-medium">
-            <button
-              onClick={() => { setUpgradeTab('plans'); setPhonePeStep('idle'); }}
-              className={`px-3.5 py-1.5 rounded-md text-xs transition-all cursor-pointer ${upgradeTab === 'plans' ? 'bg-white text-slate-900 font-bold border border-white shadow-xs' : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'}`}
-            >
-              Subscription Tiers (Monthly)
-            </button>
-            <button
-              onClick={() => { setUpgradeTab('topup'); setPhonePeStep('idle'); }}
-              className={`px-3.5 py-1.5 rounded-md text-xs transition-all flex items-center gap-1.5 cursor-pointer ${upgradeTab === 'topup' ? 'bg-white text-slate-900 font-bold border border-white shadow-xs' : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'}`}
-            >
-              <CreditCard className="w-3.5 h-3.5 text-blue-400" />
-              <span>Lead Top-Up Bundles (PhonePe)</span>
-            </button>
+          <div className="flex flex-wrap items-center justify-between gap-3 mt-4">
+            <div className="flex flex-wrap gap-2 font-delight font-medium">
+              <button
+                onClick={() => { setUpgradeTab('plans'); setPhonePeStep('idle'); }}
+                className={`px-3.5 py-1.5 rounded-md text-xs transition-all cursor-pointer font-delight font-medium ${upgradeTab === 'plans' ? 'bg-white text-slate-900 border border-white shadow-xs' : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'}`}
+              >
+                Subscription Tiers
+              </button>
+              <button
+                onClick={() => { setUpgradeTab('topup'); setPhonePeStep('idle'); }}
+                className={`px-3.5 py-1.5 rounded-md text-xs transition-all flex items-center gap-1.5 cursor-pointer font-delight font-medium ${upgradeTab === 'topup' ? 'bg-white text-slate-900 border border-white shadow-xs' : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'}`}
+              >
+                <CreditCard className="w-3.5 h-3.5 text-blue-400" />
+                <span>Lead Top-Up Bundles (PhonePe)</span>
+              </button>
+            </div>
+
+            {/* Monthly / Annual Billing Switcher in Header */}
+            {upgradeTab === 'plans' && (
+              <div className="inline-flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-md p-1 font-delight text-xs select-none">
+                <button
+                  type="button"
+                  onClick={() => setBillingInterval('monthly')}
+                  className={`px-2.5 py-1 rounded text-xs transition-all cursor-pointer font-delight ${billingInterval === 'monthly' ? 'bg-white text-slate-900 font-medium shadow-xs' : 'text-slate-400 hover:text-white font-normal'}`}
+                >
+                  Monthly
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBillingInterval('annual')}
+                  className={`px-2.5 py-1 rounded text-xs transition-all cursor-pointer flex items-center gap-1.5 font-delight ${billingInterval === 'annual' ? 'bg-[#C85A32] text-white font-medium shadow-xs' : 'text-slate-400 hover:text-white font-normal'}`}
+                >
+                  <span>Annual</span>
+                  <span className={`text-[9.5px] px-1 py-0.2 rounded font-medium ${billingInterval === 'annual' ? 'bg-white/20 text-white' : 'bg-[#C85A32]/20 text-[#C85A32]'}`}>
+                    25% Off
+                  </span>
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -170,20 +230,20 @@ const TopUpModal = () => {
         {/* PHONEPE PROCESSING STATE                                 */}
         {/* ======================================================== */}
         {phonePeStep === 'processing' && (
-          <div className="p-16 text-center space-y-4">
+          <div className="p-16 text-center space-y-4 font-delight">
             <div className="w-10 h-10 border-2 border-slate-900 border-t-transparent rounded-full animate-spin mx-auto" />
-            <h3 className="text-base font-bold text-slate-900">Contacting PhonePe Gateway...</h3>
-            <p className="text-xs text-slate-500 max-w-sm mx-auto">
+            <h3 className="text-base font-medium text-slate-900">Contacting PhonePe Gateway...</h3>
+            <p className="text-xs text-slate-500 max-w-sm mx-auto font-normal">
               Simulating secure UPI & Card payment webhook verification. Your credits and tier will update immediately.
             </p>
           </div>
         )}
 
         {phonePeStep === 'success' && (
-          <div className="p-16 text-center space-y-4">
-            <h3 className="text-xl font-bold tracking-tight text-slate-900">Payment Verified by PhonePe!</h3>
-            <p className="text-xs text-slate-600 max-w-md mx-auto">
-              Successfully activated <span className="font-bold text-slate-900">{successItemName}</span>. Your account email outreach limits and compute pool have been updated!
+          <div className="p-16 text-center space-y-4 font-delight">
+            <h3 className="text-xl font-medium tracking-tight text-slate-900">Payment Verified by PhonePe!</h3>
+            <p className="text-xs text-slate-600 max-w-md mx-auto font-normal">
+              Successfully activated <span className="font-medium text-slate-900">{successItemName}</span>. Your account email outreach limits and compute pool have been updated!
             </p>
             <button 
               onClick={handleClose}
@@ -207,36 +267,36 @@ const TopUpModal = () => {
               <div className={`p-5 rounded-md border transition-all flex flex-col justify-between ${currentPlan === 'free' ? 'border-slate-300 bg-slate-50' : 'border-slate-200 bg-white'}`}>
                 <div>
                   <div className="flex justify-between items-center mb-2">
-                    <span className="text-[11px] font-delight uppercase tracking-wider text-slate-500 font-semibold">Free Explorer</span>
+                    <span className="text-[11px] font-delight uppercase tracking-wider text-slate-500 font-medium">Free Explorer</span>
                     {currentPlan === 'free' && (
-                      <span className="text-[10px] font-delight font-semibold bg-slate-200 text-slate-700 px-2 py-0.5 rounded-sm">
+                      <span className="text-[10px] font-delight font-medium bg-slate-200 text-slate-700 px-2 py-0.5 rounded-sm">
                         Active Plan
                       </span>
                     )}
                   </div>
-                  <div className="text-2xl sm:text-3xl font-bold font-delight text-slate-900 mb-0.5">₹0</div>
-                  <p className="text-xs text-slate-400 mb-5">Forever Free</p>
+                  <div className="text-2xl sm:text-3xl font-delight font-medium text-slate-900 mb-0.5">₹0</div>
+                  <p className="text-xs text-slate-400 mb-5 font-delight font-normal">Forever Free</p>
 
-                  <ul className="space-y-2.5 text-xs">
+                  <ul className="space-y-2.5 text-xs font-delight font-normal">
                     <li className="flex items-center gap-2 text-slate-700">
                       <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                      <span><strong>50 Test Emails / Month</strong> (Single relay)</span>
+                      <span><strong className="font-medium">50 Test Emails / Month</strong> (Single relay)</span>
                     </li>
                     <li className="flex items-center gap-2 text-slate-700">
                       <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                      <span><strong>2 Standard Templates</strong> (Basic text)</span>
+                      <span><strong className="font-medium">2 Standard Templates</strong> (Basic text)</span>
                     </li>
                     <li className="flex items-center gap-2 text-slate-700">
                       <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                      <span><strong>5 AI Pitches / Mo</strong> (Smart Copilot)</span>
+                      <span><strong className="font-medium">5 AI Pitches / Mo</strong> (Smart Copilot)</span>
                     </li>
                     <li className="flex items-center gap-2 text-slate-700">
                       <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                      <span><strong>Single One-Off Blast</strong> (1 step)</span>
+                      <span><strong className="font-medium">Single One-Off Blast</strong> (1 step)</span>
                     </li>
                     <li className="flex items-center gap-2 text-slate-700">
                       <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                      <span><strong>15 Bonus Lead Tokens</strong> (4-day refresh)</span>
+                      <span><strong className="font-medium">15 Bonus Lead Tokens</strong> (4-day refresh)</span>
                     </li>
                     <li className="flex items-center gap-2 text-slate-400">
                       <Lock className="w-3.5 h-3.5 text-slate-300 shrink-0" />
@@ -260,125 +320,167 @@ const TopUpModal = () => {
               </div>
 
               {/* 2. BASIC TIER */}
-              <div className={`p-5 rounded-md border transition-all flex flex-col justify-between relative ${currentPlan === 'basic' ? 'border-blue-600 bg-blue-50/20 ring-1 ring-blue-600' : 'border-slate-200 bg-white hover:border-slate-400'}`}>
+              <div className={`p-5 rounded-md border transition-all flex flex-col justify-between relative ${currentPlan === 'basic' ? 'border-[#C85A32] bg-[#C85A32]/5 ring-1 ring-[#C85A32]' : 'border-slate-200 bg-white hover:border-slate-400'}`}>
+                {billingInterval === 'annual' && (
+                  <div className="absolute -top-2.5 right-4 bg-[#C85A32] text-white text-[9.5px] font-delight font-medium px-2 py-0.5 rounded-sm uppercase tracking-wider">
+                    Save 25%
+                  </div>
+                )}
                 <div>
                   <div className="flex justify-between items-center mb-2">
-                    <span className="text-[11px] font-delight uppercase tracking-wider text-blue-600 font-bold">Strovr Basic</span>
+                    <span className="text-[11px] font-delight uppercase tracking-wider text-[#C85A32] font-medium">Strovr Basic</span>
                     {currentPlan === 'basic' && (
-                      <span className="text-[10px] font-delight font-semibold bg-blue-600 text-white px-2 py-0.5 rounded-sm">
+                      <span className="text-[10px] font-delight font-medium bg-[#C85A32] text-white px-2 py-0.5 rounded-sm">
                         Active Plan
                       </span>
                     )}
                   </div>
-                  <div className="text-2xl sm:text-3xl font-bold font-delight text-slate-900 mb-0.5">
-                    ₹699 <span className="text-xs font-sans font-normal text-slate-500">/ mo</span>
+                  <div className="text-2xl sm:text-3xl font-delight font-medium text-slate-900 mb-0.5">
+                    {billingInterval === 'annual' ? (
+                      <>₹8,999 <span className="text-xs font-delight font-normal text-slate-500">/ yr</span></>
+                    ) : (
+                      <>₹999 <span className="text-xs font-delight font-normal text-slate-500">/ mo</span></>
+                    )}
                   </div>
-                  <p className="text-xs text-slate-400 mb-5">For solo operators & agencies</p>
+                  <p className="text-xs text-slate-500 mb-5 font-delight font-normal">
+                    {billingInterval === 'annual' ? '₹750 / month, billed annually' : 'For solo operators & agencies'}
+                  </p>
 
-                  <ul className="space-y-2.5 text-xs">
+                  <ul className="space-y-2.5 text-xs font-delight font-normal">
                     <li className="flex items-center gap-2 text-slate-800">
                       <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                      <span><strong>1,500 Emails / Month</strong> (Up to 2 connected inboxes)</span>
+                      <span><strong className="font-medium">1,500 Emails / Month</strong> (Up to 2 connected inboxes)</span>
                     </li>
                     <li className="flex items-center gap-2 text-slate-800">
                       <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                      <span><strong>All 8 Link Mobility Frameworks</strong> Unlocked</span>
+                      <span><strong className="font-medium">All 8 Link Mobility Frameworks</strong> Unlocked</span>
                     </li>
                     <li className="flex items-center gap-2 text-slate-800">
                       <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                      <span><strong>50/50 A/B Split Testing Enabled</strong></span>
+                      <span><strong className="font-medium">50/50 A/B Split Testing Enabled</strong></span>
                     </li>
                     <li className="flex items-center gap-2 text-slate-800">
                       <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                      <span><strong>250 AI Pitches / Mo</strong> Auto-Composition</span>
+                      <span><strong className="font-medium">250 AI Pitches / Mo</strong> Auto-Composition</span>
                     </li>
                     <li className="flex items-center gap-2 text-slate-800">
                       <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                      <span><strong>2-Step Follow-Up Sequence</strong> (Initial + Follow-up)</span>
+                      <span><strong className="font-medium">2-Step Follow-Up Sequence</strong> (Initial + Follow-up)</span>
                     </li>
                     <li className="flex items-center gap-2 text-slate-800">
                       <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                      <span><strong>600 Daily Lead Tokens</strong> (Auto-resets to 600 everyday)</span>
+                      <span><strong className="font-medium">600 Daily Lead Tokens</strong> (Auto-resets to 600 everyday)</span>
                     </li>
                     <li className="flex items-center gap-2 text-slate-800">
                       <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                      <span><strong>Unlimited CSV & Excel</strong> exports</span>
+                      <span><strong className="font-medium">Unlimited CSV & Excel</strong> exports</span>
                     </li>
                   </ul>
                 </div>
 
                 <div className="pt-5">
                   <button 
-                    onClick={() => handlePhonePeCheckout('basic', 'Strovr Basic (₹699/mo)')}
-                    disabled={currentPlan === 'basic' || loadingItem === 'basic'}
-                    className="w-full h-8 rounded-md bg-slate-900 hover:bg-slate-800 text-white text-xs font-delight font-bold transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 border border-slate-900 cursor-pointer"
+                    onClick={() => {
+                      if (billingInterval === 'annual') {
+                        handleCheckoutClick('basic_annual', 'Strovr Basic Annual (₹8,999/yr)');
+                      } else {
+                        handleCheckoutClick('basic', 'Strovr Basic Monthly (₹999/mo)');
+                      }
+                    }}
+                    disabled={currentPlan === 'basic' || loadingItem === 'basic' || loadingItem === 'basic_annual'}
+                    className="w-full h-8.5 rounded-md bg-[#C85A32] hover:bg-[#B04B25] text-white text-xs font-delight font-medium transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 border border-[#B04B25] cursor-pointer shadow-2xs"
                   >
-                    <span>{currentPlan === 'basic' ? 'Active' : 'Upgrade via PhonePe'}</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
+                    <span>
+                      {currentPlan === 'basic' 
+                        ? 'Active' 
+                        : isDesktop
+                          ? `Get Basic (${billingInterval === 'annual' ? '₹8,999/yr' : '₹999/mo'})`
+                          : `Upgrade via PhonePe (${billingInterval === 'annual' ? '₹8,999' : '₹999'})`}
+                    </span>
+                    {isDesktop ? <ExternalLink className="w-3.5 h-3.5" /> : <ArrowRight className="w-3.5 h-3.5" />}
                   </button>
                 </div>
               </div>
 
               {/* 3. PRO TIER */}
               <div className={`p-5 rounded-md border transition-all flex flex-col justify-between relative ${currentPlan === 'pro' ? 'border-purple-600 bg-purple-50/20 ring-1 ring-purple-600' : 'border-slate-900 bg-white'}`}>
-                <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[9px] font-delight font-semibold px-2 py-0.5 rounded-sm uppercase tracking-wider flex items-center gap-1">
-                  <Sparkles className="w-3 h-3 text-amber-400" /> High Performance
+                <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[9px] font-delight font-medium px-2 py-0.5 rounded-sm uppercase tracking-wider flex items-center gap-1">
+                  <Sparkles className="w-3 h-3 text-amber-400" />
+                  <span>{billingInterval === 'annual' ? 'Save 25% • High Performance' : 'High Performance'}</span>
                 </div>
 
                 <div>
                   <div className="flex justify-between items-center mb-2 pt-1">
-                    <span className="text-[11px] font-delight uppercase tracking-wider text-purple-600 font-bold">Strovr Pro</span>
+                    <span className="text-[11px] font-delight uppercase tracking-wider text-purple-600 font-medium">Strovr Pro</span>
                     {currentPlan === 'pro' && (
-                      <span className="text-[10px] font-delight font-semibold bg-purple-600 text-white px-2 py-0.5 rounded-sm">
+                      <span className="text-[10px] font-delight font-medium bg-purple-600 text-white px-2 py-0.5 rounded-sm">
                         Active Plan
                       </span>
                     )}
                   </div>
-                  <div className="text-2xl sm:text-3xl font-bold font-delight text-slate-900 mb-0.5">
-                    ₹1,999 <span className="text-xs font-sans font-normal text-slate-500">/ mo</span>
+                  <div className="text-2xl sm:text-3xl font-delight font-medium text-slate-900 mb-0.5">
+                    {billingInterval === 'annual' ? (
+                      <>₹17,999 <span className="text-xs font-delight font-normal text-slate-500">/ yr</span></>
+                    ) : (
+                      <>₹1,999 <span className="text-xs font-delight font-normal text-slate-500">/ mo</span></>
+                    )}
                   </div>
-                  <p className="text-xs text-slate-400 mb-5">For growth teams & sales teams</p>
+                  <p className="text-xs text-slate-500 mb-5 font-delight font-normal">
+                    {billingInterval === 'annual' ? '₹1,500 / month, billed annually' : 'For growth teams & sales teams'}
+                  </p>
 
-                  <ul className="space-y-2.5 text-xs">
+                  <ul className="space-y-2.5 text-xs font-delight font-normal">
                     <li className="flex items-center gap-2 text-slate-800">
                       <Check className="w-3.5 h-3.5 text-purple-600 shrink-0" />
-                      <span><strong>5,000+ Emails / Month</strong> (Unlimited inboxes & SMTPs)</span>
+                      <span><strong className="font-medium">5,000+ Emails / Month</strong> (Unlimited inboxes & SMTPs)</span>
                     </li>
                     <li className="flex items-center gap-2 text-slate-800">
                       <Check className="w-3.5 h-3.5 text-purple-600 shrink-0" />
-                      <span><strong>8 Frameworks + Custom Template Library</strong></span>
+                      <span><strong className="font-medium">8 Frameworks + Custom Template Library</strong></span>
                     </li>
                     <li className="flex items-center gap-2 text-slate-800">
                       <Check className="w-3.5 h-3.5 text-purple-600 shrink-0" />
-                      <span><strong>Multi-Variant A/B/C Testing</strong></span>
+                      <span><strong className="font-medium">Multi-Variant A/B/C Testing</strong></span>
                     </li>
                     <li className="flex items-center gap-2 text-slate-800">
                       <Check className="w-3.5 h-3.5 text-purple-600 shrink-0" />
-                      <span><strong>Unlimited AI Pitch Generations</strong></span>
+                      <span><strong className="font-medium">Unlimited AI Pitch Generations</strong></span>
                     </li>
                     <li className="flex items-center gap-2 text-slate-800">
                       <Check className="w-3.5 h-3.5 text-purple-600 shrink-0" />
-                      <span><strong>Multi-Step Behavioral Journeys</strong> (WhatsApp bridge)</span>
+                      <span><strong className="font-medium">Multi-Step Behavioral Journeys</strong> (WhatsApp bridge)</span>
                     </li>
                     <li className="flex items-center gap-2 text-slate-800">
                       <Check className="w-3.5 h-3.5 text-purple-600 shrink-0" />
-                      <span><strong>1,500 Daily Lead Tokens</strong> (Auto-resets to 1,500 everyday)</span>
+                      <span><strong className="font-medium">1,500 Daily Lead Tokens</strong> (Auto-resets to 1,500 everyday)</span>
                     </li>
                     <li className="flex items-center gap-2 text-slate-800">
                       <Check className="w-3.5 h-3.5 text-purple-600 shrink-0" />
-                      <span><strong>Dedicated Worker Node</strong> & Full API Access</span>
+                      <span><strong className="font-medium">Dedicated Worker Node</strong> & Full API Access</span>
                     </li>
                   </ul>
                 </div>
 
                 <div className="pt-5">
                   <button 
-                    onClick={() => handlePhonePeCheckout('pro', 'Strovr Pro (₹1,999/mo)')}
-                    disabled={currentPlan === 'pro' || loadingItem === 'pro'}
-                    className="w-full h-8 rounded-md bg-purple-700 hover:bg-purple-800 text-white text-xs font-delight font-bold transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 border border-purple-700 cursor-pointer"
+                    onClick={() => {
+                      if (billingInterval === 'annual') {
+                        handleCheckoutClick('pro_annual', 'Strovr Pro Annual (₹17,999/yr)');
+                      } else {
+                        handleCheckoutClick('pro', 'Strovr Pro Monthly (₹1,999/mo)');
+                      }
+                    }}
+                    disabled={currentPlan === 'pro' || loadingItem === 'pro' || loadingItem === 'pro_annual'}
+                    className="w-full h-8.5 rounded-md bg-purple-700 hover:bg-purple-800 text-white text-xs font-delight font-medium transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 border border-purple-700 cursor-pointer shadow-2xs"
                   >
-                    <span>{currentPlan === 'pro' ? 'Active' : 'Get Pro via PhonePe'}</span>
-                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>
+                      {currentPlan === 'pro' 
+                        ? 'Active' 
+                        : isDesktop
+                          ? `Get Pro (${billingInterval === 'annual' ? '₹17,999/yr' : '₹1,999/mo'})`
+                          : `Get Pro via PhonePe (${billingInterval === 'annual' ? '₹17,999' : '₹1,999'})`}
+                    </span>
+                    {isDesktop ? <ExternalLink className="w-3.5 h-3.5" /> : <Sparkles className="w-3.5 h-3.5" />}
                   </button>
                 </div>
               </div>
@@ -386,86 +488,138 @@ const TopUpModal = () => {
             </div>
 
             {/* ======================================================== */}
-            {/* FEATURE EXCLUSION COMPARISON MATRIX                      */}
+            {/* FEATURE EXCLUSION COMPARISON MATRIX (REDESIGNED CLEAN UI) */}
             {/* ======================================================== */}
-            <div className="border border-slate-200 rounded-md overflow-hidden bg-white">
-              <div className="p-3 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
-                <h4 className="text-xs font-delight uppercase tracking-wider text-slate-700 font-bold">
-                  Feature Exclusion & Conversion Comparison Matrix
-                </h4>
-                <span className="text-[11px] font-delight font-normal text-slate-400">All prices in INR. Instant activation via PhonePe.</span>
+            <div className="border border-slate-200 rounded-md overflow-hidden bg-white shadow-2xs">
+              <div className="p-3.5 bg-slate-50 border-b border-slate-200 flex flex-wrap justify-between items-center gap-2">
+                <div>
+                  <h4 className="text-xs font-delight uppercase tracking-wider text-slate-700 font-medium">
+                    Feature Exclusion & Conversion Comparison Matrix
+                  </h4>
+                  <p className="text-[11px] font-delight font-normal text-slate-500 mt-0.5">
+                    Clear capability matrix across tiers with transparent unit economics.
+                  </p>
+                </div>
+                <span className="text-[11px] font-delight font-normal text-slate-500 bg-white border border-slate-200 px-2 py-0.5 rounded">
+                  {billingInterval === 'annual' ? 'Annual Billing (25% Savings Included)' : 'Monthly Billing Schedule'}
+                </span>
               </div>
 
               <div className="overflow-x-auto">
                 <table className="w-full text-xs text-left border-collapse">
                   <thead>
-                    <tr className="border-b border-slate-200 bg-white text-slate-500 font-delight font-semibold text-[11px]">
-                      <th className="p-3 pl-4">Capability / Dimension</th>
-                      <th className="p-3 text-center">Free Explorer (₹0)</th>
-                      <th className="p-3 text-center text-blue-600">Basic (₹699/mo)</th>
-                      <th className="p-3 text-center text-purple-700">Pro (₹1,999/mo)</th>
+                    <tr className="border-b border-slate-200 bg-slate-50/50 text-slate-600 font-delight font-medium text-[11px]">
+                      <th className="p-3 pl-4 font-medium">Capability / Dimension</th>
+                      <th className="p-3 text-center font-medium text-slate-600">Free Explorer (₹0)</th>
+                      <th className="p-3 text-center font-medium text-[#C85A32] bg-[#C85A32]/5">
+                        Basic ({billingInterval === 'annual' ? '₹8,999/yr • ₹750/mo' : '₹999/mo'})
+                      </th>
+                      <th className="p-3 text-center font-medium text-purple-700">
+                        Pro ({billingInterval === 'annual' ? '₹17,999/yr • ₹1,500/mo' : '₹1,999/mo'})
+                      </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    <tr>
-                      <td className="p-3 pl-4 font-semibold text-slate-800">Email Dispatch Volume</td>
-                      <td className="p-3 text-center font-delight font-medium text-slate-600">50 test emails/month</td>
-                      <td className="p-3 text-center font-delight font-bold text-blue-600">1,500 emails/month (2 inboxes)</td>
-                      <td className="p-3 text-center font-delight font-bold text-purple-700">5,000+ emails/month (unlimited inboxes)</td>
+                  <tbody className="divide-y divide-slate-100 font-delight">
+                    <tr className="hover:bg-slate-50/70 transition-colors">
+                      <td className="p-3 pl-4 font-medium text-slate-800">Email Dispatch Volume</td>
+                      <td className="p-3 text-center font-normal text-slate-600">50 test emails/month</td>
+                      <td className="p-3 text-center font-medium text-slate-800 bg-[#C85A32]/5">1,500 emails/month (2 inboxes)</td>
+                      <td className="p-3 text-center font-medium text-purple-900">5,000+ emails/month (unlimited inboxes)</td>
                     </tr>
-                    <tr>
-                      <td className="p-3 pl-4 font-semibold text-slate-800">Link Mobility Frameworks</td>
-                      <td className="p-3 text-center font-delight font-medium text-slate-600">2 Standard Templates</td>
-                      <td className="p-3 text-center font-delight font-bold text-blue-600">All 8 Frameworks Unlocked</td>
-                      <td className="p-3 text-center font-delight font-bold text-purple-700">8 Frameworks + Custom Reusable Library</td>
+                    <tr className="hover:bg-slate-50/70 transition-colors">
+                      <td className="p-3 pl-4 font-medium text-slate-800">Link Mobility Frameworks</td>
+                      <td className="p-3 text-center font-normal text-slate-600">2 Standard Templates</td>
+                      <td className="p-3 text-center font-medium text-slate-800 bg-[#C85A32]/5">All 8 Frameworks Unlocked</td>
+                      <td className="p-3 text-center font-medium text-purple-900">8 Frameworks + Custom Reusable Library</td>
                     </tr>
-                    <tr>
-                      <td className="p-3 pl-4 font-semibold text-slate-800">A/B Split Testing</td>
-                      <td className="p-3 text-center font-delight text-red-500 font-bold">Locked</td>
-                      <td className="p-3 text-center font-delight text-emerald-600 font-bold">50/50 Split Testing Enabled</td>
-                      <td className="p-3 text-center font-delight font-bold text-purple-700">Multi-Variant A/B/C Testing</td>
+                    <tr className="hover:bg-slate-50/70 transition-colors">
+                      <td className="p-3 pl-4 font-medium text-slate-800">A/B Split Testing</td>
+                      <td className="p-3 text-center">
+                        <span className="inline-flex items-center text-[10.5px] font-normal text-slate-400 bg-slate-100 px-2 py-0.5 rounded">
+                          Locked
+                        </span>
+                      </td>
+                      <td className="p-3 text-center bg-[#C85A32]/5">
+                        <span className="inline-flex items-center gap-1 text-[10.5px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200/60 px-2 py-0.5 rounded">
+                          <Check className="w-3 h-3 text-emerald-600" />
+                          <span>50/50 Split Enabled</span>
+                        </span>
+                      </td>
+                      <td className="p-3 text-center">
+                        <span className="inline-flex items-center gap-1 text-[10.5px] font-medium text-purple-700 bg-purple-50 border border-purple-200/60 px-2 py-0.5 rounded">
+                          <Sparkles className="w-3 h-3 text-purple-600" />
+                          <span>Multi-Variant A/B/C</span>
+                        </span>
+                      </td>
                     </tr>
-                    <tr>
-                      <td className="p-3 pl-4 font-semibold text-slate-800">AI Copilot Pitch Synthesis</td>
-                      <td className="p-3 text-center font-delight font-medium text-slate-600">5 generations/month</td>
-                      <td className="p-3 text-center font-delight font-bold text-blue-600">250 generations/month</td>
-                      <td className="p-3 text-center font-delight font-bold text-purple-700">Unlimited AI Generations</td>
+                    <tr className="hover:bg-slate-50/70 transition-colors">
+                      <td className="p-3 pl-4 font-medium text-slate-800">AI Copilot Pitch Synthesis</td>
+                      <td className="p-3 text-center font-normal text-slate-600">5 generations/month</td>
+                      <td className="p-3 text-center font-medium text-slate-800 bg-[#C85A32]/5">250 generations/month</td>
+                      <td className="p-3 text-center font-medium text-purple-900">Unlimited AI Generations</td>
                     </tr>
-                    <tr>
-                      <td className="p-3 pl-4 font-semibold text-slate-800">Automated Sequence Depth</td>
-                      <td className="p-3 text-center font-delight font-medium text-slate-600">Single one-off blast</td>
-                      <td className="p-3 text-center font-delight text-emerald-600 font-bold">2-Step Sequence (Initial + Follow-up)</td>
-                      <td className="p-3 text-center font-delight text-purple-700 font-bold">Multi-Step Behavioral Journeys + WhatsApp</td>
+                    <tr className="hover:bg-slate-50/70 transition-colors">
+                      <td className="p-3 pl-4 font-medium text-slate-800">Automated Sequence Depth</td>
+                      <td className="p-3 text-center font-normal text-slate-600">Single one-off blast</td>
+                      <td className="p-3 text-center font-medium text-slate-800 bg-[#C85A32]/5">2-Step (Initial + Follow-up)</td>
+                      <td className="p-3 text-center font-medium text-purple-900">Multi-Step Behavioral + WhatsApp</td>
                     </tr>
-                    <tr>
-                      <td className="p-3 pl-4 font-semibold text-slate-800">Team Workspace Seats</td>
-                      <td className="p-3 text-center font-delight font-medium text-slate-600">2 Seats Total</td>
-                      <td className="p-3 text-center font-delight font-bold text-blue-600">5 Seats Total</td>
-                      <td className="p-3 text-center font-delight font-bold text-purple-700">10 Seats Total</td>
+                    <tr className="hover:bg-slate-50/70 transition-colors">
+                      <td className="p-3 pl-4 font-medium text-slate-800">Team Workspace Seats</td>
+                      <td className="p-3 text-center font-normal text-slate-600">2 Seats Total</td>
+                      <td className="p-3 text-center font-medium text-slate-800 bg-[#C85A32]/5">5 Seats Total</td>
+                      <td className="p-3 text-center font-medium text-purple-900">10 Seats Total</td>
                     </tr>
-                    <tr>
-                      <td className="p-3 pl-4 font-semibold text-slate-800">Daily Lead Token Pool</td>
-                      <td className="p-3 text-center font-delight font-medium text-slate-600">15 Tokens (4-day pool)</td>
-                      <td className="p-3 text-center font-delight font-bold text-blue-600">600 Tokens (resets daily)</td>
-                      <td className="p-3 text-center font-delight font-bold text-purple-700">1,500 Tokens (resets daily)</td>
+                    <tr className="hover:bg-slate-50/70 transition-colors">
+                      <td className="p-3 pl-4 font-medium text-slate-800">Daily Lead Token Pool</td>
+                      <td className="p-3 text-center font-normal text-slate-600">15 Tokens (4-day pool)</td>
+                      <td className="p-3 text-center font-medium text-slate-800 bg-[#C85A32]/5">600 Tokens (resets daily)</td>
+                      <td className="p-3 text-center font-medium text-purple-900">1,500 Tokens (resets daily)</td>
                     </tr>
-                    <tr>
-                      <td className="p-3 pl-4 font-semibold text-slate-800">Data Exports & CRM Sync</td>
-                      <td className="p-3 text-center font-delight text-red-500 font-bold">In-app preview only</td>
-                      <td className="p-3 text-center font-delight text-emerald-600 font-bold">Unlimited CSV & Excel Export</td>
-                      <td className="p-3 text-center font-delight text-emerald-600 font-bold">Unlimited CSV + Webhooks + API</td>
+                    <tr className="hover:bg-slate-50/70 transition-colors">
+                      <td className="p-3 pl-4 font-medium text-slate-800">Data Exports & CRM Sync</td>
+                      <td className="p-3 text-center">
+                        <span className="inline-flex items-center text-[10.5px] font-normal text-slate-400 bg-slate-100 px-2 py-0.5 rounded">
+                          Preview Only
+                        </span>
+                      </td>
+                      <td className="p-3 text-center bg-[#C85A32]/5">
+                        <span className="inline-flex items-center gap-1 text-[10.5px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200/60 px-2 py-0.5 rounded">
+                          <Check className="w-3 h-3 text-emerald-600" />
+                          <span>Unlimited CSV & Excel</span>
+                        </span>
+                      </td>
+                      <td className="p-3 text-center">
+                        <span className="inline-flex items-center gap-1 text-[10.5px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200/60 px-2 py-0.5 rounded">
+                          <Check className="w-3 h-3 text-emerald-600" />
+                          <span>Unlimited CSV + Webhooks + API</span>
+                        </span>
+                      </td>
                     </tr>
-                    <tr>
-                      <td className="p-3 pl-4 font-semibold text-slate-800">Dedicated Worker Priority</td>
-                      <td className="p-3 text-center font-delight text-red-500 font-bold">Standard Queue</td>
-                      <td className="p-3 text-center font-delight text-red-500 font-bold">Standard Queue</td>
-                      <td className="p-3 text-center font-delight text-purple-700 font-bold">Dedicated Headless Worker Node</td>
+                    <tr className="hover:bg-slate-50/70 transition-colors">
+                      <td className="p-3 pl-4 font-medium text-slate-800">Dedicated Worker Priority</td>
+                      <td className="p-3 text-center font-normal text-slate-500">Standard Queue</td>
+                      <td className="p-3 text-center font-normal text-slate-500 bg-[#C85A32]/5">Standard Queue</td>
+                      <td className="p-3 text-center font-medium text-purple-900">Dedicated Headless Worker Node</td>
                     </tr>
-                    <tr>
-                      <td className="p-3 pl-4 font-semibold text-slate-800">API Access & Webhooks</td>
-                      <td className="p-3 text-center font-delight text-red-500 font-bold">Locked</td>
-                      <td className="p-3 text-center font-delight text-red-500 font-bold">Locked</td>
-                      <td className="p-3 text-center font-delight text-purple-700 font-bold">Full API Access & Webhooks</td>
+                    <tr className="hover:bg-slate-50/70 transition-colors">
+                      <td className="p-3 pl-4 font-medium text-slate-800">API Access & Webhooks</td>
+                      <td className="p-3 text-center">
+                        <span className="inline-flex items-center text-[10.5px] font-normal text-slate-400 bg-slate-100 px-2 py-0.5 rounded">
+                          Locked
+                        </span>
+                      </td>
+                      <td className="p-3 text-center bg-[#C85A32]/5">
+                        <span className="inline-flex items-center text-[10.5px] font-normal text-slate-400 bg-slate-100 px-2 py-0.5 rounded">
+                          Locked
+                        </span>
+                      </td>
+                      <td className="p-3 text-center">
+                        <span className="inline-flex items-center gap-1 text-[10.5px] font-medium text-purple-700 bg-purple-50 border border-purple-200/60 px-2 py-0.5 rounded">
+                          <Check className="w-3 h-3 text-purple-600" />
+                          <span>Full API Access & Webhooks</span>
+                        </span>
+                      </td>
                     </tr>
                   </tbody>
                 </table>

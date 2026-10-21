@@ -204,7 +204,7 @@ const newCredits = Math.max(0, availableCredits - tokensUsed);`
           'DocuReady engineered Strovr pricing to deliver 80% lower TCO than legacy data brokers while providing enterprise-grade spatial scraping, multi-seat governance, and OAuth integrations.',
         keyTakeaways: [
           'Free Tier (₹0): 15 Contact Tokens / 4 days, 2 Operator Seats, Core Lead Finder & Kanban CRM.',
-          'Basic Tier (₹699/mo): 600 Bonus Tokens, 5 Team Seats, Email & WhatsApp Outreach Studio, CSV Export.',
+          'Basic Tier (₹999/mo): 600 Bonus Tokens, 5 Team Seats, Email & WhatsApp Outreach Studio, CSV Export.',
           'Pro Tier (₹1,999/mo): 1,500 Bonus Tokens, 10 Team Seats, Full Workflow Automations, Developer API & Inbound Webhooks.',
           'On-Demand Token Packs: Add +250 (₹199) or +1,000 (₹499) tokens anytime via PhonePe.'
         ],

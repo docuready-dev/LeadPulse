@@ -135,13 +135,13 @@ router.post('/dispatch-batch', requireAuth, async (req: any, res: any) => {
   // Tier Enforcements: Templates & A/B Split Testing
   if (userPlan === 'free' && !ALLOWED_FREE_TEMPLATES.includes(templateId)) {
     return res.status(403).json({ 
-      error: 'This Link Mobility framework is locked on the Free tier. Upgrade to Basic (₹699/mo) to unlock all 8 frameworks.' 
+      error: 'This Link Mobility framework is locked on the Free tier. Upgrade to Basic (₹999/mo) to unlock all 8 frameworks.' 
     });
   }
 
   if (userPlan === 'free' && isAbTesting) {
     return res.status(403).json({ 
-      error: 'A/B Split Testing is locked on the Free tier. Upgrade to Basic (₹699/mo) or Pro (₹1,999/mo) to enable split campaigns.' 
+      error: 'A/B Split Testing is locked on the Free tier. Upgrade to Basic (₹999/mo) or Pro (₹1,999/mo) to enable split campaigns.' 
     });
   }
 
@@ -491,7 +491,7 @@ router.post('/dispatch-single', requireAuth, async (req: any, res: any) => {
   // Tier Enforcements: Template restriction on Free tier
   if (userPlan === 'free' && !ALLOWED_FREE_TEMPLATES.includes(templateId)) {
     return res.status(403).json({ 
-      error: 'This Link Mobility framework is locked on the Free tier. Upgrade to Basic (₹699/mo) to unlock all 8 frameworks.' 
+      error: 'This Link Mobility framework is locked on the Free tier. Upgrade to Basic (₹999/mo) to unlock all 8 frameworks.' 
     });
   }
 
@@ -1420,7 +1420,7 @@ Looking forward to connecting!`;
       };
       generatedData.comparisonPulse = {
         title: 'Predictable Growth Pipeline',
-        monthlyCost: '₹699 / mo',
+        monthlyCost: '₹999 / mo',
         timeSpent: '2 hrs / wk',
         replyRate: '18.4%',
         badge: 'Automated'
@@ -1440,7 +1440,7 @@ Looking forward to connecting!`;
         { 
           name: 'Starter Pipeline', 
           category: 'Lead Discovery', 
-          price: '₹699 / mo', 
+          price: '₹999 / mo', 
           badge: 'Starter', 
           imageUrl: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600&auto=format&fit=crop&q=80', 
           description: `Get started with verified local prospects in {{location}}.`, 

@@ -89,7 +89,7 @@ export const CrmFlowluDetailModal: React.FC<CrmFlowluModalProps> = ({
       date: '2 days ago',
       author: currentUser?.name || 'Lisa Jones',
       status: 'Logged',
-      notes: `${lead?.businessName || 'Lead'} has strong existing reputation with ${lead?.rating || '4.8'} stars. Ideal candidate for the ₹699/mo Basic Growth tier.`,
+      notes: `${lead?.businessName || 'Lead'} has strong existing reputation with ${lead?.rating || '4.8'} stars. Ideal candidate for the ₹999/mo Basic Growth tier.`,
       isPlanned: false
     }
   ];

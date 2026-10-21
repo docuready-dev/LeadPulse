@@ -55,7 +55,7 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 const App = () => {
-  const { user, token, refreshUserProfile } = useStore();
+  const { user, token, refreshUserProfile, setUpgradeModalOpen, setUpgradeTab } = useStore();
   const [showLogin, setShowLogin] = useState(false);
   const isDesktop = (() => {
     if (typeof window === 'undefined') return false;
@@ -67,6 +67,35 @@ const App = () => {
     if (sessionStorage.getItem('strovr_desktop_mode') === 'true') return true;
     return false;
   })();
+
+  // Handle external checkout funneling (e.g. from desktop EXE or marketing campaigns)
+  useEffect(() => {
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const action = urlParams.get('action');
+      const plan = urlParams.get('plan');
+      const billing = urlParams.get('billing');
+
+      if (action === 'upgrade' || action === 'checkout') {
+        const payload = { action, plan: plan || 'basic', billing: billing || 'monthly' };
+        sessionStorage.setItem('strovr_pending_checkout', JSON.stringify(payload));
+        
+        if (token) {
+          setUpgradeTab('plans');
+          setUpgradeModalOpen(true);
+        } else {
+          // If logged out, funnel directly into login
+          setShowLogin(true);
+        }
+      } else if (token) {
+        const pending = sessionStorage.getItem('strovr_pending_checkout');
+        if (pending) {
+          setUpgradeTab('plans');
+          setUpgradeModalOpen(true);
+        }
+      }
+    } catch (_) {}
+  }, [token, setUpgradeTab, setUpgradeModalOpen]);
 
   useEffect(() => {
     if (token) {

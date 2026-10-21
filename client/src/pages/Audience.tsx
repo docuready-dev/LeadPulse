@@ -567,7 +567,7 @@ const Audience = () => {
     if (isExportLocked) {
       await alertDialog({
         title: 'CSV Data Export Locked on Free Tier',
-        message: 'Unlimited CSV & Excel data exports are available on Basic (₹699/mo) and Pro (₹1,999/mo) tiers. Upgrade to download your full verified prospect leads.',
+        message: 'Unlimited CSV & Excel data exports are available on Basic (₹999/mo) and Pro (₹1,999/mo) tiers. Upgrade to download your full verified prospect leads.',
         variant: 'info'
       });
       setUpgradeTab('plans');

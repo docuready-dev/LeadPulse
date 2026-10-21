@@ -75,6 +75,32 @@ const Settings = () => {
   const [updateError, setUpdateError] = useState<string | null>(null);
   const [isRestarting, setIsRestarting] = useState(false);
 
+  // PhonePe Transactions History State (Webapp only)
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [loadingTxns, setLoadingTxns] = useState(false);
+  const [txnStatusFilter, setTxnStatusFilter] = useState<'all' | 'SUCCESS' | 'FAILED' | 'CANCELLED' | 'PENDING'>('all');
+
+  const fetchTransactions = async () => {
+    if (isDesktop || !user?._id) return;
+    setLoadingTxns(true);
+    try {
+      const res = await axios.get(`${API_URL}/api/billing/transactions?userId=${user._id}&email=${user.email || ''}`);
+      if (res.data && Array.isArray(res.data.transactions)) {
+        setTransactions(res.data.transactions);
+      }
+    } catch (err) {
+      console.error('Failed to fetch transactions', err);
+    } finally {
+      setLoadingTxns(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'billing' && !isDesktop) {
+      fetchTransactions();
+    }
+  }, [activeTab, isDesktop, user?._id]);
+
   const handleCheckForUpdates = async () => {
     setUpdateStatus('checking');
     setUpdateError(null);
@@ -413,7 +439,7 @@ const Settings = () => {
     if ((user?.plan || 'free').toLowerCase() === 'free' && !isSuperAdmin) {
       await alertDialog({
         title: 'CRM Data Export Locked on Free Tier',
-        message: 'Full CRM CSV export is available on Basic (₹699/mo) and Pro (₹1,999/mo) tiers. Upgrade to download your complete workspace contacts and pipeline data.',
+        message: 'Full CRM CSV export is available on Basic (₹999/mo) and Pro (₹1,999/mo) tiers. Upgrade to download your complete workspace contacts and pipeline data.',
         variant: 'info'
       });
       setUpgradeTab('plans');
@@ -1146,7 +1172,7 @@ const Settings = () => {
                   <div className="flex items-center gap-2">
                     <span className="text-base font-bold font-delight">{isFree ? 'Free Tier Compute' : `Strovr ${currentPlan.toUpperCase()}`}</span>
                     <span className="text-[10px] font-delight font-bold bg-blue-600 text-white px-2 py-0.5 rounded-sm">
-                      {isFree ? '₹0 / forever' : currentPlan === 'basic' ? '₹699 / mo' : '₹1,999 / mo'}
+                      {isFree ? '₹0 / forever' : currentPlan === 'basic' ? ((user as any)?.billing_cycle === 'annual' ? '₹8,999 / yr' : '₹999 / mo') : ((user as any)?.billing_cycle === 'annual' ? '₹17,999 / yr' : '₹1,999 / mo')}
                     </span>
                   </div>
                   <p className="text-xs text-slate-400">
@@ -1202,6 +1228,136 @@ const Settings = () => {
                   </div>
                   <span className="text-[11px] text-slate-500 font-sans">Instant PhonePe UPI</span>
                 </div>
+              </div>
+
+              {/* Payment & Billing History Section (PhonePe Gateway) */}
+              <div className="pt-6 border-t border-slate-200">
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                  <div>
+                    <h4 className="text-sm font-delight font-medium text-slate-900 flex items-center gap-2">
+                      <CreditCard className="w-4 h-4 text-[#C85A32]" />
+                      <span>PhonePe Payment & Transaction History</span>
+                    </h4>
+                    <p className="text-xs text-slate-500 font-delight font-normal mt-0.5">
+                      Real-time ledger of all subscription upgrades, top-up packs, and payment attempts.
+                    </p>
+                  </div>
+
+                  {!isDesktop && (
+                    <button
+                      onClick={fetchTransactions}
+                      disabled={loadingTxns}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-delight font-medium rounded border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 transition-colors cursor-pointer shadow-2xs"
+                      title="Refresh transaction records"
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 text-slate-500 ${loadingTxns ? 'animate-spin' : ''}`} />
+                      <span>Refresh</span>
+                    </button>
+                  )}
+                </div>
+
+                {isDesktop ? (
+                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-md text-xs font-delight text-slate-600">
+                    <p>
+                      <strong className="font-medium text-slate-900">Desktop Offline Storage:</strong> Payment transaction receipts and billing records are stored in your central cloud account. Please visit{' '}
+                      <a href="https://strovr.space/" target="_blank" rel="noopener noreferrer" className="text-[#C85A32] underline font-medium">
+                        strovr.space
+                      </a>{' '}
+                      to view and download invoices.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {/* Status filter tabs */}
+                    <div className="flex flex-wrap gap-1.5">
+                      {(['all', 'SUCCESS', 'FAILED', 'CANCELLED', 'PENDING'] as const).map((st) => (
+                        <button
+                          key={st}
+                          onClick={() => setTxnStatusFilter(st)}
+                          className={`px-2.5 py-1 rounded text-xs font-delight transition-all cursor-pointer ${
+                            txnStatusFilter === st
+                              ? 'bg-slate-900 text-white font-medium shadow-2xs'
+                              : 'bg-slate-100 text-slate-600 hover:bg-slate-200 font-normal'
+                          }`}
+                        >
+                          {st === 'all' ? 'All Transactions' : st === 'SUCCESS' ? 'Successful (Paid)' : st.charAt(0) + st.slice(1).toLowerCase()}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Transaction Table */}
+                    <div className="border border-slate-200 rounded-md overflow-hidden bg-white">
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-xs text-left border-collapse">
+                          <thead>
+                            <tr className="border-b border-slate-200 bg-slate-50 text-slate-600 font-delight font-medium text-[11px]">
+                              <th className="p-3 pl-4">Transaction ID</th>
+                              <th className="p-3">Package / Tier</th>
+                              <th className="p-3">Amount</th>
+                              <th className="p-3">Date</th>
+                              <th className="p-3">Gateway</th>
+                              <th className="p-3 pr-4 text-right">Status</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100 font-delight">
+                            {(() => {
+                              const filtered = transactions.filter(t => txnStatusFilter === 'all' || t.status === txnStatusFilter);
+                              if (filtered.length === 0) {
+                                return (
+                                  <tr>
+                                    <td colSpan={6} className="p-8 text-center text-slate-400 font-normal">
+                                      {loadingTxns ? 'Fetching transaction records...' : 'No transactions found matching this filter.'}
+                                    </td>
+                                  </tr>
+                                );
+                              }
+                              return filtered.map((tx) => (
+                                <tr key={tx._id || tx.transactionId} className="hover:bg-slate-50/70 transition-colors">
+                                  <td className="p-3 pl-4 font-mono text-[11px] text-slate-600 select-all">
+                                    {tx.transactionId}
+                                  </td>
+                                  <td className="p-3 font-medium text-slate-800">
+                                    {tx.itemName || tx.itemKey}
+                                  </td>
+                                  <td className="p-3 font-medium text-slate-900">
+                                    ₹{Number(tx.amount || 0).toLocaleString('en-IN')}
+                                  </td>
+                                  <td className="p-3 text-slate-500 font-normal">
+                                    {tx.createdAt ? new Date(tx.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Recent'}
+                                  </td>
+                                  <td className="p-3 text-slate-500 font-normal">
+                                    {tx.gateway || 'PhonePe'}
+                                  </td>
+                                  <td className="p-3 pr-4 text-right">
+                                    {tx.status === 'SUCCESS' ? (
+                                      <span className="inline-flex items-center gap-1 text-[10.5px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200/60 px-2 py-0.5 rounded">
+                                        <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                        <span>Paid</span>
+                                      </span>
+                                    ) : tx.status === 'FAILED' ? (
+                                      <span className="inline-flex items-center gap-1 text-[10.5px] font-medium text-rose-700 bg-rose-50 border border-rose-200/60 px-2 py-0.5 rounded">
+                                        <AlertCircle className="w-3 h-3 text-rose-600" />
+                                        <span>Failed</span>
+                                      </span>
+                                    ) : tx.status === 'CANCELLED' ? (
+                                      <span className="inline-flex items-center gap-1 text-[10.5px] font-medium text-amber-700 bg-amber-50 border border-amber-200/60 px-2 py-0.5 rounded">
+                                        <span>Cancelled</span>
+                                      </span>
+                                    ) : (
+                                      <span className="inline-flex items-center gap-1 text-[10.5px] font-medium text-blue-700 bg-blue-50 border border-blue-200/60 px-2 py-0.5 rounded">
+                                        <span>Pending</span>
+                                      </span>
+                                    )}
+                                  </td>
+                                </tr>
+                              ));
+                            })()}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}

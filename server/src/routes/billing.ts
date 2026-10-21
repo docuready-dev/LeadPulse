@@ -7,7 +7,15 @@ import { userStore } from '../services/userStore';
 const router = express.Router();
 
 // Pricing definition catalog
-const PRICING_CATALOG: Record<string, { name: string; amount: number; type: 'bundle' | 'subscription'; credits?: number; plan?: 'basic' | 'pro'; dailyLimit?: number }> = {
+const PRICING_CATALOG: Record<string, { 
+  name: string; 
+  amount: number; 
+  type: 'bundle' | 'subscription'; 
+  billingCycle?: 'monthly' | 'annual';
+  credits?: number; 
+  plan?: 'basic' | 'pro'; 
+  dailyLimit?: number 
+}> = {
   micro: {
     name: 'Micro Top-Up Pack (20 Leads)',
     amount: 50,
@@ -21,17 +29,37 @@ const PRICING_CATALOG: Record<string, { name: string; amount: number; type: 'bun
     credits: 1000
   },
   basic: {
-    name: 'Strovr Basic Subscription',
-    amount: 699,
+    name: 'Strovr Basic Monthly Subscription',
+    amount: 999,
     type: 'subscription',
+    billingCycle: 'monthly',
     plan: 'basic',
     credits: 600,
     dailyLimit: 600
   },
   pro: {
-    name: 'Strovr Pro Subscription',
+    name: 'Strovr Pro Monthly Subscription',
     amount: 1999,
     type: 'subscription',
+    billingCycle: 'monthly',
+    plan: 'pro',
+    credits: 1500,
+    dailyLimit: 1500
+  },
+  basic_annual: {
+    name: 'Strovr Basic Annual Subscription (25% Off)',
+    amount: 8999,
+    type: 'subscription',
+    billingCycle: 'annual',
+    plan: 'basic',
+    credits: 600,
+    dailyLimit: 600
+  },
+  pro_annual: {
+    name: 'Strovr Pro Annual Subscription (25% Off)',
+    amount: 17999,
+    type: 'subscription',
+    billingCycle: 'annual',
     plan: 'pro',
     credits: 1500,
     dailyLimit: 1500
@@ -48,6 +76,23 @@ router.post('/checkout', async (req, res) => {
   const item = PRICING_CATALOG[itemKey];
   const transactionId = `TXN_PH_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
   
+  // Resolve user info to persist pending transaction in ledger
+  const targetUser = userStore.getUserById(userId) || (userId.includes('@') ? userStore.getUserByEmail(userId) : null);
+  transactionStore.addTransaction({
+    transactionId,
+    userId: targetUser?._id || userId,
+    userEmail: targetUser?.email || (userId.includes('@') ? userId : ''),
+    userName: targetUser?.name || 'Customer',
+    itemKey,
+    itemName: item.name,
+    amount: item.amount,
+    currency: 'INR',
+    type: item.type,
+    status: 'PENDING',
+    gateway: 'PhonePe',
+    createdAt: new Date().toISOString()
+  });
+
   // PhonePe Payload Mocking / Gateway Protocol
   const frontendBase = (process.env.FRONTEND_URL || req.headers.origin || 'http://localhost:5173').replace(/\/$/, '');
   const phonePePayload = {
@@ -81,25 +126,17 @@ router.post('/webhook', async (req, res) => {
     }
 
     const item = PRICING_CATALOG[itemKey];
-    
-    // Idempotency verification
-    const txRef = db.collection('transactions');
-    try {
-      const existing = await txRef.where('transactionId', '==', transactionId).get();
-      if (!existing.empty) {
-        return res.status(200).json({ message: 'Transaction already processed (Idempotency).' });
-      }
-    } catch {}
-    
+
     if (status !== 'SUCCESS') {
-      return res.status(400).json({ error: 'PhonePe payment reported unsuccessful' });
+      transactionStore.updateStatus(transactionId, 'FAILED');
+      return res.status(400).json({ error: 'PhonePe payment reported unsuccessful', status: 'FAILED' });
     }
 
     // Resolve target account in userStore
     const targetUser = userStore.getUserById(userId) || (userId.includes('@') ? userStore.getUserByEmail(userId) : null);
     const targetId = targetUser?._id || userId;
 
-    // Persist verified transaction
+    // Persist or update verified transaction in transactionStore
     const txRecord = {
       transactionId,
       userId: targetId,
@@ -116,9 +153,6 @@ router.post('/webhook', async (req, res) => {
     };
 
     transactionStore.addTransaction(txRecord);
-    try {
-      await txRef.add(txRecord);
-    } catch {}
 
     // Calculate updated credits and tier
     const baseCredits = (targetUser?.plan || 'free') === 'free' && !targetUser?.has_topup && (targetUser?.lead_credits || 0) > 15
@@ -139,6 +173,7 @@ router.post('/webhook', async (req, res) => {
       newPlan = item.plan!;
       const dailyTokens = item.plan === 'basic' ? 600 : 1500;
       updates.plan = newPlan;
+      updates.billing_cycle = item.billingCycle || 'monthly';
       updates.lead_credits = dailyTokens;
       updates.base_daily_credits = dailyTokens;
       updates.last_token_reset_date = new Date().toISOString().split('T')[0];
@@ -179,6 +214,27 @@ router.post('/webhook', async (req, res) => {
   } catch (err: any) {
     console.error('Webhook error:', err);
     res.status(500).json({ error: 'PhonePe webhook processing failed' });
+  }
+});
+
+// 3. PhonePe Cancel / Abandon Endpoint
+router.post('/cancel', async (req, res) => {
+  const { transactionId } = req.body;
+  if (transactionId) {
+    transactionStore.updateStatus(transactionId, 'CANCELLED');
+  }
+  res.json({ success: true, status: 'CANCELLED' });
+});
+
+// 4. User Payment History / Transactions Endpoint
+router.get('/transactions', async (req, res) => {
+  try {
+    const userId = (req.query.userId as string) || '';
+    const email = (req.query.email as string) || '';
+    const list = transactionStore.getByUser(userId, email);
+    res.json({ success: true, count: list.length, transactions: list });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to fetch transactions' });
   }
 });
 

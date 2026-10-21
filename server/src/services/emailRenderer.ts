@@ -333,7 +333,7 @@ export function compileEmailHtml(payload: TemplatePayload, lead: LeadData): { su
         };
         const pulse = templateData.comparisonPulse || {
           title: 'Strovr Autonomous Engine',
-          monthlyCost: '₹699 / mo',
+          monthlyCost: '₹999 / mo',
           timeSpent: '15 mins / week',
           replyRate: '28.4% Response Rate',
           badge: '8.4x Lower CAC'
@@ -502,7 +502,7 @@ export function compileEmailHtml(payload: TemplatePayload, lead: LeadData): { su
 
     case 'dynamic_product_feed':
       const products = templateData.products || [
-        { name: 'Starter Harvest', category: '100 Leads', price: '₹699', badge: 'Popular', imageUrl: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600&auto=format&fit=crop&q=80' },
+        { name: 'Starter Harvest', category: '100 Leads', price: '₹999', badge: 'Popular', imageUrl: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600&auto=format&fit=crop&q=80' },
         { name: 'Pro Scale Harvest', category: '1,000 Leads', price: '₹1,999', badge: 'High Volume', imageUrl: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&auto=format&fit=crop&q=80' }
       ];
 

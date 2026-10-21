@@ -728,7 +728,7 @@ const AdminPanel = () => {
                       >
                         <option value="ALL">All Tiers</option>
                         <option value="free">Free</option>
-                        <option value="basic">Basic (₹699)</option>
+                        <option value="basic">Basic (₹999)</option>
                         <option value="pro">Pro (₹1,999)</option>
                       </select>
                     </div>
@@ -1474,7 +1474,7 @@ const AdminPanel = () => {
             <div className="space-y-2.5">
               {[
                 { key: 'free', label: 'Free Tier', quota: '15 Tokens • 50 Emails/mo', price: '₹0' },
-                { key: 'basic', label: 'Basic Growth', quota: '600 Tokens • 1,500 Emails/mo', price: '₹699/mo' },
+                { key: 'basic', label: 'Basic Growth', quota: '600 Tokens • 1,500 Emails/mo', price: '₹999/mo' },
                 { key: 'pro', label: 'Pro Sovereign', quota: '1,500 Tokens • 5,000 Emails/mo', price: '₹1,999/mo' }
               ].map((tier) => (
                 <div 

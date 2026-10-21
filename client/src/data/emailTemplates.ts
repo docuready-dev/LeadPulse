@@ -261,7 +261,7 @@ Review the live cost-efficiency comparison below to see what your team could sav
       },
       comparisonPulse: {
         title: 'Strovr Autonomous Engine',
-        monthlyCost: '₹699 / mo',
+        monthlyCost: '₹999 / mo',
         timeSpent: '15 mins / week',
         replyRate: '28.4% Response Rate',
         badge: '8.4x Lower CAC'
@@ -320,7 +320,7 @@ Review the live cost-efficiency comparison below to see what your team could sav
         {
           name: 'Local Maps Accelerator',
           category: 'Lead Discovery',
-          price: '₹699 / mo',
+          price: '₹999 / mo',
           badge: 'Starter',
           imageUrl: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600&auto=format&fit=crop&q=80',
           description: 'Extract 300+ geo-targeted leads every month with live ratings & phone contacts.',
@@ -417,7 +417,7 @@ Review the live cost-efficiency comparison below to see what your team could sav
       },
       comparisonPulse: {
         title: 'Strovr Autonomous Engine',
-        monthlyCost: '₹699 / mo',
+        monthlyCost: '₹999 / mo',
         timeSpent: '15 mins / week',
         replyRate: '28.4% Response Rate',
         badge: '8.4x Lower CAC'
