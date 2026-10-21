@@ -116,6 +116,26 @@ app.get('/health', (_req, res) => {
   });
 });
 
+// Desktop Portable ZIP Download Endpoint
+app.get(['/downloads/Strovr-Desktop-Portable.zip', '/api/download/desktop'], (_req, res) => {
+  const candidatePaths = [
+    path.resolve(__dirname, '../../client/public/downloads/Strovr-Desktop-Portable.zip'),
+    path.resolve(__dirname, '../../client/dist/downloads/Strovr-Desktop-Portable.zip'),
+    path.resolve(__dirname, '../../desktop-app/Strovr-Desktop-Portable.zip')
+  ];
+  for (const zipPath of candidatePaths) {
+    if (fs.existsSync(zipPath)) {
+      res.setHeader('Content-Disposition', 'attachment; filename="Strovr-Desktop-Portable.zip"');
+      res.setHeader('Content-Type', 'application/zip');
+      return res.sendFile(zipPath);
+    }
+  }
+  res.status(404).json({ 
+    error: 'Desktop portable build not found on this instance',
+    message: 'Please build or download the desktop portable package locally or visit https://strovr.space/'
+  });
+});
+
 // Unified Full-Stack Static Serving: Serve compiled client/dist if present in production
 const clientDistPath = path.resolve(__dirname, '../../client/dist');
 const indexHtmlPath = path.join(clientDistPath, 'index.html');

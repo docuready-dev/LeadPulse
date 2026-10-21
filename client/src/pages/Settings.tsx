@@ -1159,6 +1159,31 @@ const Settings = () => {
                   </button>
                 </div>
 
+                {/* Desktop Portable Package Download Card */}
+                <div className="p-4 rounded-md bg-[#FAF8F5] border border-[#E5E0D5] flex flex-wrap items-center justify-between gap-4">
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-2">
+                      <strong className="text-xs font-semibold text-[#191716] block">Strovr for Desktop (Windows Portable Edition)</strong>
+                      <span className="text-[9.5px] font-bold font-delight px-1.5 py-0.5 rounded bg-[#C85A32]/10 text-[#C85A32] border border-[#C85A32]/30 uppercase tracking-wider">
+                        Portable .ZIP
+                      </span>
+                    </div>
+                    <p className="text-xs text-[#78716A] font-sans">
+                      Zero installation required. Runs natively on Windows with local database storage in <code className="bg-[#EBE5D8] text-[#191716] px-1 py-0.5 rounded text-[10px]">Documents\Strovr</code> and automatic Excel CSV exports.
+                    </p>
+                  </div>
+
+                  <a
+                    href="/downloads/Strovr-Desktop-Portable.zip"
+                    download="Strovr-Desktop-Portable.zip"
+                    className="h-8 px-3.5 rounded-md text-xs font-delight font-semibold bg-[#C85A32] hover:bg-[#B04B25] text-white transition-all flex items-center gap-1.5 shadow-2xs border border-[#B04B25] cursor-pointer"
+                    title="Download Strovr Portable Windows App (.zip)"
+                  >
+                    <Download className="w-3.5 h-3.5 text-white" />
+                    <span>Download for Desktop</span>
+                  </a>
+                </div>
+
                 {/* Cloud Firestore Sync Status */}
                 <div className="p-4 rounded-md bg-emerald-50 border border-emerald-200 flex items-center justify-between">
                   <div className="flex items-center gap-3">

@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import { ExternalLink } from 'lucide-react';
 import { useStore } from './store/useStore';
 import Login from './pages/Login';
 import ResetPassword from './pages/ResetPassword';
@@ -56,7 +57,16 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
 const App = () => {
   const { user, token, refreshUserProfile } = useStore();
   const [showLogin, setShowLogin] = useState(false);
-  const isDesktop = typeof navigator !== 'undefined' && /Electron|StrovrDesktop/i.test(navigator.userAgent);
+  const isDesktop = (() => {
+    if (typeof window === 'undefined') return false;
+    if (/Electron|StrovrDesktop/i.test(navigator.userAgent)) return true;
+    if (window.location.search.includes('desktop=true')) {
+      try { sessionStorage.setItem('strovr_desktop_mode', 'true'); } catch (_) {}
+      return true;
+    }
+    if (sessionStorage.getItem('strovr_desktop_mode') === 'true') return true;
+    return false;
+  })();
 
   useEffect(() => {
     if (token) {
@@ -73,6 +83,37 @@ const App = () => {
 
   return (
     <BrowserRouter>
+      {isDesktop && (
+        <aside 
+          role="banner" 
+          className="w-full bg-[#191716] text-[#FAF8F5] border-b border-[#3A3531] px-4 py-2 text-xs font-delight flex items-center justify-between z-50 select-none shadow-sm shrink-0"
+        >
+          <div className="flex items-center gap-2.5">
+            <span className="w-2 h-2 rounded-full bg-[#C85A32] shrink-0 animate-pulse" />
+            <p className="text-[#E7E2DA] leading-normal text-xs font-medium">
+              This version is only for <strong className="text-white font-bold">local db setup</strong>. For cloud db, please visit{' '}
+              <a 
+                href="https://strovr.space/" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="text-[#E07A5F] hover:text-[#FFA07A] font-bold underline underline-offset-2 transition-colors ml-0.5"
+              >
+                strovr.space
+              </a>.
+            </p>
+          </div>
+          <a 
+            href="https://strovr.space/" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 bg-[#C85A32] hover:bg-[#B04B25] text-white text-[11px] font-semibold rounded transition-colors uppercase tracking-wider shrink-0 cursor-pointer"
+            title="Open Cloud DB at strovr.space"
+          >
+            <span>strovr.space</span>
+            <ExternalLink className="w-3 h-3" />
+          </a>
+        </aside>
+      )}
       <div className="saas-platform">
         <AppConfirmModal />
       </div>

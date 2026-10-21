@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Users, BarChart3, Settings, 
   FolderKanban, HelpCircle, Search, Send, Users2, 
   Webhook, Waypoints, LogOut, Sparkles, Zap, ArrowUpRight,
-  Calendar, ShieldCheck, Lock
+  Calendar, ShieldCheck, Lock, Download
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { alertDialog } from './AppConfirmModal';
@@ -48,6 +48,14 @@ const Sidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, setToken, setUser, setUpgradeModalOpen, setUpgradeTab, setTopUpOpen } = useStore();
+
+  const isDesktop = (() => {
+    if (typeof window === 'undefined') return false;
+    if (/Electron|StrovrDesktop/i.test(navigator.userAgent)) return true;
+    if (window.location.search.includes('desktop=true')) return true;
+    if (sessionStorage.getItem('strovr_desktop_mode') === 'true') return true;
+    return false;
+  })();
 
   const currentPlan = (user?.plan || 'free').toLowerCase();
   const isSuperAdmin = (user?.role || '').toUpperCase() === 'SUPER_ADMIN' || user?.email?.toLowerCase().trim() === 'ashleyghose64@gmail.com';
@@ -151,18 +159,32 @@ const Sidebar = () => {
     <aside className="w-[244px] flex flex-col h-screen border-r border-[#E5E0D5] bg-[#F5F2EB] text-[#191716] shrink-0 select-none">
       
       {/* Brand & Workspace Header */}
-      <div className="h-15 px-4 flex items-center justify-between border-b border-[#E5E0D5] bg-[#F5F2EB]">
-        <Link 
-          to="/" 
-          className="flex items-center group cursor-pointer hover:opacity-90 transition-all select-none"
-          title="Go to Landing Page"
-        >
-          <img 
-            src={strovrLogo} 
-            alt="Strovr Logo" 
-            className="h-9 md:h-9.5 w-auto object-contain shrink-0 group-hover:scale-102 transition-transform" 
-          />
-        </Link>
+      <div className={`${isDesktop ? 'h-18' : 'h-15'} px-4 flex items-center justify-between border-b border-[#E5E0D5] bg-[#F5F2EB]`}>
+        <div className="flex flex-col select-none">
+          <div className="flex items-center gap-2">
+            <Link 
+              to="/" 
+              className="flex items-center group cursor-pointer hover:opacity-90 transition-all select-none"
+              title={isDesktop ? "Strovr Desktop" : "Go to Landing Page"}
+            >
+              <img 
+                src={strovrLogo} 
+                alt="Strovr Logo" 
+                className="h-8.5 md:h-9 w-auto object-contain shrink-0 group-hover:scale-102 transition-transform" 
+              />
+            </Link>
+            {isDesktop && (
+              <span className="text-[9.5px] font-delight font-extrabold uppercase bg-[#C85A32]/10 text-[#C85A32] border border-[#C85A32]/30 px-1.5 py-0.5 rounded tracking-wider">
+                Desktop
+              </span>
+            )}
+          </div>
+          {isDesktop && (
+            <span className="text-[9.5px] font-delight font-extrabold text-[#78716A] uppercase tracking-widest pl-1 mt-0.5">
+              Desktop
+            </span>
+          )}
+        </div>
         <div className="w-7 h-7 rounded-md overflow-hidden border border-[#D6CFC2] bg-white shrink-0">
            {user?.profile_picture ? (
              <img src={user?.profile_picture} className="w-full h-full object-cover" alt="Profile" />
@@ -267,6 +289,17 @@ const Sidebar = () => {
 
       {/* Footer Area */}
       <div className="p-3 border-t border-[#E5E0D5] bg-[#F5F2EB] space-y-1">
+         {!isDesktop && (
+           <a 
+             href="/downloads/Strovr-Desktop-Portable.zip" 
+             download="Strovr-Desktop-Portable.zip"
+             className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs font-delight font-semibold text-[#191716] hover:bg-[#EBE5D8]/80 hover:text-[#C85A32] transition-colors"
+             title="Download Windows Portable Desktop Package (.zip)"
+           >
+             <Download className="w-3.5 h-3.5 text-[#C85A32]" /> 
+             <span>Download for Desktop</span>
+           </a>
+         )}
          <Link to="/help" className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs font-delight font-medium text-[#57514B] hover:text-[#191716] hover:bg-[#EBE5D8]/60 transition-colors">
            <HelpCircle className="w-3.5 h-3.5 text-[#6E675F]" /> 
            <span>Documentation</span>

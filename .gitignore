@@ -61,5 +61,9 @@ release/
 desktop-app/
 electron-builder.env
 .electron-build/
+*.exe
+client/public/downloads/*.zip
+client/public/downloads/*.exe
+client/dist/downloads/
 
 

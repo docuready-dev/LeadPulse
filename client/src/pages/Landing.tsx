@@ -1,5 +1,5 @@
 import { 
-  BarChart3, Database, Sparkles, Users, Zap, ShieldCheck, X, Check
+  BarChart3, Database, Sparkles, Users, Zap, ShieldCheck, X, Check, Download
 } from 'lucide-react';
 import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
 import { useRef, useState } from 'react';
@@ -296,6 +296,15 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
           </div>
 
           <div className="flex items-center gap-3">
+            <a
+              href="/downloads/Strovr-Desktop-Portable.zip"
+              download="Strovr-Desktop-Portable.zip"
+              className="hidden lg:inline-flex items-center gap-1.5 h-8.5 px-3 bg-white text-[#191716] hover:bg-[#F5F2EB] border border-[#D6CFC2] rounded-[5px] font-delight font-semibold text-xs transition-colors shadow-2xs cursor-pointer"
+              title="Download Strovr for Windows Desktop (Portable ZIP)"
+            >
+              <Download className="w-3.5 h-3.5 text-[#C85A32]" />
+              <span>Download for Desktop</span>
+            </a>
             <button
               onClick={onLogin}
               className="text-xs font-delight font-semibold text-[#57524B] hover:text-[#191716] transition-colors px-2.5 py-1.5 cursor-pointer"
@@ -368,8 +377,17 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
                 {token ? 'Go to Dashboard' : 'Launch Workspace'} &rarr;
               </button>
               <a
+                href="/downloads/Strovr-Desktop-Portable.zip"
+                download="Strovr-Desktop-Portable.zip"
+                className="w-full sm:w-auto h-11 px-5 bg-white border border-[#D6CFC2] text-[#191716] rounded-[6px] font-delight font-semibold text-[13px] hover:bg-[#FAF8F5] transition-colors flex items-center justify-center gap-2 shadow-2xs hover:border-[#C85A32]"
+                title="Download Strovr for Windows Desktop (Portable ZIP)"
+              >
+                <Download className="w-3.5 h-3.5 text-[#C85A32]" />
+                <span>Download for Desktop</span>
+              </a>
+              <a
                 href="#product"
-                className="w-full sm:w-auto h-11 px-5 bg-[#F5F2EB] border border-[#D6CFC2] text-[#191716] rounded-[6px] font-delight font-semibold text-[13px] hover:bg-[#EFECE4] transition-colors flex items-center justify-center gap-1"
+                className="w-full sm:w-auto h-11 px-4 bg-[#F5F2EB] border border-[#D6CFC2] text-[#57524B] rounded-[6px] font-delight font-semibold text-[13px] hover:bg-[#EFECE4] transition-colors flex items-center justify-center gap-1"
               >
                 Inspect Platform &rarr;
               </a>
@@ -1525,6 +1543,15 @@ const Landing = ({ onLogin }: { onLogin: () => void }) => {
 
             {/* Interactive Footer Menu */}
             <div className="flex flex-wrap gap-6 text-xs font-delight font-semibold text-[#57524B]">
+              <a 
+                href="/downloads/Strovr-Desktop-Portable.zip" 
+                download="Strovr-Desktop-Portable.zip" 
+                className="hover:text-[#C85A32] transition-colors inline-flex items-center gap-1.5"
+                title="Download Windows Portable Desktop Package (.zip)"
+              >
+                <Download className="w-3.5 h-3.5 text-[#C85A32]" />
+                <span>Download for Desktop</span>
+              </a>
               <a href="#docuready" className="hover:text-[#C85A32] transition-colors">
                 Why DocuReady
               </a>
