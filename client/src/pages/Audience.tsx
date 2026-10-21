@@ -989,9 +989,9 @@ const Audience = () => {
                 ) : (
                   <div className="overflow-x-auto custom-scrollbar">
                     <table className="w-full text-left text-xs">
-                      <thead className="bg-slate-50 text-slate-500 font-delight font-semibold uppercase text-[10px] tracking-wider border-b border-slate-200">
+                      <thead className="bg-slate-50 text-slate-500 font-delight font-medium uppercase text-[10px] tracking-wider border-b border-slate-200">
                         <tr>
-                          <th className="py-2.5 px-3.5 w-10">
+                          <th className="py-3.5 px-4 w-10">
                             <input 
                               type="checkbox" 
                               checked={selectedLeadIds.length === sortedAndFilteredContacts.length && sortedAndFilteredContacts.length > 0}
@@ -1002,78 +1002,78 @@ const Audience = () => {
                               className="w-3.5 h-3.5 rounded-sm border-slate-300 text-accent cursor-pointer"
                             />
                           </th>
-                          <th className="py-2.5 px-3.5">
+                          <th className="py-3.5 px-6 min-w-[300px]">
                             <button
                               type="button"
                               onClick={() => toggleSortField('name')}
-                              className="flex items-center gap-1.5 hover:text-slate-900 transition-colors uppercase cursor-pointer group"
+                              className="flex items-center gap-1.5 hover:text-slate-900 transition-colors uppercase cursor-pointer group font-medium"
                             >
-                              <span>Contact / Business</span>
+                              <span>Contact / Business Name</span>
                               {renderSortIcon('name')}
                             </button>
                           </th>
-                          <th className="py-2.5 px-3.5">
+                          <th className="py-3.5 px-5">
                             <button
                               type="button"
                               onClick={() => toggleSortField('date')}
-                              className="flex items-center gap-1.5 hover:text-slate-900 transition-colors uppercase cursor-pointer group"
+                              className="flex items-center gap-1.5 hover:text-slate-900 transition-colors uppercase cursor-pointer group font-medium"
                             >
                               <Calendar className="w-3 h-3 text-slate-400" />
                               <span>Harvest Date</span>
                               {renderSortIcon('date')}
                             </button>
                           </th>
-                          <th className="py-2.5 px-3.5">
+                          <th className="py-3.5 px-5">
                             <button
                               type="button"
                               onClick={() => toggleSortField('city')}
-                              className="flex items-center gap-1.5 hover:text-slate-900 transition-colors uppercase cursor-pointer group"
+                              className="flex items-center gap-1.5 hover:text-slate-900 transition-colors uppercase cursor-pointer group font-medium"
                             >
                               <MapPin className="w-3 h-3 text-slate-400" />
                               <span>City / Location</span>
                               {renderSortIcon('city')}
                             </button>
                           </th>
-                          <th className="py-2.5 px-3.5">Email</th>
-                          <th className="py-2.5 px-3.5">Phone</th>
-                          <th className="py-2.5 px-3.5">
+                          <th className="py-3.5 px-5 font-medium">Email</th>
+                          <th className="py-3.5 px-5 font-medium">Phone</th>
+                          <th className="py-3.5 px-5">
                             <button
                               type="button"
                               onClick={() => toggleSortField('category')}
-                              className="flex items-center gap-1.5 hover:text-slate-900 transition-colors uppercase cursor-pointer group"
+                              className="flex items-center gap-1.5 hover:text-slate-900 transition-colors uppercase cursor-pointer group font-medium"
                             >
                               <span>Category</span>
                               {renderSortIcon('category')}
                             </button>
                           </th>
-                          <th className="py-2.5 px-3.5">
+                          <th className="py-3.5 px-5">
                             <button
                               type="button"
                               onClick={() => toggleSortField('rating')}
-                              className="flex items-center gap-1.5 hover:text-slate-900 transition-colors uppercase cursor-pointer group"
+                              className="flex items-center gap-1.5 hover:text-slate-900 transition-colors uppercase cursor-pointer group font-medium"
                             >
                               <Star className="w-3 h-3 text-amber-500 fill-amber-500/20" />
                               <span>Rating</span>
                               {renderSortIcon('rating')}
                             </button>
                           </th>
-                          <th className="py-2.5 px-3.5">
+                          <th className="py-3.5 px-5">
                             <button
                               type="button"
                               onClick={() => toggleSortField('status')}
-                              className="flex items-center gap-1.5 hover:text-slate-900 transition-colors uppercase cursor-pointer group"
+                              className="flex items-center gap-1.5 hover:text-slate-900 transition-colors uppercase cursor-pointer group font-medium"
                             >
                               <span>Stage &amp; Sync</span>
                               {renderSortIcon('status')}
                             </button>
                           </th>
-                          <th className="py-2.5 px-3.5 text-right">Actions</th>
+                          <th className="py-3.5 px-6 text-right font-medium">Actions</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
                         {sortedAndFilteredContacts.map(lead => (
                           <tr key={lead._id} className="hover:bg-slate-50/80 transition-colors group">
-                            <td className="py-3 px-3.5">
+                            <td className="py-5 px-4 align-middle">
                               <input 
                                 type="checkbox" 
                                 checked={selectedLeadIds.includes(lead._id)}
@@ -1085,17 +1085,21 @@ const Audience = () => {
                               />
                             </td>
 
-                            {/* Contact / Business */}
-                            <td className="py-3 px-3.5">
-                              <div className="flex items-center gap-2.5">
-                                <div className="w-7 h-7 rounded-sm bg-slate-100 text-slate-700 flex items-center justify-center font-delight font-bold text-xs uppercase flex-shrink-0 border border-slate-200">
+                            {/* Contact / Business Name with generous cell padding */}
+                            <td className="py-5 px-6 min-w-[300px] max-w-[460px] align-middle">
+                              <div className="flex items-center gap-3.5">
+                                <div className="w-9 h-9 rounded-md bg-[#FAF8F5] text-slate-700 flex items-center justify-center font-delight font-medium text-xs uppercase flex-shrink-0 border border-[#E5E0D5] shadow-2xs">
                                   {(lead.businessName || 'C').charAt(0)}
                                 </div>
-                                <div className="min-w-0 max-w-[240px] sm:max-w-[300px]">
-                                  <div className="font-bold text-slate-900 break-words whitespace-normal leading-snug tracking-tight">{lead.businessName || 'Unnamed Contact'}</div>
+                                <div className="min-w-0 flex-1">
+                                  <div className="font-delight font-medium text-[13px] text-slate-900 break-words whitespace-normal leading-normal tracking-normal">
+                                    {lead.businessName || 'Unnamed Contact'}
+                                  </div>
                                   {lead.source && (
-                                    <div className="text-[10px] text-slate-400 font-delight font-normal flex items-center gap-1 mt-0.5">
-                                      <span className="bg-slate-100 text-slate-600 px-1 rounded-sm border border-slate-200">{lead.source}</span>
+                                    <div className="text-[10px] text-slate-400 font-delight font-normal flex items-center gap-1.5 mt-1.5">
+                                      <span className="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded-sm border border-slate-200/80">
+                                        {lead.source}
+                                      </span>
                                     </div>
                                   )}
                                 </div>
@@ -1103,7 +1107,7 @@ const Audience = () => {
                             </td>
 
                             {/* Harvest Date */}
-                            <td className="py-3 px-3.5 font-delight text-slate-700 whitespace-nowrap">
+                            <td className="py-5 px-5 font-delight text-slate-700 whitespace-nowrap align-middle">
                               <div className="flex items-center gap-1.5 text-xs">
                                 <Calendar className="w-3 h-3 text-slate-400 shrink-0" />
                                 <span className="font-medium text-slate-800">{formatHarvestDate(lead.createdAt || lead.harvestedAt || lead.created_at || lead.timestamp)}</span>
@@ -1111,7 +1115,7 @@ const Audience = () => {
                             </td>
 
                             {/* City / Location */}
-                            <td className="py-3 px-3.5 font-delight text-slate-700">
+                            <td className="py-5 px-5 font-delight text-slate-700 align-middle">
                               <div className="flex items-center gap-1.5 text-xs max-w-[170px]">
                                 <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
                                 <span className="font-medium text-slate-800 truncate" title={getLeadCity(lead)}>
@@ -1121,7 +1125,7 @@ const Audience = () => {
                             </td>
 
                             {/* Email */}
-                            <td className="py-3 px-3.5 font-delight font-medium">
+                            <td className="py-5 px-5 font-delight font-medium align-middle">
                               {lead.email ? (
                                 <div className="flex items-center gap-1.5 group/email">
                                   <a href={`mailto:${lead.email}`} className="text-slate-800 hover:text-accent hover:underline flex items-center gap-1 font-medium">
@@ -1150,13 +1154,13 @@ const Audience = () => {
                             </td>
 
                             {/* Phone */}
-                            <td className="py-3 px-3.5 font-delight font-medium whitespace-nowrap">
+                            <td className="py-5 px-5 font-delight font-medium whitespace-nowrap align-middle">
                               {lead.phone ? (
                                 <a 
                                   href={`https://wa.me/${lead.phone.replace(/[^0-9]/g, '')}`} 
                                   target="_blank" 
                                   rel="noreferrer"
-                                  className="text-emerald-600 hover:underline flex items-center gap-1 font-semibold"
+                                  className="text-emerald-600 hover:underline flex items-center gap-1 font-medium"
                                 >
                                   <Phone className="w-3 h-3" />
                                   <span>{lead.phone}</span>
@@ -1167,22 +1171,22 @@ const Audience = () => {
                             </td>
 
                             {/* Category */}
-                            <td className="py-3 px-3.5 font-medium text-slate-600 whitespace-nowrap">
+                            <td className="py-5 px-5 font-medium text-slate-600 whitespace-nowrap align-middle">
                               <span className="px-1.5 py-0.5 rounded-sm bg-slate-100 border border-slate-200 text-[10px] font-delight font-medium text-slate-600">
                                 {lead.category || 'General'}
                               </span>
                             </td>
 
                             {/* Rating */}
-                            <td className="py-3 px-3.5 font-delight whitespace-nowrap">
+                            <td className="py-5 px-5 font-delight whitespace-nowrap align-middle">
                               <div className="flex items-center gap-1">
                                 <Star className="w-3 h-3 text-amber-500 fill-amber-400" />
-                                <span className="font-bold text-slate-800 text-xs">{lead.rating ? Number(lead.rating).toFixed(1) : 'N/A'}</span>
+                                <span className="font-medium text-slate-800 text-xs">{lead.rating ? Number(lead.rating).toFixed(1) : 'N/A'}</span>
                               </div>
                             </td>
 
                             {/* Stage & Sync */}
-                            <td className="py-3 px-3.5 font-delight font-medium">
+                            <td className="py-5 px-5 font-delight font-medium align-middle">
                               <div className="flex flex-wrap items-center gap-1">
                                 <span className={`inline-block px-2 py-0.5 rounded-sm text-[10px] font-delight font-medium border ${
                                   lead.status === 'Closed Won' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
@@ -1196,7 +1200,7 @@ const Audience = () => {
                                 {Array.isArray(lead.syncedTo) && lead.syncedTo.map((appBadge: string) => (
                                   <span
                                     key={appBadge}
-                                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm bg-emerald-50/90 text-emerald-700 border border-emerald-200/80 text-[9px] font-delight font-bold"
+                                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm bg-emerald-50/90 text-emerald-700 border border-emerald-200/80 text-[9px] font-delight font-medium"
                                     title={`Synced to ${appBadge}`}
                                   >
                                     <Check className="w-2.5 h-2.5 text-emerald-600" />
@@ -1207,7 +1211,7 @@ const Audience = () => {
                             </td>
 
                             {/* Actions */}
-                            <td className="py-3 px-3.5 text-right">
+                            <td className="py-5 px-6 text-right align-middle">
                               <div className="flex items-center justify-end gap-1.5 opacity-80 group-hover:opacity-100">
                                 <button 
                                   onClick={() => setEditingContact({ ...lead })}

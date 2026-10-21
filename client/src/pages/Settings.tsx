@@ -13,6 +13,7 @@ import Sidebar from '../components/Sidebar';
 import Header from '../components/Header';
 import EmailProviderModal from '../components/EmailProviderModal';
 import TokenDisplay from '../components/TokenDisplay';
+import { ZoomController } from '../components/ZoomController';
 import API_URL from '../config/api';
 
 type SettingsTab = 'profile' | 'security' | 'smtp' | 'outreach' | 'billing' | 'data';
@@ -1425,6 +1426,9 @@ const Settings = () => {
                     <span>Download for Desktop</span>
                   </a>
                 </div>
+
+                {/* Interface Scaling & Zoom Controller (50% to 200%) */}
+                <ZoomController variant="settings" />
 
                 {/* Desktop In-App Updates Card */}
                 <div className="p-4 rounded-md bg-[#FAF8F5] border border-[#E5E0D5] flex flex-col gap-3.5">

@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Search, Bell, Plus, Layers, ShieldCheck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useStore } from '../store/useStore';
+import { ZoomController } from './ZoomController';
 
 interface HeaderProps {
   title?: string;
@@ -69,9 +70,12 @@ const Header = ({ title: _title }: HeaderProps) => {
           <Layers className="w-3 h-3 text-[#6E675F] shrink-0" />
         </button>
 
+        {/* Zoom Controller (50% to 200%) */}
+        <ZoomController variant="header" />
+
         <button 
           onClick={() => navigate('/finder')}
-          className="bg-[#C85A32] hover:bg-[#B04B25] text-white px-3.5 py-1.5 rounded-md text-xs font-delight font-semibold transition-all flex items-center gap-1.5 cursor-pointer"
+          className="bg-[#C85A32] hover:bg-[#B04B25] text-white px-3.5 py-1.5 rounded-md text-xs font-delight font-medium transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
         >
           <Plus className="w-3.5 h-3.5 text-white/90" />
           <span>New Harvest</span>

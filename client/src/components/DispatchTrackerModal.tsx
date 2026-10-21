@@ -365,19 +365,19 @@ const DispatchTrackerModal = ({
                 
                 <div className="border border-slate-200 rounded-md overflow-hidden bg-white max-h-48 overflow-y-auto custom-scrollbar">
                   <table className="w-full text-left text-xs">
-                    <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-delight font-semibold text-[11px] uppercase sticky top-0">
+                    <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-delight font-medium text-[11px] uppercase sticky top-0">
                       <tr>
-                        <th className="py-2 px-3">Target Business</th>
-                        <th className="py-2 px-3">Location / Field</th>
-                        <th className="py-2 px-3">Recipient Email</th>
+                        <th className="py-2.5 px-4 font-medium">Target Business</th>
+                        <th className="py-2.5 px-4 font-medium">Location / Field</th>
+                        <th className="py-2.5 px-4 font-medium">Recipient Email</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {selectedLeadsToDispatch.map((lead, idx) => (
                         <tr key={lead._id || idx} className="hover:bg-slate-50">
-                          <td className="py-2 px-3 font-semibold text-slate-900">{lead.businessName}</td>
-                          <td className="py-2 px-3 text-slate-500 text-[11px]">{lead.location} &bull; {lead.category || lead.fieldOfWork}</td>
-                          <td className="py-2 px-3 text-blue-600 font-delight font-medium text-[11px]">
+                          <td className="py-3 px-4 font-delight font-medium text-slate-900 text-xs">{lead.businessName}</td>
+                          <td className="py-3 px-4 text-slate-500 text-[11px] font-delight font-medium">{lead.location} &bull; {lead.category || lead.fieldOfWork}</td>
+                          <td className="py-3 px-4 text-blue-600 font-delight font-medium text-[11px]">
                             {lead.email || `contact@${lead.businessName.toLowerCase().replace(/[^a-z0-9]/g, '') || 'company'}.com`}
                           </td>
                         </tr>
@@ -481,20 +481,20 @@ const DispatchTrackerModal = ({
               {activeTab === 'table' && (
                 <div className="border border-slate-200 rounded-md overflow-hidden bg-white max-h-72 overflow-y-auto custom-scrollbar">
                   <table className="w-full text-left text-xs">
-                    <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-delight font-semibold text-[11px] uppercase sticky top-0">
+                    <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-delight font-medium text-[11px] uppercase sticky top-0">
                       <tr>
-                        <th className="py-2.5 px-3">Recipient Business</th>
-                        <th className="py-2.5 px-3">Destination Inbox</th>
-                        <th className="py-2.5 px-3">Delivery Status</th>
-                        <th className="py-2.5 px-3 text-right">Inbox Proof</th>
+                        <th className="py-2.5 px-4 font-medium">Recipient Business</th>
+                        <th className="py-2.5 px-4 font-medium">Destination Inbox</th>
+                        <th className="py-2.5 px-4 font-medium">Delivery Status</th>
+                        <th className="py-2.5 px-4 text-right font-medium">Inbox Proof</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {deliveryLogs.map((log, i) => (
                         <tr key={i} className="hover:bg-slate-50 transition-colors">
-                          <td className="py-2.5 px-3 font-semibold text-slate-900">
+                          <td className="py-3 px-4 font-delight font-medium text-slate-900 text-xs">
                             {log.variant && (
-                              <span className={`inline-block px-1.5 py-0.5 rounded-xs font-delight text-[9px] font-bold mr-1.5 border ${
+                              <span className={`inline-block px-1.5 py-0.5 rounded-xs font-delight text-[9px] font-medium mr-1.5 border ${
                                 log.variant === 'Variant A' 
                                   ? 'bg-blue-50 text-blue-700 border-blue-200' 
                                   : 'bg-purple-50 text-purple-700 border-purple-200'
@@ -504,16 +504,16 @@ const DispatchTrackerModal = ({
                             )}
                             {log.businessName}
                           </td>
-                          <td className="py-2.5 px-3 font-delight font-medium text-slate-600 text-[11px]">
+                          <td className="py-3 px-4 font-delight font-medium text-slate-600 text-[11px]">
                             {log.recipient}
                           </td>
-                          <td className="py-2.5 px-3">
-                            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-sm text-[10px] font-delight font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          <td className="py-3 px-4">
+                            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-sm text-[10px] font-delight font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
                               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                               <span>250 OK Delivered</span>
                             </span>
                           </td>
-                          <td className="py-2.5 px-3 text-right">
+                          <td className="py-3 px-4 text-right">
                             {log.previewUrl ? (
                               <a 
                                 href={log.previewUrl} 
